@@ -1,0 +1,27 @@
+#
+# To use the profile local, the configuration 
+# smallrye.config.profile=local has to be set 
+# into any valid ConfigSource.
+#
+# https://quarkus.io/guides/config-reference
+#
+# ./mvnw package -Pnative -Dquarkus.profile=local
+#
+# local dev usage:
+# ./mvnw -Dsmallrye.config.profile=local-dev quarkus:dev
+
+# on openshift overwrite this with env var SMALLRYE_CONFIG_PROFILE or via env var JAVA_OPTIONS=... -Dsmallrye..
+smallrye:
+    config:
+        profile: local
+
+"%local":
+    app:
+        readDataFromFile: true
+        writeResultsToFile: true
+
+"%openshift":
+    app:
+        readDataFromFile: false
+        writeResultsToFile: false
+    
