@@ -16,6 +16,14 @@ smallrye:
         profile: local
 
 "%local":
+    camel:
+        context:
+            name: ya-integration
+        main:
+            #
+            # NOTE: after the comma "," there must not be any whitespaces.
+            # 
+            routes-include-pattern: classpath:routes/*.yaml,classpath:test-routes/*.yaml
     app:
         readDataFromFile: true
         writeResultsToFile: true
