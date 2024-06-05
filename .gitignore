@@ -40,4 +40,6 @@ nb-configuration.xml
 src/main/java/**/*.class
 quarkus.log
 quarkus.log.*
+inbox/*
+outbox/*
 
