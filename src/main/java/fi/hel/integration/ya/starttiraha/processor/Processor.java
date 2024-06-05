@@ -78,21 +78,21 @@ public class Processor {
                 String bankAccountNo = (String) bankAccount.get("value");
                 System.out.println("accountNo :: " + bankAccountNo);
             
-                String periodStartDate = (String) item.get("periodStartDate");
-                String periodEndDate = (String) item.get("periodEndDate");
+                String paymentPeriodStartDate = (String) item.get("paymentPeriodStartDate");
+                String paymentPeriodEndDate = (String) item.get("paymentPeriodEndDate");
 
-                if(periodStartDate != null) {
-                    periodStartDate = convertDate(periodStartDate);
+                if(paymentPeriodStartDate != null) {
+                    paymentPeriodStartDate = convertDate(paymentPeriodStartDate);
             
                 } else {
-                    periodStartDate = null;
+                    paymentPeriodStartDate = null;
                 }
 
-                if(periodEndDate != null) {
-                    periodEndDate = convertDate(periodEndDate);
+                if(paymentPeriodEndDate != null) {
+                    paymentPeriodEndDate = convertDate(paymentPeriodEndDate);
             
                 } else {
-                    periodEndDate= null;
+                    paymentPeriodEndDate= null;
                 }
             
                 personalInfoMap.put("id", EMPTY);
@@ -109,7 +109,7 @@ public class Processor {
                 personalInfoMap.put("bankAccountNo", bankAccountNo);
                 personalInfoMap.put("bic1", EMPTY);
                 personalInfoMap.put("deliveryMethod", EMPTY);
-                personalInfoMap.put("periodStartDate", periodStartDate);
+                personalInfoMap.put("paymentPeriodStartDate", paymentPeriodStartDate);
                 personalInfoMap.put("continuityDate", EMPTY);
                 personalInfoMap.put("task", EMPTY);
                 personalInfoMap.put("group", EMPTY);
@@ -117,7 +117,7 @@ public class Processor {
                 personalInfoMap.put("pensionSystem", EMPTY);
                 personalInfoMap.put("accidentInsuranceCompany", EMPTY);
                 personalInfoMap.put("insuranceException", EMPTY);
-                personalInfoMap.put("periodEndDate", periodEndDate);
+                personalInfoMap.put("paymentPeriodEndDate", paymentPeriodEndDate);
                 personalInfoMap.put("terminationReason", EMPTY);
                 personalInfoMap.put("compantyId", EMPTY);
                 personalInfoMap.put("businessUnit", EMPTY);
