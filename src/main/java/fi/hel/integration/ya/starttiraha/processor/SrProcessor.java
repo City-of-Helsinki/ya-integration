@@ -13,17 +13,21 @@ import java.util.Map;
 import org.apache.camel.Exchange;
 import org.jboss.logging.Logger;
 
+import fi.hel.integration.ya.Utils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
 
 @ApplicationScoped
-@Named ("processor")
-public class Processor {
+@Named ("srProcessor")
+public class SrProcessor {
 
     @Inject
-    Logger log; 
+    Logger log;
+
+    @Inject
+    Utils utils;
 
     private static final String EMPTY = "";
     
@@ -82,14 +86,14 @@ public class Processor {
                 String paymentPeriodEndDate = (String) item.get("paymentPeriodEndDate");
 
                 if(paymentPeriodStartDate != null) {
-                    paymentPeriodStartDate = convertDate(paymentPeriodStartDate);
+                    paymentPeriodStartDate = utils.convertDate(paymentPeriodStartDate, "yyyy-MM-dd HH:mm:ss", "dd.MM.yyyy");
             
                 } else {
                     paymentPeriodStartDate = null;
                 }
 
                 if(paymentPeriodEndDate != null) {
-                    paymentPeriodEndDate = convertDate(paymentPeriodEndDate);
+                    paymentPeriodEndDate = utils.convertDate(paymentPeriodEndDate, "yyyy-MM-dd HH:mm:ss", "dd.MM.yyyy");
             
                 } else {
                     paymentPeriodEndDate= null;
@@ -156,14 +160,14 @@ public class Processor {
                 String paymentPeriodStartDate = (String) item.get("paymentPeriodStartDate");
                 String paymentPeriodEndDate = (String) item.get("paymentPeriodEndDate");
                 if(paymentPeriodStartDate != null) {
-                    paymentPeriodStartDate = convertDate(paymentPeriodStartDate);
+                    paymentPeriodStartDate = utils.convertDate(paymentPeriodStartDate, "yyyy-MM-dd HH:mm:ss", "dd.MM.yyyy");
             
                 } else {
                     paymentPeriodStartDate = null;
                 }
 
                 if(paymentPeriodEndDate != null) {
-                    paymentPeriodEndDate = convertDate(paymentPeriodEndDate);
+                    paymentPeriodEndDate = utils.convertDate(paymentPeriodEndDate, "yyyy-MM-dd HH:mm:ss", "dd.MM.yyyy");
             
                 } else {
                     paymentPeriodEndDate= null;
@@ -200,23 +204,5 @@ public class Processor {
             e.printStackTrace();
             ex.setException(e);
         }
-    }
-
-    // Päivämäärän muoto csv:ssä pp.kk.vvvv
-    public String convertDate (String date) {
-        
-        SimpleDateFormat originalFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        SimpleDateFormat desiredFormat = new SimpleDateFormat("dd.MM.yyyy");
-        
-        try {
-            Date parsedDate = originalFormat.parse(date);
-            date = desiredFormat.format(parsedDate);
-            return date;
-            
-        } catch (ParseException e) {
-            e.printStackTrace();
-            return null;
-        }
-
     }
 }

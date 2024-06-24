@@ -12,7 +12,7 @@ import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-public class InRouteBuilder extends RouteBuilder {
+public class SrInRouteBuilder extends RouteBuilder {
     @SuppressWarnings("unchecked")
     @Override
     public void configure() throws Exception {
@@ -40,7 +40,7 @@ public class InRouteBuilder extends RouteBuilder {
                 })
             .marshal(new JacksonDataFormat())
             .log("body :: ${body}")
-            .to("direct:controller")
+            .to("direct:sr-controller")
         ;
     }
 }

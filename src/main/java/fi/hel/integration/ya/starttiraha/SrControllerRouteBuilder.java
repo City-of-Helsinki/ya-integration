@@ -5,15 +5,15 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.apache.camel.model.dataformat.CsvDataFormat;
 
-import fi.hel.integration.ya.starttiraha.processor.Processor;
+import fi.hel.integration.ya.starttiraha.processor.SrProcessor;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
-public class ControllerRouteBuilder extends RouteBuilder{
+public class SrControllerRouteBuilder extends RouteBuilder{
 
     @Inject
-    Processor processor;
+    SrProcessor srProcessor;
     
     @Override
     public void configure() throws Exception {
@@ -29,28 +29,28 @@ public class ControllerRouteBuilder extends RouteBuilder{
             .handled(true) // The error is not passed on to other error handlers.
             .stop(); // Stop routing processing for this error.
 
-        from("direct:controller")
+        from("direct:sr-controller")
             .setVariable("jsonData").simple("${body}")
-            .to("direct:controller.processPersonalData")
+            .to("direct:sr-controller.processPersonalData")
             .to("file:outbox/starttiraha")
             .setBody().variable("jsonData") // restore the original data body to route
-            .to("direct:controller.processPayrollTransaction")
+            .to("direct:sr-controller.processPayrollTransaction")
             .to("file:outbox/starttiraha") 
         ;
 
         // Henkilötietojen käsittely
-        from("direct:controller.processPersonalData")
+        from("direct:sr-controller.processPersonalData")
             .log("process body :: ${body}")
             .unmarshal(new JacksonDataFormat())
-            .bean(processor, "createPersonalInfoMap")
+            .bean(srProcessor, "createPersonalInfoMap")
             .marshal(csv)
             .setHeader(Exchange.FILE_NAME, simple("starttiraha_henkilotieto_testi_${date-with-timezone:now:Europe/Helsinki:yyyyMMddHHmmss}.csv"))
         ;
 
         // Palkkatapahtumien käsittely
-        from("direct:controller.processPayrollTransaction")
+        from("direct:sr-controller.processPayrollTransaction")
             .unmarshal(new JacksonDataFormat())
-            .bean(processor, "createPayrollTransactionMap")
+            .bean(srProcessor, "createPayrollTransactionMap")
             .marshal(csv)
             .setHeader(Exchange.FILE_NAME, simple("starttiraha_palkkatapahtuma_testi_${date-with-timezone:now:Europe/Helsinki:yyyyMMddHHmmss}.csv"))
         ;
