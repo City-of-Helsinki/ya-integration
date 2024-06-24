@@ -51,41 +51,33 @@ public class MlProcessor {
     @Inject
     Utils utils;
 
-    @ConfigProperty(name = "maksuliikenne_maksaja")
+    @ConfigProperty(name = "maksuliikenne_maksaja", defaultValue= "maksaja")
     String maksaja;
 
-    @ConfigProperty(name = "maksuliikenne_maksupalvelutunnus")
+    @ConfigProperty(name = "maksuliikenne_maksupalvelutunnus", defaultValue = "maksupalvelutunnus")
     String maksupalvelutunnus;
 
-    @ConfigProperty(name = "maksuliikenne_maksupalvelutunnus_code")
+    @ConfigProperty(name = "maksuliikenne_maksupalvelutunnus_code", defaultValue = "code")
     String code;
 
-    @ConfigProperty(name = "maksuliikenne_maksaja_maakoodi")
+    @ConfigProperty(name = "maksuliikenne_maksaja_maakoodi", defaultValue = "FI")
     String maakoodi;
 
-    @ConfigProperty(name = "maksuliikenne_maksaja_iban")
+    @ConfigProperty(name = "maksuliikenne_maksaja_iban", defaultValue = "iban")
     String iban;
 
-    @ConfigProperty(name = "maksuliikenne_maksaja_bic")
+    @ConfigProperty(name = "maksuliikenne_maksaja_bic", defaultValue = "bic")
     String bic;
-
-    @ConfigProperty(name = "maksuliikenne.document.xsi")
-    String documentXsi;
-
-    @ConfigProperty(name = "maksuliikenne.document.xsd")
-    String documentXsd;
-
-    @ConfigProperty(name = "maksuliikenne.document.schemaLocation")
-    String documentSchemaLocation;
-
-    @ConfigProperty(name = "maksuliikenne.document.xmlns")
-    String documentXmlns;
 
     private static final String ORIGINAL_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private static final String MSG_ID_PREFIX = "YA-";
     private static final String CHARGE_BEARER= "SLEV";
     private static final String PAYMENT_METHOD= "TRF";
     private static final boolean BATCH_BOOKING= true;
+    private static final String DOCUMENT_XSI = "http://www.w3.org/2001/XMLSchema-instance";
+    private static final String DOCUMENT_XSD = "http://www.w3.org/2001/XMLSchema";
+    private static final String SCHEMA_LOCATION = "urn:iso:std:iso:20022:tech:xsd:pain.001.001.03 pain.001.001.03.xsd";
+    private static final String DOCUMENT_XMLNS = "urn:iso:std:iso:20022:tech:xsd:pain.001.001.03";
 
     @SuppressWarnings("unchecked")
     public void mapPaymentTransactions(Exchange ex) {
@@ -184,10 +176,10 @@ public class MlProcessor {
             messageRoot.setGroupHeader(groupHeader);
             messageRoot.setPaymentInformation(pmtInf);
             
-            document.setXsi(documentXsi);
-            document.setXsd(documentXsd);
-            document.setSchemaLocation(documentSchemaLocation);
-            document.setXmlns(documentXmlns);
+            document.setXsi(DOCUMENT_XSI);
+            document.setXsd(DOCUMENT_XSD);
+            document.setSchemaLocation(SCHEMA_LOCATION);
+            document.setXmlns(DOCUMENT_XMLNS);
             document.setMessageRoot(messageRoot);
 
             ex.getIn().setBody(document);

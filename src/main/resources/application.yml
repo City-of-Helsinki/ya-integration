@@ -13,9 +13,9 @@
 # on openshift overwrite this with env var SMALLRYE_CONFIG_PROFILE or via env var JAVA_OPTIONS=... -Dsmallrye..
 smallrye:
     config:
-        profile: local
+        profile: dev
 
-"%local":
+"%dev":
     camel:
         context:
             name: ya-integration
