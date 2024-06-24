@@ -28,7 +28,24 @@ smallrye:
         readDataFromFile: true
         writeResultsToFile: true
 
+
+"%test":
+    camel:
+        context:
+            name: ya-integration
+        main:
+            routes-include-pattern: classpath:routes/*.yaml,classpath:test-routes/*.yaml
+
+
 "%openshift":
+    camel:
+        context:
+            name: ya-integration
+        main:
+            #
+            # NOTE: after the comma "," there must not be any whitespaces.
+            # 
+            routes-include-pattern: classpath:routes/*.yaml,classpath:test-routes/*.yaml
     app:
         readDataFromFile: false
         writeResultsToFile: false
