@@ -1,17 +1,29 @@
 package fi.hel.integration.ya.starttiraha.processor;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.StringReader;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.camel.Exchange;
 import org.jboss.logging.Logger;
+
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
+import com.opencsv.exceptions.CsvValidationException;
 
 import fi.hel.integration.ya.Utils;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -21,7 +33,7 @@ import jakarta.inject.Named;
 
 @ApplicationScoped
 @Named ("srProcessor")
-public class SrProcessor {
+public class StarttirahaProcessor {
 
     @Inject
     Logger log;
@@ -133,6 +145,7 @@ public class SrProcessor {
                 personalInfoMap.put("supervisor", EMPTY);
                 personalInfoMap.put("paymentDueDate", EMPTY);
                 personalInfoMap.put("paymentType", EMPTY);
+                //personalInfoMap.put("testi", "testi");
                 personalInfoMapList.add(personalInfoMap);
             }
 
@@ -206,3 +219,4 @@ public class SrProcessor {
         }
     }
 }
+   
