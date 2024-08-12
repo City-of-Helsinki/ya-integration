@@ -43,7 +43,7 @@ import jakarta.inject.Named;
 
 @ApplicationScoped
 @Named ("mlProcessor")
-public class MlProcessor {
+public class MaksuliikenneProcessor {
     
     @Inject
     Logger log;
@@ -101,7 +101,8 @@ public class MlProcessor {
             String duedate = (String) body.get(0).get("dueDate");
             Map<String,Object> delivery = (Map<String, Object>) body.get(0).get("delivery");
             String fileName = (String) delivery.get("fileName");
-            fileName = fileName.substring(0, 10);
+            // file name prefix, e.g. YA_P24_091
+            String fileNamePrefix = fileName.substring(0, 10);
 
             Document document = new Document();
             MessageRoot messageRoot = new MessageRoot();
@@ -164,7 +165,10 @@ public class MlProcessor {
             // Payment Info
             pmtInf.setDbtrAgt(debtorAgent);
             pmtInf.setChrgBr(CHARGE_BEARER);
-            pmtInf.setPmtInfId(utils.convertDate(duedate, ORIGINAL_DATE_FORMAT, "yyyyMMdd") + "-" + fileName);
+
+            // duedate + file name prefix, e.g. 20240612_YA_P24_091
+            pmtInf.setPmtInfId(utils.convertDate(duedate, ORIGINAL_DATE_FORMAT, "yyyyMMdd") + "-" + fileNamePrefix);
+            
             pmtInf.setPmtMtd(PAYMENT_METHOD);
             pmtInf.setBtchBookg(BATCH_BOOKING);
             pmtInf.setReqdExctnDt(utils.convertDate(duedate, ORIGINAL_DATE_FORMAT, "yyyy-MM-dd"));
