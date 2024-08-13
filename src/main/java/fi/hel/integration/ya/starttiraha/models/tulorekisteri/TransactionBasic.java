@@ -5,17 +5,17 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 public class TransactionBasic {
     
     @JacksonXmlProperty(localName = "TransactionCode")
-    private int transactionCode;
+    private String transactionCode;
 
     @JacksonXmlProperty(localName = "Amount")
     private String amount;
 
     // Getters and Setters
-    public int getTransactionCode() {
+    public String getTransactionCode() {
         return transactionCode;
     }
 
-    public void setTransactionCode(int transactionCode) {
+    public void setTransactionCode(String transactionCode) {
         this.transactionCode = transactionCode;
     }
 
