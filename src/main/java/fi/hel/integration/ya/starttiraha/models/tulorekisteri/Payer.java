@@ -10,6 +10,10 @@ public class Payer {
     @JacksonXmlProperty(localName = "Id")
     private List<Id> payerIds;
 
+    @JacksonXmlElementWrapper(localName = "SubOrgs")
+    @JacksonXmlProperty(localName = "SubOrg")
+    private List<Id> subOrgs;
+
     // Getters and Setters
     public List<Id> getPayerIds() {
         return payerIds;
@@ -17,5 +21,13 @@ public class Payer {
 
     public void setPayerIds(List<Id> payerIds) {
         this.payerIds = payerIds;
+    }
+
+    public List<Id> getSubOrgs() {
+        return subOrgs;
+    }
+
+    public void setSubOrgs(List<Id> subOrgs) {
+        this.subOrgs = subOrgs;
     }
 }
