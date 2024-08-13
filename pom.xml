@@ -142,6 +142,11 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-config-yaml</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.opencsv</groupId>
+      <artifactId>opencsv</artifactId>
+      <version>5.3</version>
+    </dependency>
 
     <!-- transports -->
 
@@ -191,6 +196,12 @@
     <dependency>
       <groupId>org.apache.camel.quarkus</groupId>
       <artifactId>camel-quarkus-csv</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>org.everit.json</groupId>
+        <artifactId>org.everit.json.schema</artifactId>
+        <version>1.5.1</version>
     </dependency>
 
     <!-- testing -->
