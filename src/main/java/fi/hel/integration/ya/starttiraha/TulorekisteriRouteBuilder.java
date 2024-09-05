@@ -46,12 +46,13 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
         "startDate",
         "endDate",
         "taxAmount",
-        "paymentDate2"
+        "paymentDate2",
+        "decisionNumber"
     );
 
     private static final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>";
-    private static final String SCHEMA_FILE = "{{tulorekisteri.xml.schema.file}}";
-    private static final int COLUMNS = 8;
+    private static final String SCHEMA_FILE = "src/main/resources/schema/tulorekisteri/BenefitReportsToIR.xsd";
+    private static final int COLUMNS = 9;
     private static final int EMPTY_COLUMNS = 0;
 
     @Override

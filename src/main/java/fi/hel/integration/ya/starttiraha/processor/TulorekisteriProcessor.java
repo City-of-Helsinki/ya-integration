@@ -38,25 +38,25 @@ public class TulorekisteriProcessor {
     @Inject
     Utils utils;
 
-    @ConfigProperty(name = "tulorekisteri.contact.person", defaultValue = "contactPerson")
+    @ConfigProperty(name = "TULOREKISTERI_CONTACTPERSON", defaultValue = "contactPerson")
     String contactPerson;
 
-    @ConfigProperty(name = "tulorekisteri.contact.person.phone", defaultValue = "phone" )
+    @ConfigProperty(name = "TULOREKISTERI_CONTACTPHONE", defaultValue = "phone" )
     String phoneNumber;
 
-    @ConfigProperty(name = "tulorekisteri.contact.person.email", defaultValue = "email")
+    @ConfigProperty(name = "TULOREKISTERI_CONTACTEMAIL", defaultValue = "email")
     String email;
 
-    @ConfigProperty(name = "tulorekisteri.transaction.code", defaultValue = "code")
+    @ConfigProperty(name = "TULOREKISTERI_TRANSACTIONCODE", defaultValue = "code")
     String transactionCode;
 
-    @ConfigProperty(name = "tulorekisteri.transaction.code.tax", defaultValue = "codeTax")
+    @ConfigProperty(name = "TULOREKISTERI_TRANSACTIONTAXCODE", defaultValue = "codeTax")
     String transactionCodeTax;
 
-    @ConfigProperty(name = "tulorekisteri.delivery.source", defaultValue = "source")
+    @ConfigProperty(name = "TULOREKISTERI_DELIVERYSOURCE", defaultValue = "source")
     String deliverySource;
 
-    @ConfigProperty(name = "tulorekisteri.suborg.code", defaultValue = "subOrg")
+    @ConfigProperty(name = "TULOREKISTERI_SUBORGCODE", defaultValue = "subOrg")
     String subOrgCode;
 
     private final int DELIVERY_DATATYPE = 102;
@@ -191,7 +191,7 @@ public class TulorekisteriProcessor {
             EarningPeriod earningPeriodTax = new EarningPeriod();
 
             reportData.setActionCode(REPORT_DATA_ACTION_CODE);
-            reportData.setReportId("1234");
+            reportData.setReportId((String) payment.get("decisionNumber"));
             
 
             List<Id> incomeEarnerIds = new ArrayList<>();
