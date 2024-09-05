@@ -8,6 +8,7 @@ import org.apache.camel.Exchange;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.loader.SchemaLoader;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
@@ -33,6 +34,12 @@ public class JsonValidator {
 
         } catch (IOException e  ) {
             e.printStackTrace();
+            ex.getIn().setHeader("isJsonValid", false);
+
+        } catch (JSONException e) {
+            // Catch JSON parsing errors
+            e.printStackTrace();
+            System.out.println("Invalid JSON format: " + e.getMessage());
             ex.getIn().setHeader("isJsonValid", false);
 
         } catch (ValidationException e) {
@@ -62,7 +69,9 @@ public class JsonValidator {
 				sb.append((char) byteInt);
 			}
 		};
+        fileReader.close();
 		return sb.toString();
+        
     }
 
     private void logValidationExceptions(ValidationException e) {
