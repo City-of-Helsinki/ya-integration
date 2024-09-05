@@ -1,9 +1,6 @@
 package fi.hel.integration.ya.maksuliikenne.processor;
 
 import java.math.BigDecimal;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -51,34 +48,36 @@ public class MaksuliikenneProcessor {
     @Inject
     Utils utils;
 
-    @ConfigProperty(name = "maksuliikenne_maksaja", defaultValue= "maksaja")
+    @ConfigProperty(name = "MAKSULIIKENNE_MAKSAJA", defaultValue= "maksaja")
     String maksaja;
 
-    @ConfigProperty(name = "maksuliikenne_maksupalvelutunnus", defaultValue = "maksupalvelutunnus")
+    @ConfigProperty(name = "MAKSULIIKENNE_MAKSUPALVELUTUNNUS", defaultValue = "maksupalvelutunnus")
     String maksupalvelutunnus;
 
-    @ConfigProperty(name = "maksuliikenne_maksupalvelutunnus_code", defaultValue = "code")
-    String code;
+    //@ConfigProperty(name = "maksuliikenne_maksupalvelutunnus_code", defaultValue = "code")
+    //String code;
 
-    @ConfigProperty(name = "maksuliikenne_maksaja_maakoodi", defaultValue = "FI")
-    String maakoodi;
+    //@ConfigProperty(name = "maksuliikenne_maksaja_maakoodi", defaultValue = "FI")
+    //String maakoodi;
 
-    @ConfigProperty(name = "maksuliikenne_maksaja_iban", defaultValue = "iban")
+    @ConfigProperty(name = "MAKSULIIKENNE_IBAN", defaultValue = "iban")
     String iban;
 
-    @ConfigProperty(name = "maksuliikenne_maksaja_bic", defaultValue = "bic")
+    @ConfigProperty(name = "MAKSULIIKENNE_BIC", defaultValue = "bic")
     String bic;
 
     private static final String ORIGINAL_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private static final String MSG_ID_PREFIX = "YA-";
     private static final String CHARGE_BEARER= "SLEV";
     private static final String PAYMENT_METHOD= "TRF";
+    private static final String MAKSUPALVELUTUNNUS_CODE = "BANK";
+    private static final String MAAKOODI_MAKSAJA = "FI";
     private static final boolean BATCH_BOOKING= true;
     private static final String DOCUMENT_XSI = "http://www.w3.org/2001/XMLSchema-instance";
     private static final String DOCUMENT_XSD = "http://www.w3.org/2001/XMLSchema";
     private static final String SCHEMA_LOCATION = "urn:iso:std:iso:20022:tech:xsd:pain.001.001.03 pain.001.001.03.xsd";
     private static final String DOCUMENT_XMLNS = "urn:iso:std:iso:20022:tech:xsd:pain.001.001.03";
-
+    
     @SuppressWarnings("unchecked")
     public void mapPaymentTransactions(Exchange ex) {
         try {
@@ -125,7 +124,7 @@ public class MaksuliikenneProcessor {
             FinInstnId finInstnId = new FinInstnId();
 
             // Initiating party (Group header)
-            initPtyschmeNm.setCd(code);
+            initPtyschmeNm.setCd(MAKSUPALVELUTUNNUS_CODE);
             initgPtyOthr.setSchmeNm(initPtyschmeNm);
             initgPtyOthr.setId(maksupalvelutunnus);
             initgPtyOrgId.setOther(initgPtyOthr);
@@ -134,8 +133,8 @@ public class MaksuliikenneProcessor {
             initiatingParty.setId(initgPtyId);
 
             // Debtor (Payment info)
-            postalAddress.setCtry(maakoodi);
-            pmtInfSchmeNm.setCd(code);
+            postalAddress.setCtry(MAAKOODI_MAKSAJA);
+            pmtInfSchmeNm.setCd(MAKSUPALVELUTUNNUS_CODE);
             pmtInfOthr.setId(maksupalvelutunnus);
             pmtInfOthr.setSchmeNm(pmtInfSchmeNm);
             pmtInfOrgId.setOther(pmtInfOthr);
