@@ -24,8 +24,8 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
     @EndpointInject("{{app.endpoints.starttiraha.sendCsv}}")
     Endpoint sendCsv;
 
-    private final int PERSONALDATACOLUMNS = 34;
-    private final int PERSONALDATAEMPTYCOLUMNS = 25;
+    private final int PERSONALDATACOLUMNS = 29;
+    private final int PERSONALDATAEMPTYCOLUMNS = 20;
     
     @Override
     public void configure() throws Exception {

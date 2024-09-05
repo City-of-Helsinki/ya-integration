@@ -1,29 +1,14 @@
 package fi.hel.integration.ya.starttiraha.processor;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.StringReader;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.camel.Exchange;
 import org.jboss.logging.Logger;
 
-import com.opencsv.CSVParser;
-import com.opencsv.CSVParserBuilder;
-import com.opencsv.CSVReader;
-import com.opencsv.CSVReaderBuilder;
-import com.opencsv.exceptions.CsvValidationException;
 
 import fi.hel.integration.ya.Utils;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -112,6 +97,7 @@ public class StarttirahaProcessor {
                 }
             
                 personalInfoMap.put("id", EMPTY);
+                personalInfoMap.put("personalNumber", EMPTY);
                 personalInfoMap.put("dateOfBirth", dateOfBirth);
                 personalInfoMap.put("personalId", personalId);
                 personalInfoMap.put("lastName", lastName);
@@ -135,17 +121,10 @@ public class StarttirahaProcessor {
                 personalInfoMap.put("insuranceException", EMPTY);
                 personalInfoMap.put("paymentPeriodEndDate", paymentPeriodEndDate);
                 personalInfoMap.put("terminationReason", EMPTY);
-                personalInfoMap.put("compantyId", EMPTY);
-                personalInfoMap.put("businessUnit", EMPTY);
-                personalInfoMap.put("costCenter", EMPTY);
-                personalInfoMap.put("profitCenter", EMPTY);
+                personalInfoMap.put("companyId", EMPTY);
                 personalInfoMap.put("internalOrder", EMPTY);
-                personalInfoMap.put("project", EMPTY);
-                personalInfoMap.put("functionalArea", EMPTY);
-                personalInfoMap.put("supervisor", EMPTY);
                 personalInfoMap.put("paymentDueDate", EMPTY);
                 personalInfoMap.put("paymentType", EMPTY);
-                //personalInfoMap.put("testi", "testi");
                 personalInfoMapList.add(personalInfoMap);
             }
 
@@ -199,13 +178,7 @@ public class StarttirahaProcessor {
                 payrollTransactionMap.put("payType", EMPTY);
                 payrollTransactionMap.put("grossSum", grossSumString);
                 payrollTransactionMap.put("compantyId", EMPTY);
-                payrollTransactionMap.put("businessUnit", EMPTY);
-                payrollTransactionMap.put("costCenter", EMPTY);
-                payrollTransactionMap.put("profitCenter", EMPTY);
                 payrollTransactionMap.put("internalOrder", EMPTY);
-                payrollTransactionMap.put("project", EMPTY);
-                payrollTransactionMap.put("functionalArea", EMPTY);
-                payrollTransactionMap.put("handler", EMPTY);
                 payrollTransactionMap.put("grantDecisionRecordNumber", grantDecisionRecordNumber);
                 payrollTransactionMapList.add(payrollTransactionMap);
             }
