@@ -3,6 +3,9 @@ package fi.hel.integration.ya;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
+
 
 import javax.xml.XMLConstants;
 import javax.xml.transform.Source;
@@ -14,6 +17,8 @@ import javax.xml.validation.Validator;
 import org.apache.camel.Exchange;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
+import org.xml.sax.ErrorHandler;
+
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Named;
@@ -41,16 +46,54 @@ public class XmlValidator {
 
             Schema schema = schemaFactory.newSchema(new File(schemaFile));
             Validator validator = schema.newValidator();
+
+            // Create a custom error handler to collect errors
+            List<String> errorMessages = new ArrayList<>();
+            List<Integer> errorLineNumbers = new ArrayList<>();
+            List<Integer> errorColumnNumbers = new ArrayList<>();
+
+            validator.setErrorHandler(new ErrorHandler() {
+                @Override
+                public void warning(SAXParseException exception) throws SAXException {
+                    // Collect warnings if needed (optional)
+                }
+
+                @Override
+                public void error(SAXParseException exception) throws SAXException {
+                    // Collect recoverable errors
+                    errorMessages.add(exception.getMessage());
+                    errorLineNumbers.add(exception.getLineNumber());
+                    errorColumnNumbers.add(exception.getColumnNumber());
+                }
+
+                @Override
+                public void fatalError(SAXParseException exception) throws SAXException {
+                    // Collect fatal errors
+                    errorMessages.add(exception.getMessage());
+                    errorLineNumbers.add(exception.getLineNumber());
+                    errorColumnNumbers.add(exception.getColumnNumber());
+                }
+            });
+
+            
             Source source = new StreamSource(new StringReader(xmlContent));
             validator.validate(source);
-            ex.getIn().setHeader("isXmlValid", true);
-        
-        } catch  (SAXParseException e){
+            // ex.getIn().setHeader("isXmlValid", true);
+            // Check if there were any errors
+            if (!errorMessages.isEmpty()) {
+                ex.getIn().setHeader("isXmlValid", false);
+                ex.getIn().setHeader("xml_error_messages", String.join(", ", errorMessages));
+                ex.getIn().setHeader("xml_error_line_numbers", errorLineNumbers.toString());
+                ex.getIn().setHeader("xml_error_column_numbers", errorColumnNumbers.toString());
+            } else {
+                ex.getIn().setHeader("isXmlValid", true);
+            }
+        /* } catch  (SAXParseException e){
             e.printStackTrace();
             ex.getIn().setHeader("xml_error_message", e.getMessage());
             ex.getIn().setHeader("xml_error_line_number", e.getLineNumber());
             ex.getIn().setHeader("xml_error_column_number", e.getColumnNumber());
-            ex.getIn().setHeader("isXmlValid", false);
+            ex.getIn().setHeader("isXmlValid", false); */
         
         } catch (SAXException | IOException e) {
             e.printStackTrace();
