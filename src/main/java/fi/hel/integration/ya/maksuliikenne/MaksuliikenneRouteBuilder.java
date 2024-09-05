@@ -25,7 +25,9 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
     @Inject
     XmlValidator xmlValidator;
 
-    private final String SCHEMA_FILE = "{{maksuliikenne.pain.schema.file}}";
+    private final String SCHEMA_FILE = "src/main/resources/schema/banking/pain.001.001.03.xsd";
+    private final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+    private final String FILE_NAME_PREFIX = "{{MAKSULIIKENNE_BANKING_FILENAMEPREFIX}}";
 
     @Override
     public void configure() throws Exception {
@@ -42,7 +44,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .to("direct:mapPaymentTransactions")
             .bean(xmlValidator, "validateXml(*," +  SCHEMA_FILE + ")")
             .log("is valid :: ${header.isXmlValid}")
-            .setHeader(Exchange.FILE_NAME, simple("testi.xml"))
+            .setHeader(Exchange.FILE_NAME, simple(FILE_NAME_PREFIX + "${date:now:yyyyMMddHHmmss}.xml"))
             .to("mock:sendMaksuliikenneXml")
             .to("file:outbox/maksuliikenne")
         
@@ -54,7 +56,8 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .marshal().jacksonXml(Document.class)
             //.log("xml body :: ${body}")
             .convertBodyTo(String.class)
-            .setBody().groovy("'{{maksuliikenne.xml.declaration}}' + body")
+            //.setBody().groovy("'" + XML_DECLARATION + "'" + "body")
+            .setBody().groovy("'" + XML_DECLARATION + "'" + " + body")
             .to("mock:mapPaymentTransactions.result")
         ;
     }
