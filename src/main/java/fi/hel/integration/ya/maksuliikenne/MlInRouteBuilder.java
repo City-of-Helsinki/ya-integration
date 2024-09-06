@@ -14,7 +14,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class MlInRouteBuilder extends RouteBuilder {
 
-    private final String testSecret = "{{test-secret}}";
+    //private final String testSecret = "{{test_secret}}";
     private final String fileNamePrefix = "{{MAKSULIIKENNE_BANKING_FILENAMEPREFIX}}";
     
     @Override
@@ -30,7 +30,7 @@ public class MlInRouteBuilder extends RouteBuilder {
             .autoStartup(true)
             .log("Starting test route")
             .log("file name prefix  :: " + fileNamePrefix)
-            .log("test secret :: " + testSecret)
+            //.log("test secret :: " + testSecret)
         ;
         
         from("file:inbox/maksuliikenne?readLock=changed")
