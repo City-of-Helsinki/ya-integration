@@ -275,12 +275,6 @@
         <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>${quarkus.platform.version}</version>
-        <configuration>
-          <mainClass>com.devikone.MyApplication</mainClass>
-          <jvmArguments>--enable-preview</jvmArguments>
-          <source>17</source>
-          <target>17</target>
-        </configuration>
         <extensions>true</extensions>
         <executions>
           <execution>
