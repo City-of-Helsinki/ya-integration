@@ -12,26 +12,10 @@
 
 # on openshift overwrite this with env var SMALLRYE_CONFIG_PROFILE or via env var JAVA_OPTIONS=... -Dsmallrye..
 
-
-"%local":
-    camel:
-        context:
-            name: ya-integration
-        main:
-            #
-            # NOTE: after the comma "," there must not be any whitespaces.
-            # 
-            routes-include-pattern: classpath:routes/*.yaml,classpath:test-routes/*.yaml
-    app:
-        endpoints:
-            starttiraha:
-                sendCsv: direct:out.starttiraha
-                outTulorekisteriXml: direct:out.tulorekisteri
+smallrye:
+    config:
+        profile: dev
         
-        readDataFromFile: true
-        writeResultsToFile: true
-
-
 "%dev":
     camel:
         context:
