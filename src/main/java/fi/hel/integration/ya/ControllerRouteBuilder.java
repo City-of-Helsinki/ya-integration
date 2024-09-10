@@ -20,6 +20,11 @@ public class ControllerRouteBuilder extends RouteBuilder {
         from("timer://smoketest.route?repeatCount=1")
             .log("Smoketest OK")
         ;
+
+        from("timer://testRoute?repeatCount=1")
+            .autoStartup(true)
+            .log("Starting test route")
+        ;
     }
     
 }
