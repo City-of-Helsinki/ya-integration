@@ -35,7 +35,7 @@ public class MlInRouteBuilder extends RouteBuilder {
             .stop(); // Stop routing processing for this error.
 
         from("timer://testRoute?repeatCount=1&delay=5000")
-            .autoStartup("{{maksuliikenne_testroute_autostartup}}")
+            .autoStartup("{{MAKSULIIKENNE_TESTROUTE_AUTOSTARTUP}}")
             .log("Starting test route")
             //.log("test secret :: " + testSecret)
             .to("direct:fetchDataFromKipa")
