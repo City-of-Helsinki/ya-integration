@@ -9,13 +9,21 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
 
+import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class MlInRouteBuilder extends RouteBuilder {
 
-    private final String testSecret = "{{test_secret}}";
-    //private final String fileNamePrefix = "{{MAKSULIIKENNE_BANKING_FILENAMEPREFIX}}";
+    @Inject
+    MaksuliikenneProcessor mlProcessor;
+
+    //private final String testSecret = "{{test_secret}}";
+    private final String KIPA_SFTP_HOST = "{{kipa_sftp_host}}";
+    private final String KIPA_SFTP_USER_P24 = "{{kipa_sftp_user_p24}}";
+    private final String KIPA_SFTP_PASSWORD_P24 = "{{kipa_sftp_password_p24}}";
+    private final String KIPA_DIRECTORY_PATH_P24 = "{{KIPA_DIRECTORY_PATH_P24}}";
     
     @Override
     public void configure() throws Exception {
@@ -26,12 +34,22 @@ public class MlInRouteBuilder extends RouteBuilder {
             .handled(true) // The error is not passed on to other error handlers.
             .stop(); // Stop routing processing for this error.
 
-        from("timer://testRoute?repeatCount=1&delay=3000")
-            .autoStartup(true)
+        from("timer://testRoute?repeatCount=1&delay=5000")
+            .autoStartup(false)
             .log("Starting test route")
-            //.log("file name prefix  :: " + fileNamePrefix)
-            .log("test secret :: " + testSecret)
+            //.log("test secret :: " + testSecret)
+            .to("direct:fetchDataFromKipa")
         ;
+
+        from("direct:fetchDataFromKipa")
+            .setHeader("hostname").simple(KIPA_SFTP_HOST)
+            .setHeader("username").simple(KIPA_SFTP_USER_P24)
+            .setHeader("password").simple(KIPA_SFTP_PASSWORD_P24)
+            .setHeader("directoryPath").simple(KIPA_DIRECTORY_PATH_P24)
+            .bean(mlProcessor, "getAllSFTPFileNames(*)")
+            .log("Body after connecting to kipa :: ${body}")
+        ;
+
         
         from("file:inbox/maksuliikenne?readLock=changed")
             .unmarshal(new JacksonDataFormat())

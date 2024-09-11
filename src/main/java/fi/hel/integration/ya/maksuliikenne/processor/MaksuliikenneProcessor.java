@@ -1,14 +1,22 @@
 package fi.hel.integration.ya.maksuliikenne.processor;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 
 import org.apache.camel.Exchange;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
+
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+import com.jcraft.jsch.SftpException;
 
 import fi.hel.integration.ya.Utils;
 import fi.hel.integration.ya.maksuliikenne.models.pain.MessageRoot;
@@ -291,4 +299,35 @@ public class MaksuliikenneProcessor {
 
         return totalAmounts;
     }
+
+    public List<String> getAllSFTPFileNames(Exchange ex) throws JSchException, SftpException, IOException {
+        String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
+        String hostname = ex.getIn().getHeader("hostname", String.class);
+        String username = ex.getIn().getHeader("username", String.class);
+        String password = ex.getIn().getHeader("password", String.class);
+
+        JSch jsch = new JSch();
+        Session session = jsch.getSession(username, hostname, 22);
+        session.setPassword( password );
+        session.setConfig("StrictHostKeyChecking", "no");
+        session.connect();
+
+        ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
+        channelSftp.connect();
+
+        List<String> fileNames = new ArrayList<>();
+        Vector<ChannelSftp.LsEntry> files = channelSftp.ls(directoryPath);
+        for (ChannelSftp.LsEntry file : files) {
+            if (!file.getAttrs().isDir()) {
+                fileNames.add(file.getFilename());
+                System.out.println(file.getFilename());
+            }        
+        }
+
+        channelSftp.exit();
+        session.disconnect();
+
+        return fileNames;
+    }
+    
 }
