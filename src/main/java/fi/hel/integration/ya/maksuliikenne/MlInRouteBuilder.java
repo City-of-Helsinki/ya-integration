@@ -58,11 +58,23 @@ public class MlInRouteBuilder extends RouteBuilder {
                 + "&antInclude=YA_p24_091_20240823*"
             )       
 
-            
-            
-        .log("Processing file: ${header.CamelFileName}")
-        .log("BODY :: ${body}")
-    ;
+            .unmarshal(new JacksonDataFormat())
+            .aggregate(new GroupedExchangeAggregationStrategy()).constant(true)
+                .completionSize(1000) 
+                .completionTimeout(5000)
+                .process(exchange -> {
+                    //System.out.println("BODY :: " + exchange.getIn().getBody());
+                    List<Exchange> combinedExchanges = exchange.getIn().getBody(List.class);
+                    List<Map<String, Object>> combinedJsons = new ArrayList<>();
+                    for (Exchange ex : combinedExchanges) {
+                        Map<String, Object> json = ex.getIn().getBody(Map.class);
+                        combinedJsons.add(json);
+                    }
+                    exchange.getIn().setBody(combinedJsons);
+                })
+            .marshal(new JacksonDataFormat())
+            .log("BODY :: ${body}")
+        ;
 
         
         from("file:inbox/maksuliikenne?readLock=changed")
