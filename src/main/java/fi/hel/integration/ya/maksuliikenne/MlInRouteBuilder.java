@@ -53,11 +53,13 @@ public class MlInRouteBuilder extends RouteBuilder {
         from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}"
                 + "&password={{KIPA_SFTP_PASSWORD_P24}}"
                 + "&strictHostKeyChecking=no"
-                + "&scheduler=timer"         // Use a basic timer scheduler
-                + "&repeatCount=1"          // Run only once when the integration starts
+                + "&scheduler=quartz"         
+                + "&scheduler.cron=0 0 14 12 9 ? 2024" 
                 + "&antInclude=YA_p24_091_20240823*"
-                + "&initialDelay=5000"
             )       
+
+            
+            
         .log("Processing file: ${header.CamelFileName}")
         .log("BODY :: ${body}")
     ;
