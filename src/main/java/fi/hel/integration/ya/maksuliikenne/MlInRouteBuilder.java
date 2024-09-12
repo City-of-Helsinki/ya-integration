@@ -54,7 +54,7 @@ public class MlInRouteBuilder extends RouteBuilder {
                 + "&password={{KIPA_SFTP_PASSWORD_P24}}"
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
-                + "&scheduler.cron=0 0 14 12 9 ? 2024" 
+                + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
                 + "&antInclude=YA_p24_091_20240823*"
             )       
 
