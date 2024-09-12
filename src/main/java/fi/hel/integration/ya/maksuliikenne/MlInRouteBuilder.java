@@ -34,21 +34,33 @@ public class MlInRouteBuilder extends RouteBuilder {
             .handled(true) // The error is not passed on to other error handlers.
             .stop(); // Stop routing processing for this error.
 
-        from("timer://testRoute?repeatCount=1&delay=5000")
+        from("timer://testRoute?repeatCount=1")
             .autoStartup("{{MAKSULIIKENNE_TESTROUTE_AUTOSTARTUP}}")
             .log("Starting test route")
             //.log("test secret :: " + testSecret)
-            .to("direct:fetchDataFromKipa")
+            //.to("direct:fetchDataFromKipa")
         ;
 
         from("direct:fetchDataFromKipa")
-            .setHeader("hostname").simple(KIPA_SFTP_HOST)
-            .setHeader("username").simple(KIPA_SFTP_USER_P24)
-            .setHeader("password").simple(KIPA_SFTP_PASSWORD_P24)
-            .setHeader("directoryPath").simple(KIPA_DIRECTORY_PATH_P24)
-            .bean(mlProcessor, "getAllSFTPFileNames(*)")
+            //.setHeader("hostname").simple(KIPA_SFTP_HOST)
+            //.setHeader("username").simple(KIPA_SFTP_USER_P24)
+            //.setHeader("password").simple(KIPA_SFTP_PASSWORD_P24)
+            //.setHeader("directoryPath").simple(KIPA_DIRECTORY_PATH_P24)
+            //.bean(mlProcessor, "getAllSFTPDirectories(*)")
             .log("Body after connecting to kipa :: ${body}")
         ;
+
+        from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}"
+                + "&password={{KIPA_SFTP_PASSWORD_P24}}"
+                + "&strictHostKeyChecking=no"
+                + "&scheduler=timer"         // Use a basic timer scheduler
+                + "&repeatCount=1"          // Run only once when the integration starts
+                + "&antInclude=YA_p24_091_20240823*"
+                + "&initialDelay=5000"
+            )       
+        .log("Processing file: ${header.CamelFileName}")
+        .log("BODY :: ${body}")
+    ;
 
         
         from("file:inbox/maksuliikenne?readLock=changed")
