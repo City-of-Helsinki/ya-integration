@@ -1,7 +1,13 @@
 package fi.hel.integration.ya.kipa;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jackson.JacksonDataFormat;
+import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
 
 import fi.hel.integration.ya.JsonValidator;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -15,6 +21,8 @@ public class KipaInRouteBuilder extends RouteBuilder{
 
     private final String SCHEMA_FILE_PT_PT55_TOJT = "src/main/resources/schema/kipa/json_schema_PT_PT55_TOJT.json";
     private final String SCHEMA_FILE_MYK_HKK = "src/main/resources/schema/kipa/json_schema_MYK_HKK.json";
+    private final String SCHEMA_FILE_SR = "src/main/resources/schema/kipa/json_schema_SR.json";
+
 
     @Override
     public void configure() throws Exception {
@@ -26,10 +34,40 @@ public class KipaInRouteBuilder extends RouteBuilder{
             .stop(); // Stop routing processing for this error.
 
 
+        // This route is for local development and testing
         from("file:inbox/kipa")
             .log("body :: ${body}")
-            .log("filename :: ${header.CamelFileName}")
-            .log("filename only :: ${header.CamelFileNameOnly}")
+            .to("direct:validate-json")
+            .choice()
+                .when(simple("${header.isJsonValid} == 'true'"))
+                    .log("Json is valid continue processing ${header.CamelFileName}")
+                    .to("direct:continue-processing")
+                .otherwise()
+                    .log("Json is not valid, ${header.CamelFileName}")
+                    //.to("file:outbox/invalidJson")
+        ;
+
+        // Reads files from the YA Kipa API
+        from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}"
+                + "&password={{KIPA_SFTP_PASSWORD_P24}}"
+                + "&strictHostKeyChecking=no"
+                + "&scheduler=quartz"         
+                + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
+                + "&antInclude=YA_p24_091_20240823*"
+            )   
+
+            .to("direct:validate-json")
+            .choice()
+                .when(simple("${header.isJsonValid} == 'true'"))
+                    .log("Json is valid continue processing ${header.CamelFileName}")
+                    .to("direct:continue-processing")
+                .otherwise()
+                    .log("Json is not valid, ${header.CamelFileName}")
+                    //.to("file:outbox/invalidJson")
+        ;
+
+        from("direct:validate-json")
+            .log("Start to validate json file")
             .process(exchange -> {
                 // Get the filename from the header
                 String fileName = exchange.getIn().getHeader("CamelFileNameOnly", String.class);
@@ -56,19 +94,34 @@ public class KipaInRouteBuilder extends RouteBuilder{
                 .when(simple("${header.lastPart} == 'MYK' || ${header.lastPart} == 'HKK'"))
                     .log("The last part is MYK, performing MYK-specific processing")
                     .bean(jsonValidator, "validateJson(*," +  SCHEMA_FILE_MYK_HKK + ")")
+                .when(simple("${header.lastPart} == 'SR'"))
+                    .log("The last part is SR, performing SR-specific processing")
+                    .bean(jsonValidator, "validateJson(*," +  SCHEMA_FILE_SR + ")")
                 .otherwise()
                     .log("No matching case found, skipping processing")
             .end()
             .log("is valid :: ${header.isJsonValid}")
-            .choice()
-                .when(simple("${header.isJsonValid} == 'true'"))
-                    .log("Json is valid continue processing ${header.CamelFileName}")
-                    .to("file:outbox/validJson")
-                .otherwise()
-                    .log("Json is not valid, ${header.CamelFileName}")
-                    .to("file:outbox/invalidJson")
         ;
 
-    }
+            from("direct:continue-processing")
+                .unmarshal(new JacksonDataFormat())
+                .aggregate(new GroupedExchangeAggregationStrategy()).constant(true)
+                    .completionSize(1000) 
+                    .completionTimeout(5000)
+                    .process(exchange -> {
+                        //System.out.println("BODY :: " + exchange.getIn().getBody());
+                        List<Exchange> combinedExchanges = exchange.getIn().getBody(List.class);
+                        List<Map<String, Object>> combinedJsons = new ArrayList<>();
+                        for (Exchange ex : combinedExchanges) {
+                            Map<String, Object> json = ex.getIn().getBody(Map.class);
+                            combinedJsons.add(json);
+                        }
+                        exchange.getIn().setBody(combinedJsons);
+                    })
+                .marshal(new JacksonDataFormat())
+                //.to("file:outbox/test")
+                .log("BODY :: ${body}")
+            ;
 
+    }
 }

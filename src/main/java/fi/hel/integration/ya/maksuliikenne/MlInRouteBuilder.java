@@ -50,33 +50,6 @@ public class MlInRouteBuilder extends RouteBuilder {
             .log("Body after connecting to kipa :: ${body}")
         ;
 
-        from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}"
-                + "&password={{KIPA_SFTP_PASSWORD_P24}}"
-                + "&strictHostKeyChecking=no"
-                + "&scheduler=quartz"         
-                + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
-                + "&antInclude=YA_p24_091_20240823*"
-            )       
-
-            .unmarshal(new JacksonDataFormat())
-            .aggregate(new GroupedExchangeAggregationStrategy()).constant(true)
-                .completionSize(1000) 
-                .completionTimeout(5000)
-                .process(exchange -> {
-                    //System.out.println("BODY :: " + exchange.getIn().getBody());
-                    List<Exchange> combinedExchanges = exchange.getIn().getBody(List.class);
-                    List<Map<String, Object>> combinedJsons = new ArrayList<>();
-                    for (Exchange ex : combinedExchanges) {
-                        Map<String, Object> json = ex.getIn().getBody(Map.class);
-                        combinedJsons.add(json);
-                    }
-                    exchange.getIn().setBody(combinedJsons);
-                })
-            .marshal(new JacksonDataFormat())
-            .log("BODY :: ${body}")
-        ;
-
-        
         from("file:inbox/maksuliikenne?readLock=changed")
             .unmarshal(new JacksonDataFormat())
             .aggregate(new GroupedExchangeAggregationStrategy()).constant(true)
