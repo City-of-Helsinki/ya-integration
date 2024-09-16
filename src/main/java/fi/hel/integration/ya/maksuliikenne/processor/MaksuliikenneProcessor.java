@@ -104,8 +104,8 @@ public class MaksuliikenneProcessor {
             int nbOfTxs = (int) totalAmounts.get("numberOfPmts");
             BigDecimal ctrlSum = (BigDecimal) totalAmounts.get("totalSumOfPmts");
             
-            // The due date should be the same for all payments being processed together
-            String duedate = (String) body.get(0).get("dueDate");
+            // The due date is the current date for all payments processed on the same day, because the due date should be the same for all payments being processed together
+            String duedate = utils.getCurrentTime("yyyy-MM-dd HH:mm:ss");
             Map<String,Object> delivery = (Map<String, Object>) body.get(0).get("delivery");
             String fileName = (String) delivery.get("fileName");
             // file name prefix, e.g. YA_P24_091
@@ -330,4 +330,38 @@ public class MaksuliikenneProcessor {
         return fileNames;
     }
     
+
+    public List<String> getAllSFTPDirectories(Exchange ex) throws JSchException, SftpException, IOException {
+        String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
+        String hostname = ex.getIn().getHeader("hostname", String.class);
+        String username = ex.getIn().getHeader("username", String.class);
+        String password = ex.getIn().getHeader("password", String.class);
+
+        JSch jsch = new JSch();
+        Session session = jsch.getSession(username, hostname, 22);
+        session.setPassword(password);
+        session.setConfig("StrictHostKeyChecking", "no");
+        session.connect();
+
+        ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
+        channelSftp.connect();
+
+        System.out.println("Listing the directories");
+        List<String> directoryNames = new ArrayList<>();
+        Vector<ChannelSftp.LsEntry> files = channelSftp.ls(directoryPath);
+    
+        for (ChannelSftp.LsEntry file : files) {
+            if (file.getAttrs().isDir()) {
+                directoryNames.add(file.getFilename());
+                System.out.println("Directory: " + file.getFilename());
+            }
+        }
+
+        channelSftp.exit();
+        session.disconnect();
+
+        return directoryNames;
+    }
 }
+
+

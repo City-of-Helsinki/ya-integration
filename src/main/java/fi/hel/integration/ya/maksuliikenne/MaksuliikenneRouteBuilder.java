@@ -45,10 +45,17 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .log("xml is valid :: ${header.isXmlValid}")
             .setHeader(Exchange.FILE_NAME, simple(FILE_NAME_PREFIX + "${date:now:yyyyMMddHHmmss}.xml"))
             .to("mock:sendMaksuliikenneXml")
-            //.to("file:outbox/maksuliikenne")
+            .to("file:outbox/maksuliikenne")
             .log("Pain xml :: ${body}")
-        
+            .choice()
+                .when(simple("${header.isXmlValid} == 'true'"))
+                .log("XML is valid, sending the file to banking ${header.CamelFileName}")
+                .to("direct:out-banking")
+            .otherwise()
+                .log("XML is not valid, ${header.CamelFileName}")
+    
         ;
+        
 
         from("direct:mapPaymentTransactions")
             .unmarshal(new JacksonDataFormat())
@@ -58,5 +65,11 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .setBody().groovy("'" + XML_DECLARATION + "'" + " + body")
             .to("mock:mapPaymentTransactions.result")
         ;
+
+        from("direct:out-banking")
+            .log("Sendig the file to banking")
+        ;
     }
+
+
 }

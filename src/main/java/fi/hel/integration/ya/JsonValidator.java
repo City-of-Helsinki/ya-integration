@@ -25,10 +25,10 @@ public class JsonValidator {
     
         try {
             String json = ex.getIn().getBody(String.class);
-            System.out.println("json string :: " + json);
+            //System.out.println("json string :: " + json);
             JSONObject jsonData = new JSONObject(new JSONTokener(json));
             //System.out.println("jsonData :: " + jsonData );
-            System.out.println("Schemafile :: " + schemaFile);
+            //System.out.println("Schemafile :: " + schemaFile);
             Schema schema = loadJsonSchema(schemaFile);
             System.out.println("Schema :: " + schema);
             schema.validate(jsonData);
@@ -54,7 +54,7 @@ public class JsonValidator {
 
     private Schema loadJsonSchema(String schemaFilename) throws FileNotFoundException, IOException {
         String schemaString = readResource(schemaFilename);
-        System.out.println("schemaString :: " + schemaString);
+        //System.out.println("schemaString :: " + schemaString);
         JSONObject rawSchema = new JSONObject(new JSONTokener(schemaString));
         Schema schema = SchemaLoader.load(rawSchema);
         return schema;
