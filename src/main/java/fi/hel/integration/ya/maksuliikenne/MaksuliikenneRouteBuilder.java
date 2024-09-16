@@ -67,7 +67,14 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
         ;
 
         from("direct:out-banking")
+            .autoStartup("{{BANKING_SFTP_AUTOSTARTUP}}")
             .log("Sendig the file to banking")
+            .to("sftp:{{BANKING_SFTP_HOST_TEST}}:22/{{BANKING_DIRECTORY_PATH}}?username={{BANKING_SFTP_USER_TEST}}"
+                + "&password={{BANKING_SFTP_PASSWORD_TEST}}"
+                + "&strictHostKeyChecking=no"
+            )
+            .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
+
         ;
     }
 
