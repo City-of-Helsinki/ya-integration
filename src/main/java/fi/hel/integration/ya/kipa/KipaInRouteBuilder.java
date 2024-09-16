@@ -104,25 +104,28 @@ public class KipaInRouteBuilder extends RouteBuilder{
             .log("is valid :: ${header.isJsonValid}")
         ;
 
-            from("direct:continue-processing")
-                .unmarshal(new JacksonDataFormat())
-                .aggregate(new GroupedExchangeAggregationStrategy()).constant(true)
-                    .completionSize(1000) 
-                    .completionTimeout(5000)
-                    .process(exchange -> {
-                        //System.out.println("BODY :: " + exchange.getIn().getBody());
-                        List<Exchange> combinedExchanges = exchange.getIn().getBody(List.class);
-                        List<Map<String, Object>> combinedJsons = new ArrayList<>();
-                        for (Exchange ex : combinedExchanges) {
-                            Map<String, Object> json = ex.getIn().getBody(Map.class);
-                            combinedJsons.add(json);
-                        }
-                        exchange.getIn().setBody(combinedJsons);
-                    })
-                .marshal(new JacksonDataFormat())
-                //.to("file:outbox/test")
-                .log("BODY :: ${body}")
-            ;
+        from("direct:continue-processing")
+            .unmarshal(new JacksonDataFormat())
+            .aggregate(new GroupedExchangeAggregationStrategy()).constant(true)
+                .completionSize(1000) 
+                 .completionTimeout(10000)
+                .process(exchange -> {
+                    //System.out.println("BODY :: " + exchange.getIn().getBody());
+                    List<Exchange> combinedExchanges = exchange.getIn().getBody(List.class);
+                    List<Map<String, Object>> combinedJsons = new ArrayList<>();
+                    for (Exchange ex : combinedExchanges) {
+                        Map<String, Object> json = ex.getIn().getBody(Map.class);
+                        combinedJsons.add(json);
+                    }
+                    
+                    exchange.getIn().setBody(combinedJsons);
+                })
+            
+            .marshal(new JacksonDataFormat())
+            //.to("file:outbox/test")
+            .log("Combined jsons :: ${body}")
+            .to("direct:ml-controller")
+        ;
 
     }
 }

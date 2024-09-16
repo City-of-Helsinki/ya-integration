@@ -1,10 +1,9 @@
 package fi.hel.integration.ya;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.io.*;
+
 
 
 import javax.xml.XMLConstants;
@@ -38,13 +37,14 @@ public class XmlValidator {
      * @throws SAXException if an error occurs during XML validation
      * @throws IOException if an I/O error occurs while reading the XML content or schema file
      */
-    public void validateXml(Exchange ex, String schemaFile) {
+    public void validateXml(Exchange ex, String schemaFilePath) {
         SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
         try {
             
             String xmlContent = ex.getIn().getBody(String.class);
 
-            Schema schema = schemaFactory.newSchema(new File(schemaFile));
+            Schema schema = loadSchemaFromClasspath(schemaFilePath, schemaFactory);
+            //Schema schema = schemaFactory.newSchema(new File(schemaFile));
             Validator validator = schema.newValidator();
 
             // Create a custom error handler to collect errors
@@ -98,6 +98,19 @@ public class XmlValidator {
         } catch (SAXException | IOException e) {
             e.printStackTrace();
             ex.getIn().setHeader("isXmlValid", false);
+        }
+    }
+
+    private Schema loadSchemaFromClasspath(String schemaFilePath, SchemaFactory schemaFactory) throws SAXException, IOException {
+        // Load the schema file from the classpath
+        InputStream schemaInputStream = getClass().getClassLoader().getResourceAsStream(schemaFilePath);
+        if (schemaInputStream == null) {
+            throw new FileNotFoundException("Schema file not found in classpath: " + schemaFilePath);
+        }
+    
+        // Use the input stream to load the schema
+        try (BufferedInputStream bufferedInputStream = new BufferedInputStream(schemaInputStream)) {
+            return schemaFactory.newSchema(new StreamSource(bufferedInputStream));
         }
     }
 }

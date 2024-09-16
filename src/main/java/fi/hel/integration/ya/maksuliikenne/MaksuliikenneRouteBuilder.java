@@ -25,7 +25,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
     @Inject
     XmlValidator xmlValidator;
 
-    private final String SCHEMA_FILE = "src/main/resources/schema/banking/pain.001.001.03.xsd";
+    private final String SCHEMA_FILE = "schema/banking/pain.001.001.03.xsd";
     private final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
     private final String FILE_NAME_PREFIX = "{{MAKSULIIKENNE_BANKING_FILENAMEPREFIX}}";
 
@@ -39,14 +39,14 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .stop(); // Stop routing processing for this error.
 
         from("direct:ml-controller")
-            .log("json body :: ${body}")
-            .to("file:outbox/test")
+            //.to("file:outbox/test")
             .to("direct:mapPaymentTransactions")
             .bean(xmlValidator, "validateXml(*," +  SCHEMA_FILE + ")")
-            .log("is valid :: ${header.isXmlValid}")
+            .log("xml is valid :: ${header.isXmlValid}")
             .setHeader(Exchange.FILE_NAME, simple(FILE_NAME_PREFIX + "${date:now:yyyyMMddHHmmss}.xml"))
             .to("mock:sendMaksuliikenneXml")
-            .to("file:outbox/maksuliikenne")
+            //.to("file:outbox/maksuliikenne")
+            .log("Pain xml :: ${body}")
         
         ;
 
@@ -54,9 +54,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .unmarshal(new JacksonDataFormat())
             .bean(mlProcessor, "mapPaymentTransactions")
             .marshal().jacksonXml(Document.class)
-            //.log("xml body :: ${body}")
             .convertBodyTo(String.class)
-            //.setBody().groovy("'" + XML_DECLARATION + "'" + "body")
             .setBody().groovy("'" + XML_DECLARATION + "'" + " + body")
             .to("mock:mapPaymentTransactions.result")
         ;
