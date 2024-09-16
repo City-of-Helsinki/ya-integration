@@ -1,8 +1,10 @@
 package fi.hel.integration.ya;
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import org.apache.camel.Exchange;
 import org.everit.json.schema.Schema;
@@ -58,21 +60,22 @@ public class JsonValidator {
         return schema;
     }
 
-    public String readResource(String resourcePathAndFile) throws FileNotFoundException, IOException {
-
-        var fileReader = new FileReader(resourcePathAndFile);
-		StringBuilder sb = new StringBuilder();
-		int byteInt = 0;
-		while (byteInt != -1) {
-			byteInt = fileReader.read();
-			if (byteInt != -1) {
-				sb.append((char) byteInt);
-			}
-		};
-        fileReader.close();
-		return sb.toString();
+    public String readResource(String resourcePathAndFile) throws IOException {
+        InputStream inputStream = getClass().getClassLoader().getResourceAsStream(resourcePathAndFile);
+        if (inputStream == null) {
+            throw new FileNotFoundException("Resource not found: " + resourcePathAndFile);
+        }
         
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line).append(System.lineSeparator());
+            }
+            return sb.toString();
+        }
     }
+
 
     private void logValidationExceptions(ValidationException e) {
         System.out.println("Validation failed with " + e.getViolationCount() + " violations:");

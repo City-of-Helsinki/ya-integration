@@ -19,9 +19,9 @@ public class KipaInRouteBuilder extends RouteBuilder{
     @Inject
     JsonValidator jsonValidator;
 
-    private final String SCHEMA_FILE_PT_PT55_TOJT = "src/main/resources/schema/kipa/json_schema_PT_PT55_TOJT.json";
-    private final String SCHEMA_FILE_MYK_HKK = "src/main/resources/schema/kipa/json_schema_MYK_HKK.json";
-    private final String SCHEMA_FILE_SR = "src/main/resources/schema/kipa/json_schema_SR.json";
+    private final String SCHEMA_FILE_PT_PT55_TOJT = "schema/kipa/json_schema_PT_PT55_TOJT.json";
+    private final String SCHEMA_FILE_MYK_HKK = "schema/kipa/json_schema_MYK_HKK.json";
+    private final String SCHEMA_FILE_SR = "schema/kipa/json_schema_SR.json";
 
 
     @Override
@@ -35,6 +35,7 @@ public class KipaInRouteBuilder extends RouteBuilder{
 
 
         // This route is for local development and testing
+        // The route is triggered by dropping json file/files into folder inbox/kipa
         from("file:inbox/kipa")
             .log("body :: ${body}")
             .to("direct:validate-json")
