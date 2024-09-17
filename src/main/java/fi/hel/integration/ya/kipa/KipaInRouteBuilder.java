@@ -56,7 +56,7 @@ public class KipaInRouteBuilder extends RouteBuilder{
                 + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
                 + "&antInclude=YA_p24_091_20240823*"
             )   
-
+            .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
             .to("direct:validate-json")
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
