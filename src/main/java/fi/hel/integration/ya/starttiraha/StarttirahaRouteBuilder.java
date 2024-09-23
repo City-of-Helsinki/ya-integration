@@ -25,7 +25,7 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
     Endpoint sendCsv;
 
     private final int PERSONALDATACOLUMNS = 29;
-    private final int PERSONALDATAEMPTYCOLUMNS = 20;
+    private final int PERSONALDATAEMPTYCOLUMNS = 19;
     
     @Override
     public void configure() throws Exception {
