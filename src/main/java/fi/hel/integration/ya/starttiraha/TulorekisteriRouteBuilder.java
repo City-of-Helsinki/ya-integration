@@ -41,19 +41,24 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
     private static final List<String> CSV_HEADERS = Arrays.asList(
         "payerId",
         "paymentDate",
+        "empty1",
+        "empty2",
+        "empty3",
         "hetu",
+        "empty4",
         "amount",
         "startDate",
         "endDate",
+        "empty5",
         "taxAmount",
         "paymentDate2",
         "decisionNumber"
     );
 
     private static final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>";
-    private static final String SCHEMA_FILE = "src/main/resources/schema/tulorekisteri/BenefitReportsToIR.xsd";
-    private static final int COLUMNS = 9;
-    private static final int EMPTY_COLUMNS = 0;
+    private static final String SCHEMA_FILE = "schema/tulorekisteri/BenefitReportsToIR.xsd";
+    private static final int COLUMNS = 15;
+    private static final int EMPTY_COLUMNS = 5;
 
     @Override
     public void configure() throws Exception {
@@ -76,6 +81,7 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
         ;
 
         from("direct:tulorekisteri.controller")
+            .log("file name :: ${header.CamelFileName}")
             .bean(csvValidator, "validateCsv(*," + COLUMNS + "," + EMPTY_COLUMNS + ")")
             .log("IS CSV VALID :: ${header.isCsvValid}")
             .to("direct:create-map")
@@ -86,8 +92,8 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
             .setBody().groovy("'" + XML_DECLARATION + "'" + " + body")
             .bean(xmlValidator, "validateXml(*," +  SCHEMA_FILE + ")")
             .log("is valid :: ${header.isXmlValid}")
-            .setHeader(Exchange.FILE_NAME, simple("tulorekisteri_testi.xml"))
-            .log("XML BODY :: ${body}")
+            .setHeader(Exchange.FILE_NAME, simple("${header.CamelFileName.replaceAll('.csv$', '.xml')}"))
+            //.log("XML BODY :: ${body}")
             .to(outTulorekisteriXml)
             
         ;
@@ -103,7 +109,7 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
             // Get the body as a list of lists (rows and columns)
                 List<List<String>> csvData = exchange.getIn().getBody(List.class);
 
-                System.out.println("CSV data ::" + csvData);
+                //System.out.println("CSV data ::" + csvData);
 
                 // Map the CSV data to a list of maps using the custom headers
                 List<Map<String, String>> mappedData = csvData.stream()
@@ -116,7 +122,7 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
                     })
                         
                     .collect(Collectors.toList());
-                    System.out.println("Mapped data :: " + mappedData);
+                    //System.out.println("Mapped data :: " + mappedData);
             
                     // Set the mapped data as the body if further processing is needed
                     exchange.getIn().setBody(mappedData);
