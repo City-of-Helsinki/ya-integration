@@ -35,7 +35,7 @@ public class CsvValidator {
             int lineNumber = 0;
             while ((line = reader.readNext()) != null) {
                 lineNumber++;
-                System.out.println("Line " + lineNumber + " length: " + line.length); // Debugging statement
+                //System.out.println("Line " + lineNumber + " length: " + line.length); // Debugging statement
 
                 //Check if the line has the correct number of columns
                 if (line.length != expectedColumnCount) {
@@ -45,7 +45,7 @@ public class CsvValidator {
 
                 int emptyFieldCount = (int) Arrays.stream(line).filter(String::isEmpty).count();
             
-                System.out.println("Empty fields :: " + emptyFieldCount);
+                //System.out.println("Empty fields :: " + emptyFieldCount);
                 // Validate the number of empty fields
                 if (emptyFieldCount != expectedEmptyFieldsCount) {
                     throw new IllegalArgumentException("Line " + lineNumber + " does not have the expected number of empty fields. Found " + emptyFieldCount + " empty fields.");

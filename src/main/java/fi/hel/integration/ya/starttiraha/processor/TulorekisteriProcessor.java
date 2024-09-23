@@ -160,7 +160,6 @@ public class TulorekisteriProcessor {
             benefitReportsRequestToIR.setXsi(XSI);
             benefitReportsRequestToIR.setSchemaLocation(SCHEMA_LOCATION);
             benefitReportsRequestToIR.setDeliveryData(deliveryData);
-            System.out.println("benefitreport :: " + benefitReportsRequestToIR);
             ex.getIn().setBody(benefitReportsRequestToIR);
 
 
@@ -230,9 +229,7 @@ public class TulorekisteriProcessor {
             report.setIncomeEarner(incomeEarner);
             report.setReportData(reportData);
             report.setTransactions(transactions);
-            System.out.println("report :: " + report);
             reports.add(report);
-            System.out.println("Reports :: " + reports);
         }
 
         return reports;
