@@ -71,6 +71,9 @@ public class KirjanpitoProcessor {
     @ConfigProperty(name = "MAKSULIIKENNE_KIRJANPITO_TULOSYKSIKKO", defaultValue= "profitCenter")
     String profitCenter;
 
+    @ConfigProperty(name = "MAKSULIIKENNE_KIRJANPITO_SENDERID", defaultValue= "senderId")
+    String senderId;
+
     private static final String EMPTY = "";
     
     // Claim types:
@@ -93,8 +96,7 @@ public class KirjanpitoProcessor {
             
             Map<String,Object> body = ex.getIn().getBody(Map.class);
             String claimType = (String) body.get("claimType");
-            // TODO: mikä on oikea id? (pakollinen)
-            simpleAccounting.setSenderId(EMPTY);
+            simpleAccounting.setSenderId(senderId);
             simpleAccounting.setCompanyCode(companyCode);
             simpleAccounting.setDocumentType(documentType);
 
@@ -152,8 +154,6 @@ public class KirjanpitoProcessor {
             } */
 
             lineItemType.setTradingPartner(EMPTY);
-            // Ei tarvita
-            //lineItemType.setCostCenter("12345678");
 
             // kirjaustunniste (sisäinen tilaus), pituus 10 numeroa, pakollinen
             // mäpätään claimTypen perusteella
@@ -164,20 +164,9 @@ public class KirjanpitoProcessor {
             // mäpätään claimTypen perusteella
             String glAccount = getGlAccount(claimType);
             lineItemType.setGlAccount(glAccount);
-
-            // ei tarvita
-            //lineItemType.setNetwork(EMPTY);
-            //lineItemType.setPhases(EMPTY);
-            
             
             // SAP- tulosyksikkö (7 numeroa), pakollinen
             lineItemType.setProfitCenter(profitCenter);
-
-            // Ei tarvita
-            //lineItemType.setWbsElement(EMPTY);
-
-            // Ei tarvita
-            //lineItemType.setFunctionalArea("123456");
 
             lineItemTypes.add(lineItemType);
             simpleAccounting.setLineItem(lineItemTypes);
@@ -185,6 +174,12 @@ public class KirjanpitoProcessor {
             simpleAccountingcontainer.setSboSimpleAccounting(sbo_SimpleAccountings);
 
             ex.getIn().setBody(simpleAccountingcontainer);
+
+            String fileName = (String) delivery.get("fileName");
+            ex.getIn().setHeader("jsonFileName", fileName);
+
+
+    
 
         } catch (Exception e){
             log.error(e);

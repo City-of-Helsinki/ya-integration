@@ -20,8 +20,10 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
     XmlValidator xmlValidator;
     
 
-    private final String SCHEMA_FILE = "src/main/resources/schema/sap/SBO_SimpleAccountingContainer.xsd";
+    private final String SCHEMA_FILE = "schema/sap/SBO_SimpleAccountingContainer.xsd";
     private final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+    private final String FILE_NAME_PREFIX= "{{MAKSULIIKENNE_KIRJANPITO_FILENAMEPREFIX}}";
+    private final String SENDER_ID = "{{MAKSULIIKENNE_KIRJANPITO_SENDERID}}";
 
     @Override
     public void configure() throws Exception {
@@ -46,9 +48,11 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
             .setBody().groovy("'" + XML_DECLARATION + "'" + " + body")
             .bean(xmlValidator, "validateXml(*," +  SCHEMA_FILE + ")")
             .log("is valid :: ${header.isXmlValid}")
+            .setVariable("claimTypeCode")
+                .language("groovy", "def filename = request.headers.jsonFileName; filename.split('_')[-1].replace('.json', '')")
             .log("Error ::${header.xml_error_messages}, lines :: ${header.xml_error_line_numbers}, columns :: ${header.xml_error_column_numbers}")
-            .setHeader(Exchange.FILE_NAME, simple("kirjanpito_testi.xml"))
-            .to("file:outbox/maksuliikenne")
+            .setHeader(Exchange.FILE_NAME, simple(FILE_NAME_PREFIX + SENDER_ID + "_${variable.claimTypeCode}_${date:now:yyyyMMddHHmmss}.xml"))
+            .to("file:outbox/maksuliikenne/sap")
         ;
     }
 
