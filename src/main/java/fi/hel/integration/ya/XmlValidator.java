@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.io.*;
 
-
-
 import javax.xml.XMLConstants;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
@@ -17,7 +15,6 @@ import org.apache.camel.Exchange;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.ErrorHandler;
-
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Named;
@@ -39,12 +36,15 @@ public class XmlValidator {
      */
     public void validateXml(Exchange ex, String schemaFilePath) {
         SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+        // Set custom resource resolver for resolving schemas from the classpath
+        schemaFactory.setResourceResolver(new ClasspathResourceResolver());
+
         try {
             
             String xmlContent = ex.getIn().getBody(String.class);
 
             Schema schema = loadSchemaFromClasspath(schemaFilePath, schemaFactory);
-            //Schema schema = schemaFactory.newSchema(new File(schemaFile));
+            //Schema schema = schemaFactory.newSchema(new File(schemaFilePath));
             Validator validator = schema.newValidator();
 
             // Create a custom error handler to collect errors
@@ -114,3 +114,5 @@ public class XmlValidator {
         }
     }
 }
+
+
