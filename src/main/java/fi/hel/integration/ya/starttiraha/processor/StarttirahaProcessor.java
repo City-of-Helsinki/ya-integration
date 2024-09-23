@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.camel.Exchange;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 
@@ -26,7 +27,10 @@ public class StarttirahaProcessor {
     @Inject
     Utils utils;
 
-    private static final String EMPTY = "";
+    @ConfigProperty(name = "STARTTIRAHA_PALVELUSUHDE_TUNNUS", defaultValue = "contactPerson")
+    String id;
+
+    private final String EMPTY = "";
     
     @SuppressWarnings("unchecked")
     public void createPersonalInfoMap(Exchange ex) {
@@ -96,7 +100,7 @@ public class StarttirahaProcessor {
                     paymentPeriodEndDate= null;
                 }
             
-                personalInfoMap.put("id", EMPTY);
+                personalInfoMap.put("id", id);
                 personalInfoMap.put("personalNumber", EMPTY);
                 personalInfoMap.put("dateOfBirth", dateOfBirth);
                 personalInfoMap.put("personalId", personalId);
