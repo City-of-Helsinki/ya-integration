@@ -65,7 +65,7 @@ public class KipaInRouteBuilder extends RouteBuilder{
                     .to("direct:continue-processing")
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
-                    .to("file:outbox/invalidJson")
+                    //.to("file:outbox/invalidJson")
         ;
 
         from("direct:validate-json")
