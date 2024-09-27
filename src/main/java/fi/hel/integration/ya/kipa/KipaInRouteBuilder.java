@@ -10,6 +10,7 @@ import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
 
 import fi.hel.integration.ya.JsonValidator;
+import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -18,6 +19,9 @@ public class KipaInRouteBuilder extends RouteBuilder{
 
     @Inject
     JsonValidator jsonValidator;
+
+    @Inject
+    MaksuliikenneProcessor mlProcessor;
 
     private final String SCHEMA_FILE_PT_PT55_TOJT = "schema/kipa/json_schema_PT_PT55_TOJT.json";
     private final String SCHEMA_FILE_MYK_HKK = "schema/kipa/json_schema_MYK_HKK.json";
@@ -129,5 +133,20 @@ public class KipaInRouteBuilder extends RouteBuilder{
             .to("direct:ml-controller")
         ;
 
+        from("timer://testP24Route?repeatCount=1")
+            .autoStartup("{{MAKSULIIKENNE_TESTROUTE_AUTOSTARTUP}}")
+            .log("Starting kipa P24 test route")
+            //.log("test secret :: " + testSecret)
+            .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
+            .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
+            .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
+            .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
+            .to("direct:fetchFileNamesFromKipa")
+        ;
+
+        from("direct:fetchFileNamesFromKipa")
+            .bean(mlProcessor, "getAllSFTPFileNames(*)")
+            .log("File names :: ${body}")
+        ;
     }
 }
