@@ -41,24 +41,20 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
     private static final List<String> CSV_HEADERS = Arrays.asList(
         "payerId",
         "paymentDate",
-        "empty1",
-        "empty2",
-        "empty3",
         "hetu",
-        "empty4",
         "amount",
         "startDate",
         "endDate",
-        "empty5",
         "taxAmount",
         "paymentDate2",
+        "paymentDate3",
         "decisionNumber"
     );
 
     private static final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>";
     private static final String SCHEMA_FILE = "schema/tulorekisteri/BenefitReportsToIR.xsd";
-    private static final int COLUMNS = 15;
-    private static final int EMPTY_COLUMNS = 5;
+    private static final int COLUMNS = 10;
+    private static final int EMPTY_COLUMNS = 0;
 
     @Override
     public void configure() throws Exception {
