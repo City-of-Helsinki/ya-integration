@@ -30,7 +30,7 @@ public class JsonValidator {
             //System.out.println("jsonData :: " + jsonData );
             //System.out.println("Schemafile :: " + schemaFile);
             Schema schema = loadJsonSchema(schemaFile);
-            System.out.println("Schema :: " + schema);
+            //System.out.println("Schema :: " + schema);
             schema.validate(jsonData);
             ex.getIn().setHeader("isJsonValid", true);
 
