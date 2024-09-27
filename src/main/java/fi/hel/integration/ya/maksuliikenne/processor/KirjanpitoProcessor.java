@@ -136,7 +136,9 @@ public class KirjanpitoProcessor {
             lineItemType.setAmountInDocumentCurrency(sumAsString);
 
             String ourRefence = (String) body.get("ourReference");
-            lineItemType.setLineText(ourRefence);
+            String cutOurReference = ourRefence.length() > 50 ? ourRefence.substring(0, 50) : ourRefence;
+
+            lineItemType.setLineText(cutOurReference);
 
             // TODO: hae kumppanikoodilistaus verkkoasemalta
             /* String filePath = "src/main/resources/kumppanikoodilistaus 16.8.2024.xlsx";
