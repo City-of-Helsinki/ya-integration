@@ -34,26 +34,45 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
             .handled(true) // The error is not passed on to other error handlers.
             .stop(); // Stop routing processing for this error.
     
+        // This route is for local testing
         from("file:inbox/maksuliikenne/kirjanpito?readLock=changed")
             //.log("Data ::  ${body}")
             .to("direct:kirjanpito.controller")
         ;
 
         from("direct:kirjanpito.controller")
-            .log("BODY :: ${body}")
+            //.log("BODY :: ${body}")
             .unmarshal(new JacksonDataFormat())
+            .split(body())
+                //.log("Splitted body :: ${body}")
+                //.bean(kpProcessor, "mapAccountigData(*)")
+                //.marshal().jacksonXml(SBO_SimpleAccountingContainer.class)
+                //.convertBodyTo(String.class)
+                //.setBody().groovy("'" + XML_DECLARATION + "'" + " + body")
+                .to("direct:mapAccountingData")
+                .bean(xmlValidator, "validateXml(*," +  SCHEMA_FILE + ")")
+                .choice()
+                    .when().simple("${header.isXmlValid} == 'true'")
+                        .log("is valid :: ${header.isXmlValid}")
+                        .setVariable("claimTypeCode")
+                            .language("groovy", "def filename = request.headers.jsonFileName; filename.split('_')[-1].replace('.json', '')")
+                        .setHeader(Exchange.FILE_NAME, simple(FILE_NAME_PREFIX + SENDER_ID + "_${variable.claimTypeCode}_${date:now:yyyyMMddHHmmssSSS}.xml"))
+                        //.to("file:outbox/maksuliikenne/sap")
+                        .log("Created kirjanpito xml, file name :: ${header.CamelFileName}")
+                        .log("Kirjanpito xml :: ${body}")
+                    .otherwise()
+                        .log("XML is not valid, errors :: ${header.xml_error_messages}, lines :: ${header.xml_error_line_numbers}, columns :: ${header.xml_error_column_numbers}")
+                
+        ;
+
+        from("direct:mapAccountingData")
             .bean(kpProcessor, "mapAccountigData(*)")
             .marshal().jacksonXml(SBO_SimpleAccountingContainer.class)
             .convertBodyTo(String.class)
             .setBody().groovy("'" + XML_DECLARATION + "'" + " + body")
-            .bean(xmlValidator, "validateXml(*," +  SCHEMA_FILE + ")")
-            .log("is valid :: ${header.isXmlValid}")
-            .setVariable("claimTypeCode")
-                .language("groovy", "def filename = request.headers.jsonFileName; filename.split('_')[-1].replace('.json', '')")
-            .log("Error ::${header.xml_error_messages}, lines :: ${header.xml_error_line_numbers}, columns :: ${header.xml_error_column_numbers}")
-            .setHeader(Exchange.FILE_NAME, simple(FILE_NAME_PREFIX + SENDER_ID + "_${variable.claimTypeCode}_${date:now:yyyyMMddHHmmss}.xml"))
-            .to("file:outbox/maksuliikenne/sap")
+            .to("mock:mapAccountingData.result")
         ;
+
     }
 
 }

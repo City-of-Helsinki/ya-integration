@@ -45,12 +45,15 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .log("xml is valid :: ${header.isXmlValid}")
             .setHeader(Exchange.FILE_NAME, simple(FILE_NAME_PREFIX + "${date:now:yyyyMMddHHmmss}.xml"))
             .to("mock:sendMaksuliikenneXml")
-            .to("file:outbox/maksuliikenne")
+            //.to("file:outbox/maksuliikenne")
             .log("Pain xml :: ${body}")
             .choice()
                 .when(simple("${header.isXmlValid} == 'true'"))
                 .log("XML is valid, sending the file to banking ${header.CamelFileName}")
-                .to("direct:out-banking")
+                //.to("direct:out-banking")
+                // Restore the Kipa data to the route and direct it to the accounting mapping
+                .setBody().variable("kipa_p24_data")
+                .to("direct:kirjanpito.controller")
             .otherwise()
                 .log("XML is not valid, ${header.CamelFileName}")
     

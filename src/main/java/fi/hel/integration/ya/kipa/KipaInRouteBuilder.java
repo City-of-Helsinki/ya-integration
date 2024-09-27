@@ -56,6 +56,7 @@ public class KipaInRouteBuilder extends RouteBuilder{
                 + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
                 + "&antInclude=YA_p24_091_20240823*"
             )   
+            .routeId("kipa-P24") 
             .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
             .to("direct:validate-json")
             .choice()
@@ -64,7 +65,7 @@ public class KipaInRouteBuilder extends RouteBuilder{
                     .to("direct:continue-processing")
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
-                    //.to("file:outbox/invalidJson")
+                    .to("file:outbox/invalidJson")
         ;
 
         from("direct:validate-json")
@@ -124,6 +125,7 @@ public class KipaInRouteBuilder extends RouteBuilder{
             .marshal(new JacksonDataFormat())
             //.to("file:outbox/test")
             .log("Combined jsons :: ${body}")
+            .setVariable("kipa_p24_data").simple("${body}")
             .to("direct:ml-controller")
         ;
 
