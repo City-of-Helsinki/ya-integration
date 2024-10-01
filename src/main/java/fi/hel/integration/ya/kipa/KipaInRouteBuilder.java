@@ -72,7 +72,7 @@ public class KipaInRouteBuilder extends RouteBuilder{
              
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
-                    .setVariable("kipa_dir").simple("error")
+                    .setVariable("kipa_dir").simple("errors")
                     .to("direct:readSFTPFileAndMove")
                     //.to("file:outbox/invalidJson")
         ;
@@ -140,7 +140,7 @@ public class KipaInRouteBuilder extends RouteBuilder{
 
         from("direct:readSFTPFileAndMove")
             .pollEnrich()
-                .simple("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}&password={{KIPA_SFTP_PASSWORD_P24})&&strictHostKeyChecking=no&fileName=${headers.CamelFileName}&move=${variable.kipa_dir}")
+                .simple("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}&password={{KIPA_SFTP_PASSWORD_P24})&&strictHostKeyChecking=no&fileName=${headers.CamelFileName}&move=&move=${file:parent}/../${variable.kipa_dir}/${file:onlyname}")
                 .timeout(10000)
             .log("CamelFtpReplyString: ${headers.CamelFtpReplyString}")
         ;
