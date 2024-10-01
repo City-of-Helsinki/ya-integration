@@ -58,7 +58,7 @@ public class KipaInRouteBuilder extends RouteBuilder{
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
                 + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
-                + "&antInclude=YA_p24_091_20240823*"
+                + "&antInclude=YA_p24_091_20240425*"
             )   
             .routeId("kipa-P24") 
             .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
@@ -66,9 +66,14 @@ public class KipaInRouteBuilder extends RouteBuilder{
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
                     .log("Json is valid continue processing ${header.CamelFileName}")
+                    .setVariable("kipa_dir").simple("processed")
+                    .to("direct:readSFTPFileAndMove")
                     .to("direct:continue-processing")
+             
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
+                    .setVariable("kipa_dir").simple("error")
+                    .to("direct:readSFTPFileAndMove")
                     //.to("file:outbox/invalidJson")
         ;
 
@@ -113,7 +118,7 @@ public class KipaInRouteBuilder extends RouteBuilder{
             .unmarshal(new JacksonDataFormat())
             .aggregate(new GroupedExchangeAggregationStrategy()).constant(true)
                 .completionSize(1000) 
-                 .completionTimeout(10000)
+                .completionTimeout(10000)
                 .process(exchange -> {
                     //System.out.println("BODY :: " + exchange.getIn().getBody());
                     List<Exchange> combinedExchanges = exchange.getIn().getBody(List.class);
@@ -131,6 +136,13 @@ public class KipaInRouteBuilder extends RouteBuilder{
             .log("Combined jsons :: ${body}")
             .setVariable("kipa_p24_data").simple("${body}")
             .to("direct:ml-controller")
+        ;
+
+        from("direct:readSFTPFileAndMove")
+            .pollEnrich()
+                .simple("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}&password={{KIPA_SFTP_PASSWORD_P24})&&strictHostKeyChecking=no&fileName=${headers.CamelFileName}&move=${variable.kipa_dir}")
+                .timeout(10000)
+            .log("CamelFtpReplyString: ${headers.CamelFtpReplyString}")
         ;
 
         from("timer://testP24Route?repeatCount=1")
