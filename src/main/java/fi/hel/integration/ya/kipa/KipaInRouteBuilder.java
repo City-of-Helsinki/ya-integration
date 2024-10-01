@@ -68,12 +68,14 @@ public class KipaInRouteBuilder extends RouteBuilder{
                     .log("Json is valid continue processing ${header.CamelFileName}")
                     .setVariable("kipa_dir").simple("processed")
                     .to("direct:readSFTPFileAndMove")
+                    .log("file moved to processed")
                     .to("direct:continue-processing")
              
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
                     .setVariable("kipa_dir").simple("errors")
                     .to("direct:readSFTPFileAndMove")
+                    .log("file moved to errors")
                     //.to("file:outbox/invalidJson")
         ;
 
