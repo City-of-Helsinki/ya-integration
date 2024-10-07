@@ -179,7 +179,7 @@ public class KipaInRouteBuilder extends RouteBuilder{
 
         from("direct:readSFTPFileAndMove")
             .pollEnrich()
-                .simple("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}&password={{KIPA_SFTP_PASSWORD_P24}}&&strictHostKeyChecking=no&fileName=${headers.CamelFileName}&move=${file:parent}/../${variable.kipa_dir}/${file:onlyname}")
+                .simple("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}&password={{KIPA_SFTP_PASSWORD_P24}}&strictHostKeyChecking=no&fileName=${headers.CamelFileName}&move=${file:parent}/../${variable.kipa_dir}/${file:onlyname}")
                 .timeout(10000)
             .log("CamelFtpReplyString: ${headers.CamelFtpReplyString}")
         ;
