@@ -193,7 +193,7 @@ public class KipaInRouteBuilder extends RouteBuilder{
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
             .to("direct:fetchFileNamesFromKipa")
-            //.to("direct:fetchDirectoriesFromKipa")
+            .to("direct:fetchDirectoriesFromKipa")
         ;
 
         from("direct:fetchFileNamesFromKipa")
