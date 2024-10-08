@@ -208,7 +208,7 @@ public class KipaInRouteBuilder extends RouteBuilder{
         ;
 
         from("direct:deleteDirectories")
-            .bean(mlProcessor, "deleteSFTPDirectory")
+            .bean(mlProcessor, "deleteSFTPDirectoryRecursively")
             .log("Directories :: ${body}")
         ;
     }
