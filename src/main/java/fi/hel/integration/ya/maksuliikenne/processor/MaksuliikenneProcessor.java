@@ -362,6 +362,54 @@ public class MaksuliikenneProcessor {
 
         return directoryNames;
     }
+
+    public void deleteSFTPDirectoryRecursively(Exchange ex) throws JSchException, SftpException {
+        String directoryPath = ex.getIn().getHeader("directoryPath", String.class);  // Directory to delete
+        String hostname = ex.getIn().getHeader("hostname", String.class);
+        String username = ex.getIn().getHeader("username", String.class);
+        String password = ex.getIn().getHeader("password", String.class);
+    
+        JSch jsch = new JSch();
+        Session session = jsch.getSession(username, hostname, 22);
+        session.setPassword(password);
+        session.setConfig("StrictHostKeyChecking", "no");
+        session.connect();
+    
+        ChannelSftp sftpChannel = (ChannelSftp) session.openChannel("sftp");
+        sftpChannel.connect();
+    
+        // Recursively delete all files and directories within the specified directory
+        deleteDirectoryContents(sftpChannel, directoryPath);
+    
+        // Finally, delete the empty directory itself
+        sftpChannel.rmdir(directoryPath);
+    
+        // Disconnect after the operation
+        sftpChannel.disconnect();
+        session.disconnect();
+    }
+    
+    private void deleteDirectoryContents(ChannelSftp sftpChannel, String directoryPath) throws SftpException {
+        // List all files and directories in the given directory
+        List<ChannelSftp.LsEntry> entries = sftpChannel.ls(directoryPath);
+        
+        for (ChannelSftp.LsEntry entry : entries) {
+            String filename = entry.getFilename();
+            // Skip "." and ".." directories
+            if (!filename.equals(".") && !filename.equals("..")) {
+                String fullPath = directoryPath + "/" + filename;
+                if (entry.getAttrs().isDir()) {
+                    // Recursively delete subdirectory
+                    deleteDirectoryContents(sftpChannel, fullPath);
+                    sftpChannel.rmdir(fullPath);  // Remove the subdirectory
+                } else {
+                    // Delete the file
+                    sftpChannel.rm(fullPath);
+                }
+            }
+        }
+    }
+    
 }
 
 
