@@ -31,17 +31,17 @@ public class SendEmail {
     @Inject
     Logger log; 
 
-    @ConfigProperty(name="recipient.email.address.list", defaultValue = "recipient")
+    @ConfigProperty(name="MAKSULIIKENNE_EMAIL_RECIPIENTS", defaultValue = "recipient")
     String recipients;
 
-    @ConfigProperty(name="mail.smtp.host", defaultValue = "host")
+    @ConfigProperty(name="MAIL_SMTP_HOST", defaultValue = "host")
     String host;
 
-    @ConfigProperty(name="mail.smtp.port", defaultValue = "port")
+    @ConfigProperty(name="MAIL_SMTP_PORT", defaultValue = "port")
     String port;
 
-    //@ConfigProperty(name="sender.name", defaultValue = "sender")
-    //String sender;
+    @ConfigProperty(name="MAIL_SMTP_SENDER", defaultValue = "sender")
+    String sender;
 
 
     public void sendEmail(Exchange ex) {
@@ -50,7 +50,6 @@ public class SendEmail {
             //byte[] byteArray = ex.getIn().getBody(byte[].class);
             String messageSubject = (String) ex.getIn().getHeader("messageSubject");
             String emailMessage = (String) ex.getIn().getHeader("emailMessage");
-            //String sender = "ya-integration";
             System.out.println("Sending email to " + recipients);
 
             Properties prop = new Properties();
@@ -61,7 +60,7 @@ public class SendEmail {
             Session session = Session.getInstance(prop);
     
             Message message = new MimeMessage(session);
-            //message.setFrom(new InternetAddress(sender));
+            message.setFrom(new InternetAddress(sender));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipients));
             message.setSubject(messageSubject);
     
