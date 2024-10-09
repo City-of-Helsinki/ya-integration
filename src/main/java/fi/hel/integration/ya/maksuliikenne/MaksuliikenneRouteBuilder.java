@@ -10,6 +10,7 @@ import fi.hel.integration.ya.Utils;
 import fi.hel.integration.ya.XmlValidator;
 import fi.hel.integration.ya.maksuliikenne.models.pain.Document;
 import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
+import fi.hel.integration.ya.maksuliikenne.processor.SendEmail;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -18,6 +19,9 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
 
     @Inject
     MaksuliikenneProcessor mlProcessor;
+
+    @Inject
+    SendEmail sendEmail;
 
     @Inject
     Utils utils;
@@ -84,8 +88,8 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .log("Start test route for sending email")
             .setHeader("messageSubject").simple("testi")
             .setHeader("emailMessage").simple("Tämä on testi")
-            .bean(mlProcessor, "sendEmail")
-            .log("Email shas been sent")
+            .bean(sendEmail, "sendEmail")
+            .log("Email has been sent")
         ;
     }
 
