@@ -33,23 +33,7 @@ public class MlInRouteBuilder extends RouteBuilder {
             .log("An error occurred: ${exception}") // Log error.
             .handled(true) // The error is not passed on to other error handlers.
             .stop(); // Stop routing processing for this error.
-
-        from("timer://testRoute?repeatCount=1")
-            .autoStartup("{{MAKSULIIKENNE_TESTROUTE_AUTOSTARTUP}}")
-            .log("Starting test route")
-            //.log("test secret :: " + testSecret)
-            //.to("direct:fetchDataFromKipa")
-        ;
-
-        from("direct:fetchDataFromKipa")
-            //.setHeader("hostname").simple(KIPA_SFTP_HOST)
-            //.setHeader("username").simple(KIPA_SFTP_USER_P24)
-            //.setHeader("password").simple(KIPA_SFTP_PASSWORD_P24)
-            //.setHeader("directoryPath").simple(KIPA_DIRECTORY_PATH_P24)
-            //.bean(mlProcessor, "getAllSFTPDirectories(*)")
-            .log("Body after connecting to kipa :: ${body}")
-        ;
-
+   
         from("file:inbox/maksuliikenne?readLock=changed")
             .unmarshal(new JacksonDataFormat())
             .aggregate(new GroupedExchangeAggregationStrategy()).constant(true)
