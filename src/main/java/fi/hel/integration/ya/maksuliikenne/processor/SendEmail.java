@@ -50,7 +50,7 @@ public class SendEmail {
             //byte[] byteArray = ex.getIn().getBody(byte[].class);
             String messageSubject = (String) ex.getIn().getHeader("messageSubject");
             String emailMessage = (String) ex.getIn().getHeader("emailMessage");
-            String sender = "ya-integration";
+            //String sender = "ya-integration";
             System.out.println("Sending email to " + recipients);
 
             Properties prop = new Properties();
@@ -61,7 +61,7 @@ public class SendEmail {
             Session session = Session.getInstance(prop);
     
             Message message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(sender));
+            //message.setFrom(new InternetAddress(sender));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipients));
             message.setSubject(messageSubject);
     
