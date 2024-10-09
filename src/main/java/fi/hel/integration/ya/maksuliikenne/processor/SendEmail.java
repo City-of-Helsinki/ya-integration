@@ -40,8 +40,8 @@ public class SendEmail {
     @ConfigProperty(name="mail.smtp.port", defaultValue = "port")
     String port;
 
-    @ConfigProperty(name="sender.name", defaultValue = "sender")
-    String sender;
+    //@ConfigProperty(name="sender.name", defaultValue = "sender")
+    //String sender;
 
 
     public void sendEmail(Exchange ex) {
@@ -50,6 +50,7 @@ public class SendEmail {
             //byte[] byteArray = ex.getIn().getBody(byte[].class);
             String messageSubject = (String) ex.getIn().getHeader("messageSubject");
             String emailMessage = (String) ex.getIn().getHeader("emailMessage");
+            String sender = "ya-integration";
             System.out.println("Sending email to " + recipients);
 
             Properties prop = new Properties();

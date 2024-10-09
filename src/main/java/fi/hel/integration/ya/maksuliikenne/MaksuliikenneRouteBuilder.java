@@ -79,6 +79,14 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
 
         ;
+
+        from("timer://testEmailSendig?repeatCount=1")
+            .log("Start test route for sending email")
+            .setHeader("messageSubject").simple("testi")
+            .setHeader("emailMessage").simple("Tämä on testi")
+            .bean(mlProcessor, "sendEmail")
+            .log("Email shas been sent")
+        ;
     }
 
 
