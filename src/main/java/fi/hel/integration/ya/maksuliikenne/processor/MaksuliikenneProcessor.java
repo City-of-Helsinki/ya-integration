@@ -104,7 +104,8 @@ public class MaksuliikenneProcessor {
             int nbOfTxs = (int) totalAmounts.get("numberOfPmts");
             BigDecimal ctrlSum = (BigDecimal) totalAmounts.get("totalSumOfPmts");
             
-            // The due date is the current date for all payments processed on the same day, because the due date should be the same for all payments being processed together
+            // The due date is the current date for all payments processed on the same day, 
+            // because the due date should be the same for all payments being processed together
             String duedate = utils.getCurrentTime("yyyy-MM-dd HH:mm:ss");
             Map<String,Object> delivery = (Map<String, Object>) body.get(0).get("delivery");
             String fileName = (String) delivery.get("fileName");
@@ -194,6 +195,8 @@ public class MaksuliikenneProcessor {
             document.setMessageRoot(messageRoot);
 
             ex.getIn().setBody(document);
+            ex.getIn().setHeader("reportData", totalAmounts);
+            ex.getIn().setHeader("dueDate", utils.convertDate(duedate, ORIGINAL_DATE_FORMAT, "dd-MM-yyyy"));
 
         } catch (Exception e){
             log.error(e);

@@ -1,5 +1,8 @@
 package fi.hel.integration.ya.maksuliikenne;
 
+import java.math.BigDecimal;
+import java.util.Map;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jackson.JacksonDataFormat;
@@ -55,6 +58,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                 .when(simple("${header.isXmlValid} == 'true'"))
                 .log("XML is valid, sending the file to banking ${header.CamelFileName}")
                 //.to("direct:out-banking")
+                .to("direct:sendMaksuliikenneReportEmail")
                 // Restore the Kipa data to the route and direct it to the accounting mapping
                 .setBody().variable("kipa_p24_data")
                 .to("direct:kirjanpito.controller")
@@ -63,7 +67,6 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
     
         ;
         
-
         from("direct:mapPaymentTransactions")
             .unmarshal(new JacksonDataFormat())
             .bean(mlProcessor, "mapPaymentTransactions")
@@ -84,10 +87,22 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
 
         ;
 
-        from("timer://testEmailSendig?repeatCount=1")
-            .log("Start test route for sending email")
-            .setHeader("messageSubject").simple("testi")
-            .setHeader("emailMessage").simple("Tämä on testi")
+        from("direct:sendMaksuliikenneReportEmail")
+            .log("Creating email message")
+            .process(ex -> {
+                Map<String,Object> totalAmounts = ex.getIn().getHeader("reportData", Map.class);
+                String dueDate = ex.getIn().getHeader("dueDate", String.class);
+                int amountOfPayments = (int) totalAmounts.get("numberOfPmts");
+                BigDecimal totalAmount = (BigDecimal) totalAmounts.get("totalSumOfPmts");
+                String message = "Maksupäivä: " + dueDate + "\n" 
+                               + "Maksuja yhteensä: " + amountOfPayments + "\n"
+                               + "Maksujen yhteissumma: " + totalAmount;
+                
+                String subject = "Maksuliikenteen maksut ya-banking";
+
+                ex.getIn().setHeader("messageSubject", subject);
+                ex.getIn().setHeader("emailMessage", message);
+            })
             .bean(sendEmail, "sendEmail")
             .log("Email has been sent")
         ;
