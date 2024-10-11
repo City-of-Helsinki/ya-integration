@@ -1,6 +1,12 @@
 package fi.hel.integration.ya;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
+
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 
 import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -9,6 +15,52 @@ import jakarta.inject.Inject;
 // These routes are for testing (e.g.connections)
 @ApplicationScoped
 public class TestRoutesRouteBuilder extends RouteBuilder {
+
+    public boolean testSFTPConnection(Exchange exchange) {
+        // Extract SFTP connection details from Exchange headers
+        String hostname = exchange.getIn().getHeader("hostname", String.class);
+        String username = exchange.getIn().getHeader("username", String.class);
+        String password = exchange.getIn().getHeader("password", String.class);
+        int port = exchange.getIn().getHeader("port", 22, Integer.class);  // Default to 22 if not provided
+
+        // Check if mandatory headers are present
+        if (hostname == null || username == null || password == null) {
+            throw new IllegalArgumentException("Missing SFTP connection details (hostname, username, or password).");
+        }
+
+        Session session = null;
+        ChannelSftp channelSftp = null;
+
+        try {
+            // Setup JSch session
+            JSch jsch = new JSch();
+            session = jsch.getSession(username, hostname, port);  // Use port from headers, default to 22
+            session.setPassword(password);
+            session.setConfig("StrictHostKeyChecking", "no");   // Disable host key checking for testing
+            session.connect();  // Connect to the SFTP server
+
+            // Open the SFTP channel
+            channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+
+            // Connection is successful
+            System.out.println("SFTP connection successful");
+            return true;
+        } catch (JSchException e) {
+            // Log the error and return false if the connection failed
+            System.err.println("SFTP connection failed: " + e.getMessage());
+            return false;
+        
+        } finally {
+            // Ensure resources are properly closed
+            if (channelSftp != null && channelSftp.isConnected()) {
+                channelSftp.disconnect();
+            }
+            if (session != null && session.isConnected()) {
+                session.disconnect();
+            }
+        }
+    }
 
     @Inject
     MaksuliikenneProcessor mlProcessor;
@@ -29,8 +81,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("hostname").simple("{{VERKKOLEVY_SFTP_HOST}}")
             .setHeader("username").simple("{{VERKKOLEVY_SFTP_USER}}")
             .setHeader("password").simple("{{VERKKOLEVY_SFTP_PASSWORD}}")
-            .setHeader("directoryPath").simple("{{VERKKOLEVY_DIRECTORY_PATH}}")
-            .to("direct:fetchDirectoriesFromSftp")
+            //.setHeader("directoryPath").simple("{{VERKKOLEVY_DIRECTORY_PATH}}")
+            .bean(this, "testSFTPConnection")
         ;
 
         from("direct:fetchFileNamesFromSftp")
