@@ -23,7 +23,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .stop(); // Stop routing processing for this error.
 
         
-        from("timer://testVerkkolevySftp?repeatCount=1")
+        from("timer://testVerkkolevySftp?repeatCount=1&delay=5000")
             .autoStartup("{{VERKKOLEVY_SFTP_TESTROUTE_AUTOSTARTUP}}")
             .log("Starting verkkolevy sftp test route")
             .setHeader("hostname").simple("{{VERKKOLEVY_SFTP_HOST}}")

@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Vector;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.RuntimeCamelException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -340,31 +341,51 @@ public class MaksuliikenneProcessor {
         String username = ex.getIn().getHeader("username", String.class);
         String password = ex.getIn().getHeader("password", String.class);
 
-        JSch jsch = new JSch();
-        Session session = jsch.getSession(username, hostname, 22);
-        session.setPassword(password);
-        session.setConfig("StrictHostKeyChecking", "no");
-        session.connect();
+        // Check for missing or invalid headers
+        if (directoryPath == null || hostname == null || username == null || password == null) {
+            throw new IllegalArgumentException("Missing one or more required SFTP headers (directoryPath, hostname, username, password).");
+        }
 
-        ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
-        channelSftp.connect();
-
-        System.out.println("Listing the directories");
         List<String> directoryNames = new ArrayList<>();
-        Vector<ChannelSftp.LsEntry> files = channelSftp.ls(directoryPath);
-    
-        for (ChannelSftp.LsEntry file : files) {
-            if (file.getAttrs().isDir()) {
-                directoryNames.add(file.getFilename());
-                System.out.println("Directory: " + file.getFilename());
+        Session session = null;
+        ChannelSftp channelSftp = null;
+
+        try {
+            // Create JSch session and set config
+            JSch jsch = new JSch();
+            session = jsch.getSession(username, hostname, 22);
+            session.setPassword(password);
+            session.setConfig("StrictHostKeyChecking", "no");
+            session.connect();  // Connect to the SFTP server
+
+            // Open SFTP channel
+            channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+
+            // List directories in the given path
+            Vector<ChannelSftp.LsEntry> files = channelSftp.ls(directoryPath);
+
+            for (ChannelSftp.LsEntry file : files) {
+                if (file.getAttrs().isDir()) {
+                    directoryNames.add(file.getFilename());
+                }
+            }
+        } catch (JSchException | SftpException e) {
+            // Log and wrap the exception
+            throw new RuntimeCamelException("SFTP operation failed: " + e.getMessage(), e);
+        } finally {
+            // Properly close resources
+            if (channelSftp != null && channelSftp.isConnected()) {
+                channelSftp.disconnect();
+            }
+            if (session != null && session.isConnected()) {
+                session.disconnect();
             }
         }
 
-        channelSftp.exit();
-        session.disconnect();
-
         return directoryNames;
     }
+
 
     public void deleteSFTPDirectoryRecursively(Exchange ex) throws JSchException, SftpException {
         String directoryPath = ex.getIn().getHeader("directoryPath", String.class);  // Directory to delete
