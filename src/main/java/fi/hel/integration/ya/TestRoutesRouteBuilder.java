@@ -94,5 +94,16 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .bean(mlProcessor, "getAllSFTPDirectories")
             .log("Directories :: ${body}")
         ;
+
+        from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}"
+                + "&password={{KIPA_SFTP_PASSWORD_P24}}"
+                + "&strictHostKeyChecking=no"
+                + "&scheduler=quartz"         
+                + "&scheduler.cron={{MAKSULIIKENNE_TEST_TIMER}}" 
+                + "&antInclude=YA_p22_091_20240930153015_091_SR*"
+            )   
+            .autoStartup("{{MAKSULIIKENNE_TEST_IN_AUTOSTARTUP}}")
+            .log("json content :: ${body}")
+        ;
     }
 }
