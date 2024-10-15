@@ -56,17 +56,24 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .log("Pain xml :: ${body}")
             .choice()
                 .when(simple("${header.isXmlValid} == 'true'"))
-                .log("XML is valid, sending the file to banking ${header.CamelFileName}")
-                //.to("direct:out-banking")
-                .to("direct:sendMaksuliikenneReportEmail")
-                // Restore the Kipa data to the route and direct it to the accounting mapping
-                .setBody().variable("kipa_p24_data")
-                .to("direct:kirjanpito.controller")
-            .otherwise()
-                .log("XML is not valid, ${header.CamelFileName}")
-    
+                    .log("XML is valid, sending the file to banking ${header.CamelFileName}")
+                    //.to("direct:out-banking")
+                    .setHeader("CamelFtpReplyString").simple("OK")
+                    .choice()
+                        .when(simple("${header.CamelFtpReplyString} == 'OK'"))
+                            .log("The pain xml has been sent to Banking")
+                            .to("direct:sendMaksuliikenneReportEmail")
+                            // Restore the Kipa data to the route and direct it to the accounting mapping
+                            .setBody().variable("kipa_p24_data")
+                            .to("direct:kirjanpito.controller")
+                        .otherwise()
+                            .log("Error occurred  while sending the xml file to Banking")
+                    .endChoice()
+                .otherwise()
+                    .log("XML is not valid, ${header.CamelFileName}")
+            .end()
         ;
-        
+         
         from("direct:mapPaymentTransactions")
             .unmarshal(new JacksonDataFormat())
             .bean(mlProcessor, "mapPaymentTransactions")
@@ -84,7 +91,6 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                 + "&strictHostKeyChecking=no"
             )
             .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
-
         ;
 
         from("direct:sendMaksuliikenneReportEmail")
@@ -106,7 +112,6 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .bean(sendEmail, "sendEmail")
             .log("Email has been sent")
         ;
+
     }
-
-
 }
