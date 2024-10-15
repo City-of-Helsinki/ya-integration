@@ -104,7 +104,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                                + "Maksuja yhteensä: " + amountOfPayments + "<br>"
                                + "Maksujen yhteissumma: " + totalAmount;
                 
-                String subject = "Maksuliikenteen maksut ya-banking";
+                String subject = "TESTI: Maksuliikenteen maksut ya-banking";
 
                 ex.getIn().setHeader("messageSubject", subject);
                 ex.getIn().setHeader("emailMessage", message);

@@ -72,7 +72,7 @@ public class KipaInRouteBuilder extends RouteBuilder{
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
                 + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
-                + "&antInclude=YA_p24_091_20240823120252*"
+                + "&antInclude=YA_p24_091_20240823120311*"
             )   
             .routeId("kipa-P24") 
             .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
