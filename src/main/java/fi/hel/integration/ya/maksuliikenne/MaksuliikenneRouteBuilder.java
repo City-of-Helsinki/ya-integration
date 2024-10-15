@@ -100,8 +100,8 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                 String dueDate = ex.getIn().getHeader("dueDate", String.class);
                 int amountOfPayments = (int) totalAmounts.get("numberOfPmts");
                 BigDecimal totalAmount = (BigDecimal) totalAmounts.get("totalSumOfPmts");
-                String message = "Maksupäivä: " + dueDate + "\n" 
-                               + "Maksuja yhteensä: " + amountOfPayments + "\n"
+                String message = "Maksupäivä: " + dueDate + "<br>" 
+                               + "Maksuja yhteensä: " + amountOfPayments + "<br>"
                                + "Maksujen yhteissumma: " + totalAmount;
                 
                 String subject = "Maksuliikenteen maksut ya-banking";
