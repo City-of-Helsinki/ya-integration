@@ -183,42 +183,5 @@ public class KipaInRouteBuilder extends RouteBuilder{
                 .timeout(10000)
             .log("CamelFtpReplyString: ${headers.CamelFtpReplyString}")
         ;
-
-        from("timer://testP24Route?repeatCount=1")
-            .autoStartup("{{MAKSULIIKENNE_P24_TESTROUTE_AUTOSTARTUP}}")
-            .log("Starting kipa P24 test route")
-            .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
-            .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
-            .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
-            .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
-            .to("direct:fetchFileNamesFromKipa")
-            .to("direct:fetchDirectoriesFromKipa")
-        ;
-
-        from("timer://testP23Route?repeatCount=1")
-            .autoStartup("{{MAKSULIIKENNE_P23_TESTROUTE_AUTOSTARTUP}}")
-            .log("Starting kipa P23 test route")
-            .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
-            .setHeader("username").simple("{{KIPA_SFTP_USER_P23}}")
-            .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P23}}")
-            .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P23}}")
-            .to("direct:fetchFileNamesFromKipa")
-            .to("direct:fetchDirectoriesFromKipa")
-        ;
-
-        from("direct:fetchFileNamesFromKipa")
-            .bean(mlProcessor, "getAllSFTPFileNames(*)")
-            .log("File names :: ${body}")
-        ;
-
-        from("direct:fetchDirectoriesFromKipa")
-            .bean(mlProcessor, "getAllSFTPDirectories")
-            .log("Directories :: ${body}")
-        ;
-
-        from("direct:deleteDirectories")
-            .bean(mlProcessor, "deleteSFTPDirectoryRecursively")
-            .log("Directories :: ${body}")
-        ;
     }
 }
