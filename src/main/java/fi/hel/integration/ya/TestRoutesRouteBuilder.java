@@ -16,6 +16,7 @@ import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
 import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
+import io.sentry.Sentry;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -215,6 +216,21 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             )   
             .autoStartup("{{MAKSULIIKENNE_TEST_IN_AUTOSTARTUP}}")
             .log("json content :: ${body}")
+        ;
+
+        from("timer://testSentry?repeatCount=1&delay=5000")
+            .autoStartup("{{SENTRY_TEST_AUTOSTARTUP}}")
+            .log("Sendig error message to Sentry")
+            .process(ex -> {
+                try {
+                    throw new Exception("This is a test.");
+                } catch (Exception e) {
+                    Sentry.captureException(e);
+
+                    ex.getMessage().setBody("Error sent to Sentry: " + e.getMessage());
+                    ex.getContext().createProducerTemplate().send("log:info", ex);
+                }           
+            })
         ;
     }
 }
