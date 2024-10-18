@@ -227,6 +227,12 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                 } catch (Exception e) {
                     Sentry.captureException(e);
 
+                    if (Sentry.isEnabled()) {
+                        System.out.println("Sentry is initialized and ready.");
+                    } else {
+                        System.out.println("Sentry failed to initialize.");
+                    }
+
                     ex.getMessage().setBody("Error sent to Sentry: " + e.getMessage());
                     ex.getContext().createProducerTemplate().send("log:info", ex);
                 }           
