@@ -161,6 +161,17 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
        // Exception handler for route errors. 
         onException(Exception.class) // Catch all the Exception -type exceptions.
             .log("An error occurred: ${exception}") // Log error.
+            .process(exchange -> {
+                // Get the exception that was caught
+                Exception cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
+                
+                // Send the exception to Sentry
+                if (cause != null) {
+                    Sentry.captureException(cause);
+                }
+
+                exchange.getIn().setBody("Error sent to Sentry: " + (cause != null ? cause.getMessage() : "Unknown error"));
+            })
             .handled(true) // The error is not passed on to other error handlers.
             .stop(); // Stop routing processing for this error.
 
@@ -220,23 +231,11 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
         from("timer://testSentry?repeatCount=1&delay=5000")
             .autoStartup("{{SENTRY_TEST_AUTOSTARTUP}}")
-            .log("Sendig error message to Sentry")
-            .process(ex -> {
-                try {
-                    throw new Exception("This is a test.");
-                } catch (Exception e) {
-                    Sentry.captureException(e);
-
-                    if (Sentry.isEnabled()) {
-                        System.out.println("Sentry is initialized and ready.");
-                    } else {
-                        System.out.println("Sentry failed to initialize.");
-                    }
-
-                    ex.getMessage().setBody("Error sent to Sentry: " + e.getMessage());
-                    ex.getContext().createProducerTemplate().send("log:info", ex);
-                }           
+            .process(exchange -> {
+                throw new Exception("This is a test."); 
             })
         ;
     }
+       
 }
+
