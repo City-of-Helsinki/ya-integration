@@ -1,9 +1,9 @@
 package fi.hel.integration.ya;
 
+import io.quarkus.runtime.Startup;
 import io.sentry.Sentry;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 
 
@@ -13,7 +13,7 @@ public class SentryConfig {
     @ConfigProperty(name = "SENTRY_DSN")
     String dsn;
 
-    @PostConstruct
+    @Startup
     public void init() {
         Sentry.init(options -> {
             options.setDsn(dsn); 
