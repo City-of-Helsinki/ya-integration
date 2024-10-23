@@ -72,7 +72,7 @@ public class KipaInRouteBuilder extends RouteBuilder{
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
                 + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
-                + "&antInclude=YA_p24_091_20240823120311*"
+                + "&antInclude=YA_p24_091_202410*"
             )   
             .routeId("kipa-P24") 
             .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
@@ -80,16 +80,16 @@ public class KipaInRouteBuilder extends RouteBuilder{
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
                     .log("Json is valid continue processing ${header.CamelFileName}")
-                    .setVariable("kipa_dir").simple("processed")
-                    .to("direct:readSFTPFileAndMove")
-                    .log("file moved to processed")
+                    //.setVariable("kipa_dir").simple("processed")
+                    //.to("direct:readSFTPFileAndMove")
+                    //.log("file moved to processed")
                     .to("direct:continue-processing-P24Data")
              
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
-                    .setVariable("kipa_dir").simple("errors")
-                    .to("direct:readSFTPFileAndMove")
-                    .log("file moved to errors")
+                    //.setVariable("kipa_dir").simple("errors")
+                    //.to("direct:readSFTPFileAndMove")
+                    //.log("file moved to errors")
                     //.to("file:outbox/invalidJson")
         ;
 
