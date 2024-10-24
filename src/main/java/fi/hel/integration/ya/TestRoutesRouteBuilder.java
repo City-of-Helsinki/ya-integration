@@ -223,7 +223,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
                 + "&scheduler.cron={{MAKSULIIKENNE_TEST_TIMER}}" 
-                + "&antInclude=YA_p22_091_20240930153015_091_SR*"
+                + "&antInclude=YA_p24_091_20241012000003_6_HKK*"
             )   
             .autoStartup("{{MAKSULIIKENNE_TEST_IN_AUTOSTARTUP}}")
             .log("json content :: ${body}")
