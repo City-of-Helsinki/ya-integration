@@ -235,7 +235,17 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                 throw new Exception("This is a test."); 
             })
         ;
-    }
-       
+
+        from("timer://testRedis?repeatCount=1&delay=5000")
+            .autoStartup("{{REDIS_TEST_AUTOSTARTUP}}")
+            .setBody(constant("redis testi"))
+            .setHeader("key", constant("redisTestKey"))
+            .bean("redisProcessor", "set(${header.key}, ${body})")
+            .log("Value set in Redis with key ${header.key}")
+            .bean("redisProcessor", "get(${header.key})")
+            .log("Retrieved Redis value: ${body}")
+            
+        ;
+    }     
 }
 
