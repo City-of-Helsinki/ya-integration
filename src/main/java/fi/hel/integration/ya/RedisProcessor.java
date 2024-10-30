@@ -31,12 +31,14 @@ public class RedisProcessor {
     public void initRedis() {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setTestOnBorrow(true); // Validates a connection before borrowing
-        poolConfig.setTestWhileIdle(true); // Checks idle connections
+        poolConfig.setTestWhileIdle(false); // Checks idle connections
         poolConfig.setMinEvictableIdleDuration(Duration.ofMinutes(1)); // 1 minute idle timeout
         poolConfig.setTimeBetweenEvictionRuns(Duration.ofSeconds(30)); // Run evictor every 30 seconds
         poolConfig.setNumTestsPerEvictionRun(3); // Test 3 idle connections per eviction run
 
-        this.jedisPool = new JedisPool(poolConfig, host, port, 10000, password);
+        int connectionTimeout = 10000; // 10 seconds for connection
+
+        this.jedisPool = new JedisPool(poolConfig, host, port, connectionTimeout, password);
     }
 
     public void set(String key, String value) throws Exception {
