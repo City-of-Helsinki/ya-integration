@@ -38,7 +38,7 @@ public class RedisProcessor {
             
         } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException("Failed to execute Redis operation", e);
+            throw new RuntimeException("Failed to execute Redis operation [set]", e);
         }
     }
 
@@ -50,7 +50,7 @@ public class RedisProcessor {
                 
         } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException("Failed to execute Redis operation", e);  
+            throw new RuntimeException("Failed to execute Redis operation [get]", e);  
         }
 
         return value;
