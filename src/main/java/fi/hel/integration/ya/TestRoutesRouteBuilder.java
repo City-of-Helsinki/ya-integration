@@ -1,6 +1,7 @@
 package fi.hel.integration.ya;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
@@ -31,9 +32,17 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         String password = exchange.getIn().getHeader("password", String.class);
         int port = exchange.getIn().getHeader("port", 22, Integer.class);  // Default to 22 if not provided
 
+        System.out.println("hostname :: " + hostname);
         // Check if mandatory headers are present
         if (hostname == null || username == null || password == null) {
             throw new IllegalArgumentException("Missing SFTP connection details (hostname, username, or password).");
+        }
+
+        try (Socket socket = new Socket(hostname, port)) {
+            System.out.println("Successfully connected to " + hostname + ":" + port + " (pre-SFTP check)");
+        } catch (IOException e) {
+            System.err.println("Unable to reach " + hostname + ":" + port + ". Check network/firewall settings.");
+            return false;
         }
 
         Session session = null;
@@ -47,16 +56,33 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             session.setConfig("StrictHostKeyChecking", "no");   // Disable host key checking for testing
             session.connect();  // Connect to the SFTP server
 
+            if (session.isConnected()) {
+                System.out.println("Session connected successfully to " + hostname + ":" + port);
+            } else {
+                System.err.println("Session failed to connect to " + hostname + ":" + port);
+                return false;
+            }
+
             // Open the SFTP channel
             channelSftp = (ChannelSftp) session.openChannel("sftp");
             channelSftp.connect();
 
+            if (channelSftp.isConnected()) {
+                System.out.println("SFTP channel opened and connected successfully.");
+            } else {
+                System.err.println("Failed to open SFTP channel.");
+                return false;
+            }
+
             // Connection is successful
             System.out.println("SFTP connection successful");
             return true;
+
         } catch (JSchException e) {
             // Log the error and return false if the connection failed
             System.err.println("SFTP connection failed: " + e.getMessage());
+            System.err.println("Detailed cause: " + e.getCause());
+
             return false;
         
         } finally {
