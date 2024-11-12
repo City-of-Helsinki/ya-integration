@@ -208,8 +208,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("hostname").simple("{{VERKKOLEVY_SFTP_HOST}}")
             .setHeader("username").simple("{{VERKKOLEVY_SFTP_USER}}")
             .setHeader("password").simple("{{VERKKOLEVY_SFTP_PASSWORD}}")
-            //.setHeader("directoryPath").simple("{{VERKKOLEVY_DIRECTORY_PATH}}")
-            .bean(this, "testSFTPConnection")
+            .setHeader("directoryPath").simple("{{VERKKOLEVY_DIRECTORY_PATH}}")
+            //.bean(this, "testSFTPConnection")
+            .to("direct:fetchDirectoriesFromSftp")
         ;
 
         from("timer://testP24Route?repeatCount=1")
