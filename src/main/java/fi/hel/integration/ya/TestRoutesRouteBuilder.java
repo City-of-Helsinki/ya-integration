@@ -1,7 +1,9 @@
 package fi.hel.integration.ya;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -109,6 +111,15 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         // Check if mandatory headers are present
         if (hostname == null || username == null || privateKey == null) {
             throw new IllegalArgumentException("Missing SFTP connection details (hostname, username, or privateKey).");
+        }
+
+        try {
+            InetAddress address = InetAddress.getByName(hostname);
+            System.out.println("Hostname resolved to IP: " + address.getHostAddress());
+       
+        } catch (UnknownHostException e) {
+            System.err.println("Failed to resolve hostname: " + hostname + ". Verify DNS settings or hostname.");
+            return false;
         }
 
         try (Socket socket = new Socket(hostname, port)) {
