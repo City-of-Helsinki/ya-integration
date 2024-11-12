@@ -110,6 +110,13 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         if (hostname == null || username == null || privateKey == null) {
             throw new IllegalArgumentException("Missing SFTP connection details (hostname, username, or privateKey).");
         }
+
+        try (Socket socket = new Socket(hostname, port)) {
+            System.out.println("Successfully connected to " + hostname + ":" + port + " (pre-SFTP check)");
+        } catch (IOException e) {
+            System.err.println("Unable to reach " + hostname + ":" + port + ". Check network/firewall settings.");
+            return false;
+        }
     
         Session session = null;
         ChannelSftp channelSftp = null;
@@ -279,7 +286,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
         from("timer://testAHRSftp?repeatCount=1&delay=5000")
             .autoStartup("{{AHR_SFTP_TESTROUTE_AUTOSTARTUP}}")
-            .log("Starting verkkolevy sftp test route")
+            .log("Starting AHR sftp test route")
             .setHeader("hostname").simple("{{AHR_SFTP_HOST}}")
             .setHeader("username").simple("{{AHR_SFTP_USER}}")
             .setHeader("privateKey").simple("{{AHR_SFTP_PRIVATEKEY}}")
