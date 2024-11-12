@@ -3,6 +3,7 @@ package fi.hel.integration.ya;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Vector;
 
@@ -85,6 +86,69 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
             return false;
         
+        } finally {
+            // Ensure resources are properly closed
+            if (channelSftp != null && channelSftp.isConnected()) {
+                channelSftp.disconnect();
+            }
+            if (session != null && session.isConnected()) {
+                session.disconnect();
+            }
+        }
+    }
+
+    public boolean testSFTPConnectionWithPrivateKey(Exchange exchange) {
+        // Extract SFTP connection details from Exchange headers
+        String hostname = exchange.getIn().getHeader("hostname", String.class);
+        String username = exchange.getIn().getHeader("username", String.class);
+        String privateKeyEncoded = exchange.getIn().getHeader("privateKey", String.class);
+        String privateKey = new String(Base64.getDecoder().decode(privateKeyEncoded));
+        int port = exchange.getIn().getHeader("port", 22, Integer.class);  // Default to 22 if not provided
+    
+        System.out.println("hostname :: " + hostname);
+        // Check if mandatory headers are present
+        if (hostname == null || username == null || privateKey == null) {
+            throw new IllegalArgumentException("Missing SFTP connection details (hostname, username, or privateKey).");
+        }
+    
+        Session session = null;
+        ChannelSftp channelSftp = null;
+    
+        try {
+            // Setup JSch session with private key
+            JSch jsch = new JSch();
+            jsch.addIdentity("sftp-identity", privateKey.getBytes(), null, null);
+            session = jsch.getSession(username, hostname, port);  
+            session.setConfig("StrictHostKeyChecking", "no");  
+            session.connect(); 
+    
+            if (session.isConnected()) {
+                System.out.println("Session connected successfully to " + hostname + ":" + port);
+            } else {
+                System.err.println("Session failed to connect to " + hostname + ":" + port);
+                return false;
+            }
+    
+            channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+    
+            if (channelSftp.isConnected()) {
+                System.out.println("SFTP channel opened and connected successfully.");
+            } else {
+                System.err.println("Failed to open SFTP channel.");
+                return false;
+            }
+    
+            // Connection is successful
+            System.out.println("SFTP connection successful");
+            return true;
+    
+        } catch (JSchException e) {
+            // Log the error and return false if the connection failed
+            System.err.println("SFTP connection failed: " + e.getMessage());
+            System.err.println("Detailed cause: " + e.getCause());
+    
+            return false;
         } finally {
             // Ensure resources are properly closed
             if (channelSftp != null && channelSftp.isConnected()) {
@@ -211,6 +275,16 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("directoryPath").simple("{{VERKKOLEVY_DIRECTORY_PATH}}")
             //.bean(this, "testSFTPConnection")
             .to("direct:fetchDirectoriesFromSftp")
+        ;
+
+        from("timer://testAHRSftp?repeatCount=1&delay=5000")
+            .autoStartup("{{AHR_SFTP_TESTROUTE_AUTOSTARTUP}}")
+            .log("Starting verkkolevy sftp test route")
+            .setHeader("hostname").simple("{{AHR_SFTP_HOST}}")
+            .setHeader("username").simple("{{AHR_SFTP_USER}}")
+            .setHeader("privateKey").simple("{{AHR_SFTP_PRIVATEKEY}}")
+            .bean(this, "testSFTPConnectionWithPrivateKey")
+            
         ;
 
         from("timer://testP24Route?repeatCount=1")
