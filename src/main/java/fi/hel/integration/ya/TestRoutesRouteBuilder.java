@@ -221,6 +221,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         String hostname = ex.getIn().getHeader("hostname", String.class);
         String username = ex.getIn().getHeader("username", String.class);
         String password = ex.getIn().getHeader("password", String.class);
+        java.util.Properties sftpConfig = ex.getIn().getHeader("sftp_config", java.util.Properties.class);
+
 
         // Check for missing or invalid headers
         if (directoryPath == null || hostname == null || username == null || password == null) {
@@ -236,6 +238,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             JSch jsch = new JSch();
             session = jsch.getSession(username, hostname, 22);
             session.setPassword(password);
+            if (sftpConfig != null && !sftpConfig.isEmpty()) {
+                session.setConfig(sftpConfig); 
+            }
             session.setConfig("StrictHostKeyChecking", "no");
             session.connect();  // Connect to the SFTP server
 
@@ -318,9 +323,16 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("hostname").simple("{{SAP_SFTP_HOST}}")
             .setHeader("username").simple("{{SAP_SFTP_USER}}")
             .setHeader("password").simple("{{SAP_SFTP_PASSWORD}}")
-            //.setHeader("directoryPath").simple("{{SAP_DIRECTORY_PATH}}")
-            .bean(this, "testSFTPConnection")
-            //.to("direct:fetchDirectoriesFromSftp")            
+            .setHeader("directoryPath").simple("{{SAP_DIRECTORY_PATH}}")
+            .process(ex -> {
+                // Configure algorithms for compatibility with the server
+                java.util.Properties config = new java.util.Properties();
+                config.put("kex", "diffie-hellman-group1-sha1,diffie-hellman-group14-sha1");
+                config.put("server_host_key", "ssh-rsa");
+                ex.getIn().setHeader("sftp_config", config);
+            })
+            //.bean(this, "testSFTPConnection")
+            .to("direct:fetchDirectoriesFromSftp")            
         ;
 
         from("timer://testP24Route?repeatCount=1")
