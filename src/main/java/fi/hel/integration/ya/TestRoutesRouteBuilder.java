@@ -57,6 +57,12 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             session = jsch.getSession(username, hostname, port);  // Use port from headers, default to 22
             session.setPassword(password);
             session.setConfig("StrictHostKeyChecking", "no");   // Disable host key checking for testing
+            
+            // Configure algorithms for compatibility with the server
+            java.util.Properties config = new java.util.Properties();
+            config.put("kex", "diffie-hellman-group1-sha1,diffie-hellman-group14-sha1");
+            session.setConfig(config);
+            
             session.connect();  // Connect to the SFTP server
 
             if (session.isConnected()) {
