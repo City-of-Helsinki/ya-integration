@@ -305,6 +305,17 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             
         ;
 
+        from("timer://testSapSftp?repeatCount=1&delay=5000")
+            .autoStartup("{{SAP_SFTP_TESTROUTE_AUTOSTARTUP}}")
+            .log("Starting SAP sftp test route")
+            .setHeader("hostname").simple("{{SAP_SFTP_HOST}}")
+            .setHeader("username").simple("{{SAP_SFTP_USER}}")
+            .setHeader("password").simple("{{SAP_SFTP_PASSWORD}}")
+            //.setHeader("directoryPath").simple("{{SAP_DIRECTORY_PATH}}")
+            .bean(this, "testSFTPConnection")
+            //.to("direct:fetchDirectoriesFromSftp")            
+        ;
+
         from("timer://testP24Route?repeatCount=1")
             .autoStartup("{{MAKSULIIKENNE_P24_TESTROUTE_AUTOSTARTUP}}")
             .log("Starting kipa P24 test route")
