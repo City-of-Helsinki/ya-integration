@@ -61,6 +61,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             // Configure algorithms for compatibility with the server
             java.util.Properties config = new java.util.Properties();
             config.put("kex", "diffie-hellman-group1-sha1,diffie-hellman-group14-sha1");
+            config.put("server_host_key", "ssh-rsa");
             session.setConfig(config);
             
             session.connect();  // Connect to the SFTP server
