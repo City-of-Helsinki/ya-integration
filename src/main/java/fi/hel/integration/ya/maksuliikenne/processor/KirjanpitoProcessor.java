@@ -79,9 +79,9 @@ public class KirjanpitoProcessor {
     // Claim types:
     private static final String PT = "PALKKATUKI";
     private static final String PT55 = "PALKKATUKI_55V";
-    private static final String HKK = "KULUKORVAUS";
-    private static final String MYK = "MATKA_JA_YOPYMISKORVAUS";
-    private static final String TOJT = "JARJESTELYTUKI";
+    private static final String HKK = "HARKINNANVARAINEN_KULUKORVAUS";
+    private static final String MYK = "MATKA_JA_YOPYMISKUSTANNUSTENKORVAUS";
+    private static final String TOJT = "TYOOLOSUHTEIDEN_JARJESTELYTUKI";
 
     @SuppressWarnings("unchecked")
     public void mapAccountigData(Exchange ex) {
@@ -95,6 +95,7 @@ public class KirjanpitoProcessor {
             List<SBO_SimpleAccounting> sbo_SimpleAccountings = new ArrayList<>();
             
             Map<String,Object> body = ex.getIn().getBody(Map.class);
+            //System.out.println("Accounting data map :: " + body);
             String claimType = (String) body.get("claimType");
             simpleAccounting.setSenderId(senderId);
             simpleAccounting.setCompanyCode(companyCode);
@@ -179,9 +180,6 @@ public class KirjanpitoProcessor {
 
             String fileName = (String) delivery.get("fileName");
             ex.getIn().setHeader("jsonFileName", fileName);
-
-
-    
 
         } catch (Exception e){
             log.error(e);
