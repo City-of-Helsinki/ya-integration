@@ -94,7 +94,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             )   
             .routeId("kipa-P24") 
             .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
-            .to("direct:validate-json")
+            .to("direct:validate-json-P24")
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
                     .log("Json is valid continue processing ${header.CamelFileName}")
