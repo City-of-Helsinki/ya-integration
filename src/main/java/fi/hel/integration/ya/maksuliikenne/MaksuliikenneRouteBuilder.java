@@ -1,19 +1,22 @@
 package fi.hel.integration.ya.maksuliikenne;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jackson.JacksonDataFormat;
-import org.apache.camel.model.dataformat.JacksonXMLDataFormat;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import fi.hel.integration.ya.Utils;
 import fi.hel.integration.ya.XmlValidator;
+import fi.hel.integration.ya.exceptions.XmlValidationException;
 import fi.hel.integration.ya.maksuliikenne.models.pain.Document;
 import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
 import fi.hel.integration.ya.maksuliikenne.processor.SendEmail;
+import io.sentry.Sentry;
+import io.sentry.SentryLevel;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -45,7 +48,29 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .handled(true) // The error is not passed on to other error handlers.
             .stop(); // Stop routing processing for this error.
 
-        from("direct:ml-controller")
+        onException(XmlValidationException.class)
+            .handled(true)
+            .process(exchange -> {
+                XmlValidationException cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, XmlValidationException.class);
+
+                Sentry.withScope(scope -> {
+                    String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
+                    String uniqueId = UUID.randomUUID().toString(); // Generate a unique ID for the error
+
+                    scope.setLevel(cause.getSentryLevel());
+                    scope.setTag("error.type", cause.getTag());
+                    scope.setTag("context.fileName", fileName);
+                    scope.setFingerprint(Arrays.asList(uniqueId)); 
+                    Sentry.captureException(cause);
+                });
+
+                Sentry.flush(2000);
+
+            })
+            .log("XmlValidationException occurred: ${exception.message}")
+        ;
+
+        from("direct:maksuliikenne-controller")
             //.to("file:outbox/test")
             .to("direct:mapPaymentTransactions")
             .bean(xmlValidator, "validateXml(*," +  SCHEMA_FILE + ")")
@@ -71,6 +96,8 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                     .endChoice()
                 .otherwise()
                     .log("XML is not valid, ${header.CamelFileName}")
+                    .log("Error message :: ${header.xml_error_messages}")
+                    .throwException(new XmlValidationException("Invalid xml file", SentryLevel.ERROR, "xmlValidationError"))
             .end()
         ;
          
