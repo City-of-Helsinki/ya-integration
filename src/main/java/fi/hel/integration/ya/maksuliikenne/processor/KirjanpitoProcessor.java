@@ -113,7 +113,14 @@ public class KirjanpitoProcessor {
             String formattedId = String.format("%09d", id);
             simpleAccounting.setReference(formattedId);
 
-            simpleAccounting.setHeaderText(claimType);
+            String header = claimType;
+
+            // The maximum number of characters in the header is 25
+            if(header.length() > 25) {
+                header = header.substring(0, 25);
+            }
+
+            simpleAccounting.setHeaderText(header);
 
             String currency = (String) body.get("currency");
             simpleAccounting.setCurrencyCode(currency);
