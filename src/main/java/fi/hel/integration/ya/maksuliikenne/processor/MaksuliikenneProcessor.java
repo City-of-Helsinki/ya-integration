@@ -41,6 +41,7 @@ import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransfe
 import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.CreditorAccount;
 import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.InstructedAmount;
 import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.PaymentId;
+import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.PostalAddressCreditor;
 import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.RemittanceInfo;
 //import fi.hel.integration.ya.maksuliikenne.models.pain.groupHeader.InitgPty;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -237,6 +238,29 @@ public class MaksuliikenneProcessor {
                 receiverName = lastName + ", " + firstName;
             }
 
+            Map<String,Object> address = (Map<String, Object>) receiver.get("postalAddress");
+            ArrayList<String> addressList = (ArrayList<String>) address.get("addressLine");
+            StringBuilder postalAddressBuilder = new StringBuilder();
+
+            for (String addressLine : addressList) {
+                if (postalAddressBuilder.length() > 0) {
+                    postalAddressBuilder.append(", "); // Separator between address lines
+                }
+                postalAddressBuilder.append(addressLine);
+            }
+
+            String postalAddress = postalAddressBuilder.toString();
+
+            String postalCode = (String) address.get("postalCode");
+            String postOffice = (String) address.get("postOffice");
+            String postalAddress2 = postalCode + " " + postOffice;
+
+            List<String> addresslines = new ArrayList<String>();
+            addresslines.add(postalAddress);
+            addresslines.add(postalAddress2);
+
+            String country = (String) address.get("country");
+
             CreditTransferTransaction creditTransferTransaction = new CreditTransferTransaction();
             PaymentId pmtId = new PaymentId();
             Amount amt = new Amount();
@@ -245,10 +269,11 @@ public class MaksuliikenneProcessor {
             CreditorAccount creditorAccount = new CreditorAccount();
             AccountIdentification accountIdentification = new AccountIdentification();
             RemittanceInfo remittanceInfo = new RemittanceInfo();
+            PostalAddressCreditor pstlAdr = new PostalAddressCreditor();
 
             // Payment id (invoice number)
             pmtId.setEndToEndId(id);
-    
+            
             // Amount
             instructedAmount.setCcy((String) payment.get("currency"));
             instructedAmount.setValue((double) payment.get("grossSum"));
@@ -256,6 +281,9 @@ public class MaksuliikenneProcessor {
            
             // Creditor
             creditor.setNm(receiverName);
+            pstlAdr.setAdrLine(addresslines);
+            pstlAdr.setCtry(country);
+            creditor.setPstlAdr(pstlAdr);
             
             // Creditor account
             accountIdentification.setIban(iban);
@@ -302,55 +330,5 @@ public class MaksuliikenneProcessor {
         totalAmounts.put("totalSumOfPmts", totalSumOfPmts);
 
         return totalAmounts;
-    }
-
-    public void deleteSFTPDirectoryRecursively(Exchange ex) throws JSchException, SftpException {
-        String directoryPath = ex.getIn().getHeader("directoryPath", String.class);  // Directory to delete
-        String hostname = ex.getIn().getHeader("hostname", String.class);
-        String username = ex.getIn().getHeader("username", String.class);
-        String password = ex.getIn().getHeader("password", String.class);
-    
-        JSch jsch = new JSch();
-        Session session = jsch.getSession(username, hostname, 22);
-        session.setPassword(password);
-        session.setConfig("StrictHostKeyChecking", "no");
-        session.connect();
-    
-        ChannelSftp sftpChannel = (ChannelSftp) session.openChannel("sftp");
-        sftpChannel.connect();
-    
-        // Recursively delete all files and directories within the specified directory
-        deleteDirectoryContents(sftpChannel, directoryPath);
-    
-        // Finally, delete the empty directory itself
-        sftpChannel.rmdir(directoryPath);
-    
-        // Disconnect after the operation
-        sftpChannel.disconnect();
-        session.disconnect();
-    }
-    
-    private void deleteDirectoryContents(ChannelSftp sftpChannel, String directoryPath) throws SftpException {
-        // List all files and directories in the given directory
-        List<ChannelSftp.LsEntry> entries = sftpChannel.ls(directoryPath);
-        
-        for (ChannelSftp.LsEntry entry : entries) {
-            String filename = entry.getFilename();
-            // Skip "." and ".." directories
-            if (!filename.equals(".") && !filename.equals("..")) {
-                String fullPath = directoryPath + "/" + filename;
-                if (entry.getAttrs().isDir()) {
-                    // Recursively delete subdirectory
-                    deleteDirectoryContents(sftpChannel, fullPath);
-                    sftpChannel.rmdir(fullPath);  // Remove the subdirectory
-                } else {
-                    // Delete the file
-                    sftpChannel.rm(fullPath);
-                }
-            }
-        }
-    }
-    
+    }   
 }
-
-
