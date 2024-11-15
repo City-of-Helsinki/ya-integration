@@ -62,6 +62,9 @@ public class KirjanpitoProcessor {
     @ConfigProperty(name = "MAKSULIIKENNE_KIRJANPITO_PAAKIRJATILI_TOJT", defaultValue= "glAccountTojt")
     String glAccountTojt;
 
+    @ConfigProperty(name = "MAKSULIIKENNE_KIRJANPITO_PAAKIRJATILI_KREDIT", defaultValue= "glAccountCredit")
+    String glAccountCredit;
+
     @ConfigProperty(name = "MAKSULIIKENNE_KIRJANPITO_COMPANYCODE", defaultValue= "companyCode")
     String companyCode;
 
@@ -90,7 +93,8 @@ public class KirjanpitoProcessor {
 
             SBO_SimpleAccountingContainer simpleAccountingcontainer = new SBO_SimpleAccountingContainer();
             SBO_SimpleAccounting simpleAccounting = new SBO_SimpleAccounting();
-            LineItemType lineItemType = new LineItemType();
+            LineItemType lineItemTypeDebit = new LineItemType();
+            LineItemType lineItemTypeCredit = new LineItemType();
             List<LineItemType> lineItemTypes = new ArrayList<>();
             List<SBO_SimpleAccounting> sbo_SimpleAccountings = new ArrayList<>();
             
@@ -133,7 +137,8 @@ public class KirjanpitoProcessor {
                 vatCode = vatCode.substring(vatCode.length() - 2);
             }
 
-            lineItemType.setTaxCode(vatCode);
+            // Debit row:
+            lineItemTypeDebit.setTaxCode(vatCode);
 
             double sum = (double) body.get("grossSum");
             System.out.println("sum :: " + sum);
@@ -141,12 +146,12 @@ public class KirjanpitoProcessor {
             
             sumAsString = sumAsString.replaceAll("\\.", ",");
             System.out.println("sumAsString :: " + sumAsString);
-            lineItemType.setAmountInDocumentCurrency(sumAsString);
+            lineItemTypeDebit.setAmountInDocumentCurrency(sumAsString);
 
             String ourRefence = (String) body.get("ourReference");
             String cutOurReference = ourRefence.length() > 50 ? ourRefence.substring(0, 50) : ourRefence;
 
-            lineItemType.setLineText(cutOurReference);
+            lineItemTypeDebit.setLineText(cutOurReference);
 
             // TODO: hae kumppanikoodilistaus verkkoasemalta
             /* String filePath = "src/main/resources/kumppanikoodilistaus 16.8.2024.xlsx";
@@ -163,22 +168,28 @@ public class KirjanpitoProcessor {
                 lineItemType.setTradingPartner(partnerCode);
             } */
 
-            lineItemType.setTradingPartner(EMPTY);
+            lineItemTypeDebit.setTradingPartner(EMPTY);
 
             // kirjaustunniste (sisäinen tilaus), pituus 10 numeroa, pakollinen
             // mäpätään claimTypen perusteella
             String orderItemNumber = getOrderItemNumber(claimType);
-            lineItemType.setOrderItemNumber(orderItemNumber);
+            lineItemTypeDebit.setOrderItemNumber(orderItemNumber);
             
             // SAP pääkirjatili (6 numeroa) -> pääkirjatili (tulos), pakollinen
             // mäpätään claimTypen perusteella
             String glAccount = getGlAccount(claimType);
-            lineItemType.setGlAccount(glAccount);
-            
-            // SAP- tulosyksikkö (7 numeroa), pakollinen
-            lineItemType.setProfitCenter(profitCenter);
+            lineItemTypeDebit.setGlAccount(glAccount);
 
-            lineItemTypes.add(lineItemType);
+            // Credit row:
+            lineItemTypeCredit.setAmountInDocumentCurrency("-" + sumAsString);
+            lineItemTypeCredit.setLineText(cutOurReference);
+            lineItemTypeCredit.setGlAccount(glAccountCredit);
+            // SAP- tulosyksikkö (7 numeroa), pakollinen
+            lineItemTypeCredit.setProfitCenter(profitCenter);
+
+
+            lineItemTypes.add(lineItemTypeDebit);
+            lineItemTypes.add(lineItemTypeCredit);
             simpleAccounting.setLineItem(lineItemTypes);
             sbo_SimpleAccountings.add(simpleAccounting);
             simpleAccountingcontainer.setSboSimpleAccounting(sbo_SimpleAccountings);
