@@ -463,7 +463,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                 + "&delay=30000"
                 + "&antInclude=YA_p24_091_20241031*"
             )
-            .autoStartup("{{SEND_JSONFILES_AUTOSTARTUP}}")
+            .autoStartup("{{TEST_SEND_JSONFILES_AUTOSTARTUP}}")
             .log("Sending json file :: ${header.CamelFileName}")
             .bean(this, "sendJsonFileByEmail")
         ;   
