@@ -12,6 +12,7 @@ import java.util.Vector;
 import org.apache.camel.Exchange;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.builder.RouteBuilder;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
@@ -277,10 +278,17 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         return directoryNames;
     }
 
-    private final String RECIPIENTS = "{{TEST_EMAIL_RECIPIENTS}}";
-    private final String MAIL_SMTP_HOST = "{{MAIL_SMTP_HOST}}";
-    private final String MAIL_SMTP_PORT = "{{MAIL_SMTP_PORT}}";
-    private final String MAIL_SMTP_SENDER = "{{MAIL_SMTP_SENDER}}";
+    @ConfigProperty(name="TEST_EMAIL_RECIPIENTS", defaultValue = "recipient")
+    String recipients;
+
+    @ConfigProperty(name="MAIL_SMTP_HOST", defaultValue = "host")
+    String host;
+
+    @ConfigProperty(name="MAIL_SMTP_PORT", defaultValue = "port")
+    String port;
+
+    @ConfigProperty(name="MAIL_SMTP_SENDER", defaultValue = "sender")
+    String sender;
 
     public void sendJsonFileByEmail(Exchange ex) {
         try {
@@ -290,19 +298,19 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             String filename = (String) ex.getIn().getHeader("CamelFileName"); 
             byte[] fileContent = ex.getIn().getBody(byte[].class);
             
-            System.out.println("Sending email to " + RECIPIENTS);
+            System.out.println("Sending email to " + recipients);
     
             Properties prop = new Properties();
             prop.put("mail.smtp.starttls.enable", "true");
-            prop.put("mail.smtp.host", MAIL_SMTP_HOST);
-            prop.put("mail.smtp.port", MAIL_SMTP_PORT);
+            prop.put("mail.smtp.host", host);
+            prop.put("mail.smtp.port", port);
     
             jakarta.mail.Session session = jakarta.mail.Session.getInstance(prop);
     
             // Create the email message
             Message message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(MAIL_SMTP_SENDER));
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(RECIPIENTS));
+            message.setFrom(new InternetAddress(sender));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipients));
             message.setSubject(messageSubject);
     
             // Create a multipart message for attachment
@@ -464,6 +472,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                 + "&antInclude=YA_p24_091_20241031*"
             )
             .autoStartup("{{TEST_SEND_JSONFILES_AUTOSTARTUP}}")
+            .setHeader("messageSubject", simple("kipa json file"))
+            .setHeader("emailMessage", simple("This is a test file from Kipa"))
             .log("Sending json file :: ${header.CamelFileName}")
             .bean(this, "sendJsonFileByEmail")
         ;   
