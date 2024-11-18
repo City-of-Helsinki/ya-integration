@@ -23,6 +23,11 @@ import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
 import io.sentry.Sentry;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.mail.*;
+import jakarta.mail.internet.*;
+import jakarta.mail.util.ByteArrayDataSource;
+import jakarta.activation.*;
+import java.util.Properties;
 
 // These routes are for testing (e.g.connections)
 @ApplicationScoped
@@ -54,9 +59,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         try {
             // Setup JSch session
             JSch jsch = new JSch();
-            session = jsch.getSession(username, hostname, port);  // Use port from headers, default to 22
+            session = jsch.getSession(username, hostname, port);
             session.setPassword(password);
-            session.setConfig("StrictHostKeyChecking", "no");   // Disable host key checking for testing
+            session.setConfig("StrictHostKeyChecking", "no");   
             
             // Configure algorithms for compatibility with the server
             java.util.Properties config = new java.util.Properties();
@@ -64,7 +69,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             config.put("server_host_key", "ssh-rsa");
             session.setConfig(config);
             
-            session.connect();  // Connect to the SFTP server
+            session.connect();
 
             if (session.isConnected()) {
                 System.out.println("Session connected successfully to " + hostname + ":" + port);
@@ -272,6 +277,63 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         return directoryNames;
     }
 
+    private final String RECIPIENTS = "{{TEST_EMAIL_RECIPIENTS}}";
+    private final String MAIL_SMTP_HOST = "{{MAIL_SMTP_HOST}}";
+    private final String MAIL_SMTP_PORT = "{{MAIL_SMTP_PORT}}";
+    private final String MAIL_SMTP_SENDER = "{{MAIL_SMTP_SENDER}}";
+
+    public void sendJsonFileByEmail(Exchange ex) {
+        try {
+            // Retrieve the email parameters
+            String messageSubject = (String) ex.getIn().getHeader("messageSubject");
+            String emailMessage = (String) ex.getIn().getHeader("emailMessage");
+            String filename = (String) ex.getIn().getHeader("CamelFileName"); 
+            byte[] fileContent = ex.getIn().getBody(byte[].class);
+            
+            System.out.println("Sending email to " + RECIPIENTS);
+    
+            Properties prop = new Properties();
+            prop.put("mail.smtp.starttls.enable", "true");
+            prop.put("mail.smtp.host", MAIL_SMTP_HOST);
+            prop.put("mail.smtp.port", MAIL_SMTP_PORT);
+    
+            jakarta.mail.Session session = jakarta.mail.Session.getInstance(prop);
+    
+            // Create the email message
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(MAIL_SMTP_SENDER));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(RECIPIENTS));
+            message.setSubject(messageSubject);
+    
+            // Create a multipart message for attachment
+            Multipart multipart = new MimeMultipart();
+    
+            // Add the email message as the text part
+            MimeBodyPart textBodyPart = new MimeBodyPart();
+            textBodyPart.setText(emailMessage, "utf-8", "html");
+            multipart.addBodyPart(textBodyPart);
+    
+            // Add the attachment
+            MimeBodyPart attachmentBodyPart = new MimeBodyPart();
+            DataSource source = new ByteArrayDataSource(fileContent, "application/json"); // Set MIME type to JSON
+            attachmentBodyPart.setDataHandler(new DataHandler(source));
+            attachmentBodyPart.setFileName(filename); // Set the attachment filename
+            multipart.addBodyPart(attachmentBodyPart);
+    
+            // Set the content of the email
+            message.setContent(multipart);
+    
+            // Send the email
+            Transport.send(message);
+            System.out.println("Email sent successfully with JSON attachment.");
+    
+        } catch (Exception e) {
+            log.error("An error occurred while sending email: ", e);
+            e.printStackTrace();
+            ex.setException(e);
+        }
+    }
+
     @Inject
     MaksuliikenneProcessor mlProcessor;
 
@@ -393,8 +455,20 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .log("Value set in Redis with key ${header.key}")
             .bean("redisProcessor", "get(${header.key})")
             .log("Retrieved Redis value: ${body}")
-            
         ;
+
+        from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}"
+                + "&password={{KIPA_SFTP_PASSWORD_P24}}"
+                + "&strictHostKeyChecking=no"
+                + "&delay=30000"
+                + "&antInclude=YA_p24_091_20241031*"
+            )
+            .autoStartup("{{SEND_JSONFILES_AUTOSTARTUP}}")
+            .log("Sending json file :: ${header.CamelFileName}")
+            .bean(this, "sendJsonFileByEmail")
+        ;   
+
+
     }     
 }
 
