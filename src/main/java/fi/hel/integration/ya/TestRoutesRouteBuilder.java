@@ -227,10 +227,10 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         String hostname = ex.getIn().getHeader("hostname", String.class);
         String username = ex.getIn().getHeader("username", String.class);
         String password = ex.getIn().getHeader("password", String.class);
-        String privateKey = ex.getIn().getHeader("privateKey", String.class);
+        String privateKeyEncoded = ex.getIn().getHeader("privateKey", String.class);
+        String privateKey = new String(Base64.getDecoder().decode(privateKeyEncoded));
 
         java.util.Properties sftpConfig = ex.getIn().getHeader("sftp_config", java.util.Properties.class);
-
 
         // Check for missing or invalid headers
         if (directoryPath == null || hostname == null || username == null || (password == null && privateKey == null)) {
