@@ -227,12 +227,14 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         String hostname = ex.getIn().getHeader("hostname", String.class);
         String username = ex.getIn().getHeader("username", String.class);
         String password = ex.getIn().getHeader("password", String.class);
+        String privateKey = ex.getIn().getHeader("privateKey", String.class);
+
         java.util.Properties sftpConfig = ex.getIn().getHeader("sftp_config", java.util.Properties.class);
 
 
         // Check for missing or invalid headers
-        if (directoryPath == null || hostname == null || username == null || password == null) {
-            throw new IllegalArgumentException("Missing one or more required SFTP headers (directoryPath, hostname, username, password).");
+        if (directoryPath == null || hostname == null || username == null || (password == null && privateKey == null)) {
+            throw new IllegalArgumentException("Missing one or more required SFTP headers (directoryPath, hostname, username, and either password or privateKey.");
         }
 
         List<String> directoryNames = new ArrayList<>();
@@ -242,8 +244,17 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         try {
             // Create JSch session and set config
             JSch jsch = new JSch();
+
+            if (privateKey != null) {
+                jsch.addIdentity(privateKey);
+            }
+            
             session = jsch.getSession(username, hostname, 22);
-            session.setPassword(password);
+
+            if (privateKey == null && password != null) {
+                session.setPassword(password);
+            }
+
             if (sftpConfig != null && !sftpConfig.isEmpty()) {
                 session.setConfig(sftpConfig); 
             }
@@ -262,9 +273,11 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                     directoryNames.add(file.getFilename());
                 }
             }
+        
         } catch (JSchException | SftpException e) {
             // Log and wrap the exception
             throw new RuntimeCamelException("SFTP operation failed: " + e.getMessage(), e);
+        
         } finally {
             // Properly close resources
             if (channelSftp != null && channelSftp.isConnected()) {
@@ -383,8 +396,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("hostname").simple("{{AHR_SFTP_HOST}}")
             .setHeader("username").simple("{{AHR_SFTP_USER}}")
             .setHeader("privateKey").simple("{{AHR_SFTP_PRIVATEKEY}}")
-            .bean(this, "testSFTPConnectionWithPrivateKey")
-            
+            .setHeader("directoryPath").simple("{{AHR_DIRECTORY_PATH}}")
+            .to("direct:fetchDirectoriesFromSftp")            
         ;
 
         from("timer://testSapSftp?repeatCount=1&delay=5000")
