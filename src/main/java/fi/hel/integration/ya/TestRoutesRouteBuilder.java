@@ -415,13 +415,13 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .to("direct:fetchFileNamesFromSftp")
         ;
 
-        from("timer://testP23Route?repeatCount=1")
-            .autoStartup("{{MAKSULIIKENNE_P23_TESTROUTE_AUTOSTARTUP}}")
-            .log("Starting kipa P23 test route")
+        from("timer://testP22Route?repeatCount=1")
+            .autoStartup("{{STARTTIRAHA_P22_TESTROUTE_AUTOSTARTUP}}")
+            .log("Starting kipa P22 test route")
             .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
-            .setHeader("username").simple("{{KIPA_SFTP_USER_P23}}")
-            .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P23}}")
-            .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P23}}")
+            .setHeader("username").simple("{{KIPA_SFTP_USER_P22}}")
+            .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P22}}")
+            .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P22}}")
             .to("direct:fetchFileNamesFromSftp")
             //.to("direct:fetchDirectoriesFromSftp")
         ;
