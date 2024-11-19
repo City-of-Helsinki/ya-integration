@@ -246,12 +246,12 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             JSch jsch = new JSch();
 
             if (privateKey != null) {
-                jsch.addIdentity(privateKey);
+                jsch.addIdentity("sftp-identity", privateKey.getBytes(), null, null);
             }
             
             session = jsch.getSession(username, hostname, 22);
 
-            if (privateKey == null && password != null) {
+            if (password != null) {
                 session.setPassword(password);
             }
 
