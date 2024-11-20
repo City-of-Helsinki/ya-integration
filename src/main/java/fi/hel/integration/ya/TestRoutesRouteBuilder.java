@@ -486,6 +486,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                 + "noop=true"
             )
             .autoStartup("{{TEST_SEND_JSONFILES_AUTOSTARTUP}}")
+            .log("Start route to fetch and send json files via email")
             .setHeader("messageSubject", simple("kipa json file"))
             .setHeader("emailMessage", simple("This is a test file from Kipa"))
             .log("Sending json file :: ${header.CamelFileName}")
