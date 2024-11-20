@@ -485,7 +485,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                 + "&antInclude=YA_p22_091_202410*"
                 + "noop=true"
             )
-            .autoStartup("{{TEST_SEND_JSONFILES_AUTOSTARTUP}}")
+            .autoStartup(true)
+            .routeId("kipa-fetch-files")
             .log("Start route to fetch and send json files via email")
             .setHeader("messageSubject", simple("kipa json file"))
             .setHeader("emailMessage", simple("This is a test file from Kipa"))
