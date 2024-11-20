@@ -482,8 +482,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                 + "&password={{KIPA_SFTP_PASSWORD_P22}}"
                 + "&strictHostKeyChecking=no"
                 + "&delay=30000"
-                + "&antInclude=YA_p22_091_202410*"
-                + "noop=true"
+                + "&noop=true"
+                + "&antInclude=YA_p22_091_202410*" 
             )
             .autoStartup("{{TEST_SEND_JSONFILES_AUTOSTARTUP}}")
             .routeId("kipa-fetch-files")
