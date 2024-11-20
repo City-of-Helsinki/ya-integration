@@ -478,20 +478,18 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .log("Retrieved Redis value: ${body}")
         ;
 
-        from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}"
-                + "&password={{KIPA_SFTP_PASSWORD_P24}}"
+        from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P22}}?username={{KIPA_SFTP_USER_P22}}"
+                + "&password={{KIPA_SFTP_PASSWORD_P22}}"
                 + "&strictHostKeyChecking=no"
                 + "&delay=30000"
-                + "&antInclude=YA_p24_091_20241031*"
+                + "&antInclude=YA_p22_091_202410*"
+                + "noop=true"
             )
             .autoStartup("{{TEST_SEND_JSONFILES_AUTOSTARTUP}}")
             .setHeader("messageSubject", simple("kipa json file"))
             .setHeader("emailMessage", simple("This is a test file from Kipa"))
             .log("Sending json file :: ${header.CamelFileName}")
             .bean(this, "sendJsonFileByEmail")
-        ;   
-
-
+        ;
     }     
 }
-
