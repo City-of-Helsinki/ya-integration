@@ -46,6 +46,7 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
         "startDate",
         "endDate",
         "taxAmount",
+        "seizedAmount",
         "paymentDate2",
         "paymentDate3",
         "decisionNumber"
@@ -53,8 +54,7 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
 
     private static final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>";
     private static final String SCHEMA_FILE = "schema/tulorekisteri/BenefitReportsToIR.xsd";
-    private static final int COLUMNS = 10;
-    private static final int EMPTY_COLUMNS = 0;
+    private static final int COLUMNS = 11;
 
     @Override
     public void configure() throws Exception {
@@ -78,7 +78,8 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
 
         from("direct:tulorekisteri.controller")
             .log("file name :: ${header.CamelFileName}")
-            .bean(csvValidator, "validateCsv(*," + COLUMNS + "," + EMPTY_COLUMNS + ")")
+            .setHeader("columns", constant(COLUMNS))
+            .bean(csvValidator, "validateCsv(*)")
             .log("IS CSV VALID :: ${header.isCsvValid}")
             .to("direct:create-map")
             .bean(trProcessor, "mapIncomeRegisterData")

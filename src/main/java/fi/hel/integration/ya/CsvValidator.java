@@ -20,16 +20,17 @@ import jakarta.inject.Named;
 @Named("csvValidator")
 public class CsvValidator {
     
-     public void validateCsv(Exchange ex, int columns, int emptyColumns) {
+     public void validateCsv(Exchange ex) {
         String csvContent = ex.getIn().getBody(String.class);
+        Integer expectedColumnCount = ex.getIn().getHeader("columns", Integer.class);
+        Integer expectedEmptyFieldsCount = ex.getIn().getHeader("emptyColumns", Integer.class);
+
+        System.out.println("EMPTY COLUMNS :: " + expectedEmptyFieldsCount);
 
         CSVParser parser = new CSVParserBuilder().withSeparator(';').build();
 
         try (BufferedReader bufferedReader = new BufferedReader(new StringReader(csvContent));
                 CSVReader reader = new CSVReaderBuilder(bufferedReader).withCSVParser(parser).build()) {
-
-            int expectedColumnCount = columns;
-            int expectedEmptyFieldsCount = emptyColumns;
 
             String[] line;
             int lineNumber = 0;
@@ -43,17 +44,15 @@ public class CsvValidator {
                     
                 }
 
-                int emptyFieldCount = (int) Arrays.stream(line).filter(String::isEmpty).count();
-            
-                //System.out.println("Empty fields :: " + emptyFieldCount);
-                // Validate the number of empty fields
-                if (emptyFieldCount != expectedEmptyFieldsCount) {
-                    throw new IllegalArgumentException("Line " + lineNumber + " does not have the expected number of empty fields. Found " + emptyFieldCount + " empty fields.");
+                if (expectedEmptyFieldsCount != null) {
+                    int emptyFieldCount = (int) Arrays.stream(line).filter(String::isEmpty).count();
+                    if (emptyFieldCount != expectedEmptyFieldsCount) {
+                        throw new IllegalArgumentException("Line " + lineNumber + " does not have the expected number of empty fields. Found " + emptyFieldCount + " empty fields.");
+                    }
                 }
             }
 
             ex.getIn().setHeader("isCsvValid", true);
-
     
         } catch (IOException | CsvValidationException | IllegalArgumentException e) {
             e.printStackTrace();
