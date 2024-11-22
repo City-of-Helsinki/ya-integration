@@ -26,6 +26,8 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
 
     private final int PERSONALDATACOLUMNS = 29;
     private final int PERSONALDATAEMPTYCOLUMNS = 19;
+    private final int PAYROLLDATACOLUMNS = 8;
+    private final int PAYROLLDATAEMPTYCOLUMNS = 3;
     
     @Override
     public void configure() throws Exception {
@@ -41,40 +43,56 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
             .handled(true) // The error is not passed on to other error handlers.
             .stop(); // Stop routing processing for this error.
 
-        from("direct:sr-controller")
+        from("direct:starttiraha-controller")
             .multicast().stopOnException().parallelProcessing(false)
-                .to("direct:sr-controller.processPersonalData")
-                .to("direct:sr-controller.processPayrollTransaction")
+                .to("direct:processPersonalData")
+                .to("direct:processPayrollTransaction")
             .end()
         ;
 
         // Henkilötietojen käsittely
-        from("direct:sr-controller.processPersonalData")
+        from("direct:processPersonalData")
             .log("process body :: ${body}")
             .unmarshal(new JacksonDataFormat())
             .bean(srProcessor, "createPersonalInfoMap")
             .marshal(csv)
             .setHeader(Exchange.FILE_NAME, simple("starttiraha_henkilotieto_testi_${date-with-timezone:now:Europe/Helsinki:yyyyMMddHHmmss}.csv"))
-            .log("personalData body :: ${body}")
+            //.log("personalData body :: ${body}")
             .bean(csvValidator, "validateCsv(*," + PERSONALDATACOLUMNS + "," + PERSONALDATAEMPTYCOLUMNS + ")")
             .log("IS CSV VALID :: ${header.isCsvValid}")
-            //.to("mock:processPersonalData.result")
-            .to(sendCsv)
+            .choice()
+                .when(simple("${header.isCsvValid} == 'true'"))
+                    .log("csv is valid")
+                    //.to("mock:processPersonalData.result")
+                    //.to(sendCsv)
+                    .log("personal data csv :: ${body}")
+                .otherwise()
+                    .log("CSV is not valid, ${header.CamelFileName}")
+            
         ;
 
         // Palkkatapahtumien käsittely
-        from("direct:sr-controller.processPayrollTransaction")
+        from("direct:processPayrollTransaction")
             //.log("Received message: ${body}")
             .unmarshal(new JacksonDataFormat())
             .bean(srProcessor, "createPayrollTransactionMap")
             .marshal(csv)
             .setHeader(Exchange.FILE_NAME, simple("starttiraha_palkkatapahtuma_testi_${date-with-timezone:now:Europe/Helsinki:yyyyMMddHHmmss}.csv"))
+            .bean(csvValidator, "validateCsv(*," + PAYROLLDATACOLUMNS + "," + PAYROLLDATAEMPTYCOLUMNS + ")")
             //.log("payroll body :: ${body}")
-            .to(sendCsv)
+            .log("IS CSV VALID :: ${header.isCsvValid}")
+            .choice()
+                .when(simple("${header.isCsvValid} == 'true'"))
+                    .log("csv is valid")
+                    //.to("mock:processPersonalData.result")
+                    .log("payroll data csv :: ${body}")
+                    //.to(sendCsv)
+                .otherwise()
+                    .log("CSV is not valid, ${header.CamelFileName}")   
         ;
 
         from("direct:out.starttiraha")
-            .to("file:outbox/starttiraha")
+            //.to("file:outbox/starttiraha")
         ;
     }
 }
