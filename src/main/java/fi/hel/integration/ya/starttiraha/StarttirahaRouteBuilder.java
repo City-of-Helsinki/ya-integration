@@ -93,6 +93,7 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
 
         from("direct:out.starttiraha")
             //.to("file:outbox/starttiraha")
+            .log("Send the csv file to AHR")
         ;
     }
 }
