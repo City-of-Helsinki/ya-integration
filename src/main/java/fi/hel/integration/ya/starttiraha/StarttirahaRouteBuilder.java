@@ -107,7 +107,7 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
                 ex.setProperty("privateKey", privateKeyBytes);
                 
             })
-            .toD("sftp:{{ahr_sftp_host}}:22/In?username={{AHR_SFTP_USER}}&privateKey=${exchangeProperty.privateKey}&preferredAuthentication=publickey&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no&noop=true&useUserKnownHostsFile=false")
+            .toD("sftp:{{ahr_sftp_host}}:22/In?username={{AHR_SFTP_USER}}&privateKey=${exchangeProperty.privateKey}&preferredAuthentications=publickey&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no&noop=true&useUserKnownHostsFile=false")
             .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
         ;
     }
