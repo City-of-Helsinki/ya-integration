@@ -79,7 +79,7 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
                 + "&scheduler.cron={{STARTTIRAHA_QUARTZ_TIMER}}" 
-                + "&antInclude=YA_p22_091_20241031*"
+                + "&antInclude=YA_p22_091_2024103*"
             )   
             .routeId("kipa-P22") 
             .autoStartup("{{STARTTIRAHA_IN_AUTOSTARTUP}}")

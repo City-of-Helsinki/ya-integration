@@ -1,5 +1,7 @@
 package fi.hel.integration.ya.starttiraha;
 
+import java.util.Base64;
+
 import org.apache.camel.Endpoint;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
@@ -66,8 +68,8 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
                 .when(simple("${header.isCsvValid} == 'true'"))
                     .log("csv is valid")
                     //.to("mock:processPersonalData.result")
-                    //.to(sendCsv)
-                    .log("personal data csv :: ${body}")
+                    .to(sendCsv)
+                    //.log("personal data csv :: ${body}")
                 .otherwise()
                     .log("CSV is not valid, ${header.CamelFileName}")
             
@@ -89,15 +91,24 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
                 .when(simple("${header.isCsvValid} == 'true'"))
                     .log("csv is valid")
                     //.to("mock:processPersonalData.result")
-                    .log("payroll data csv :: ${body}")
-                    //.to(sendCsv)
+                    //.log("payroll data csv :: ${body}")
+                    .to(sendCsv)
                 .otherwise()
                     .log("CSV is not valid, ${header.CamelFileName}")   
         ;
 
         from("direct:out.starttiraha")
+            .log("Sending the csv file to AHR")
             //.to("file:outbox/starttiraha")
-            .log("Send the csv file to AHR")
+            .setHeader("privateKeyEncoded", simple("{{AHR_SFTP_PRIVATEKEY}}"))
+            .process(ex -> {
+                String privateKeyEncoded = ex.getIn().getHeader("privateKeyEncoded", String.class);
+                byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyEncoded);
+                ex.getIn().setHeader("privateKey", privateKeyBytes);
+                
+            })
+            .to("sftp:{{ahr_sftp_host}}:22/In?username={{AHR_SFTP_USER}}&privateKey=${header.privateKey}&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no")
+            .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
         ;
     }
 }
