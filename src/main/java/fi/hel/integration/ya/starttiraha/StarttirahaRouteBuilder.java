@@ -99,15 +99,11 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
 
         from("direct:out.starttiraha")
             .log("Sending the csv file to AHR")
-            //.to("file:outbox/starttiraha")
-            .setHeader("privateKeyEncoded", simple("{{AHR_SFTP_PRIVATEKEY}}"))
-            .process(ex -> {
-                String privateKeyEncoded = ex.getIn().getHeader("privateKeyEncoded", String.class);
-                byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyEncoded);
-                ex.setProperty("privateKey", privateKeyBytes);
-                
-            })
-            .toD("sftp:{{ahr_sftp_host}}:22/In?username={{AHR_SFTP_USER}}&privateKey=${exchangeProperty.privateKey}&preferredAuthentications=publickey&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no&noop=true&useUserKnownHostsFile=false")
+            .setHeader("hostname").simple("{{AHR_SFTP_HOST}}")
+            .setHeader("username").simple("{{AHR_SFTP_USER}}")
+            .setHeader("privateKey").simple("{{AHR_SFTP_PRIVATEKEY}}")
+            .setHeader("directoryPath").simple("{{AHR_DIRECTORY_PATH}}")
+            .bean(srProcessor, "writeFileSftp(*)")
             .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
         ;
     }
