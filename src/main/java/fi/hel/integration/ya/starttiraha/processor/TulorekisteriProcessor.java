@@ -303,7 +303,11 @@ public class TulorekisteriProcessor {
 
             // List files in the directory
             Vector<ChannelSftp.LsEntry> fileList = channelSftp.ls(directoryPath);
-            if (fileList == null || fileList.isEmpty()) {
+            List<ChannelSftp.LsEntry> filesOnly = fileList.stream()
+                .filter(entry -> !entry.getAttrs().isDir()) // Exclude directories
+                .toList();
+
+            if (filesOnly == null || filesOnly.isEmpty()) {
                 log.infof("No files found in the directory: %s", directoryPath);
                 ex.getIn().setBody(""); // Set empty body
                 ex.getIn().setHeader(Exchange.FILE_NAME, null);
@@ -313,12 +317,12 @@ public class TulorekisteriProcessor {
             }
 
             // Check if there is only one file
-            if (fileList.size() != 1) {
-                throw new IllegalStateException("Expected exactly one file, but found: " + fileList.size());
+            if (filesOnly.size() != 1) {
+                throw new IllegalStateException("Expected exactly one file, but found: " + filesOnly.size());
             }
 
             // Fetch the only file
-            ChannelSftp.LsEntry fileEntry = fileList.get(0);
+            ChannelSftp.LsEntry fileEntry = filesOnly.get(0);
             String fileName = fileEntry.getFilename();
             String remoteFilePath = directoryPath + "/" + fileName;
 
