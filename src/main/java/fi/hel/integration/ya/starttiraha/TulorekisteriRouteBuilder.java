@@ -46,7 +46,7 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
         "startDate",
         "endDate",
         "taxAmount",
-        "seizedAmount",
+        "garnishmentAmount",
         "paymentDate2",
         "paymentDate3",
         "decisionNumber"
@@ -76,6 +76,20 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
             .to("direct:tulorekisteri.controller")
         ;
 
+        from("{{TULOREKISTERI_QUARTZ_TIMER}}")
+            .autoStartup("{{TULOREKISTERI_IN_AUTOSTARTUP}}")
+            .setHeader("hostname", simple("{{AHR_SFTP_HOST}}"))
+            .setHeader("username", simple("{{AHR_SFTP_USER}}"))
+            .setHeader("privateKey", simple("{{AHR_SFTP_PRIVATEKEY}}"))
+            .setHeader("directoryPath", constant("/Out"))
+            .bean(trProcessor, "fetchFileFromSftp")
+            .choice()
+                .when(simple("${body} != ''"))
+                    .log("Fetched file content: ${body}")
+                    .log("Fetched file name: ${header.CamelFileName}")
+                .otherwise()
+                    .log("No files found in the remote directory");
+
         from("direct:tulorekisteri.controller")
             .log("file name :: ${header.CamelFileName}")
             .setHeader("columns", constant(COLUMNS))
@@ -96,9 +110,11 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
         ;
 
         from("direct:out.tulorekisteri")
-            .to("file:outbox/starttiraha")
+            //.to("file:outbox/starttiraha")
+            .log("Sending tulorekisteri file to verkkolevy sftp")
+            .to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/ture?username={{VERKKOLEVY_SFTP_USER}}&password={{VERKKOLEVY_SFTP_PASSWORD}}&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no")
+            .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
         ;
-
 
         from("direct:create-map")
             .unmarshal(csv)

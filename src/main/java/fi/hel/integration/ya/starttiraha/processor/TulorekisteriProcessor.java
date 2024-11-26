@@ -1,13 +1,22 @@
 package fi.hel.integration.ya.starttiraha.processor;
 
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Vector;
 
 import org.apache.camel.Exchange;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
+
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Session;
 
 import fi.hel.integration.ya.Utils;
 import fi.hel.integration.ya.starttiraha.models.tulorekisteri.BenefitReportsRequestToIR;
@@ -61,7 +70,7 @@ public class TulorekisteriProcessor {
 
     private final int DELIVERY_DATATYPE = 102;
     private final int FAULTY_CONTROL = 1;
-    private final boolean PRODUCTION_ENVIRONMENT = true;
+    private final boolean PRODUCTION_ENVIRONMENT = false;
     private final int DELIVERY_DATA_OWNER_TYPE = 1;
     private final int DELIVERY_DATA_CREATOR_TYPE = 1;
     private final int DELIVERY_DATA_SENDER_TYPE = 1;
@@ -73,6 +82,7 @@ public class TulorekisteriProcessor {
     private final String DESIRED_DATE_FORMAT = "yyyy-MM-dd";
     private final int RESPONSIBILITY_CODE1 = 1;
     private final int RESPONSIBILITY_CODE2 = 2;
+    private final String TRANSACTIONCODEGARNISHMENT = "1269";
 
     private final String XMLNS_BRTIR = "http://www.tulorekisteri.fi/2017/1/BenefitReportsToIR";
     private final String XSI = "http://www.w3.org/2001/XMLSchema-instance";
@@ -92,8 +102,9 @@ public class TulorekisteriProcessor {
             if (payerId != null) {  
                payerId = payerId.replace("\uFEFF", ""); // Remove BOM character if present
             }
-            String deliveryId = utils.getCurrentTime("yyyy-MM-dd'T'HH:mm:ss");
+            String deliveryId = utils.getCurrentTime("yyyy-MM-dd'T'HH-mm-ss");
 
+            System.out.println("DELIVERY ID :: " + deliveryId);
             BenefitReportsRequestToIR benefitReportsRequestToIR = new BenefitReportsRequestToIR();
             DeliveryData deliveryData = new DeliveryData();
             DeliveryDataOwner deliveryDataOwner = new DeliveryDataOwner();
@@ -184,13 +195,21 @@ public class TulorekisteriProcessor {
             Id incomeEarnerId = new Id();
             PaymentTransaction transaction = new PaymentTransaction();
             PaymentTransaction transactionTax = new PaymentTransaction();
+            PaymentTransaction transactionGarnishment = new PaymentTransaction();
             TransactionBasic transactionBasic = new TransactionBasic();
             TransactionBasic transactionBasicTax = new TransactionBasic();
+            TransactionBasic transactionBasicGarnishment = new TransactionBasic();
             EarningPeriod earningPeriod = new EarningPeriod();
             EarningPeriod earningPeriodTax = new EarningPeriod();
+            EarningPeriod earningPeriodGarnishment = new EarningPeriod();
 
             reportData.setActionCode(REPORT_DATA_ACTION_CODE);
-            reportData.setReportId((String) payment.get("decisionNumber"));
+            String decisionNumber = (String) payment.get("decisionNumber");
+            decisionNumber = decisionNumber.replaceAll("/", "");
+            String date = (String) payment.get("startDate");
+            date = utils.convertDate(date, ORIGINAL_DATE_FORMAT, "ddMMyyyy");
+            String reportId = decisionNumber + date;
+            reportData.setReportId(reportId);
             
 
             List<Id> incomeEarnerIds = new ArrayList<>();
@@ -226,6 +245,23 @@ public class TulorekisteriProcessor {
             transactionTax.setEarningPeriod(earningPeriodTax);
             transactions.add(transactionTax);
 
+            String garnishmentAmount = (String) payment.get("garnishmentAmount");
+
+            System.out.println("Garnishment amount :: " + garnishmentAmount);
+
+            if(!garnishmentAmount.isEmpty()) {
+                transactionBasicGarnishment.setTransactionCode(TRANSACTIONCODEGARNISHMENT);
+                garnishmentAmount = garnishmentAmount.replaceAll(",", ".");
+                transactionBasicGarnishment.setAmount(garnishmentAmount);
+                transactionGarnishment.setTransactionBasic(transactionBasicGarnishment);
+                String paymentDate = (String) payment.get("paymentDate2");
+                paymentDate = utils.convertDate(paymentDate, ORIGINAL_DATE_FORMAT, DESIRED_DATE_FORMAT);
+                earningPeriodGarnishment.setStartDate(paymentDate);
+                earningPeriodGarnishment.setEndDate(paymentDate);
+                transactionGarnishment.setEarningPeriod(earningPeriodGarnishment);
+                transactions.add(transactionGarnishment);
+            }
+
             report.setIncomeEarner(incomeEarner);
             report.setReportData(reportData);
             report.setTransactions(transactions);
@@ -233,5 +269,86 @@ public class TulorekisteriProcessor {
         }
 
         return reports;
+    }
+
+    public void fetchFileFromSftp(Exchange ex) {
+        Session session = null;
+        ChannelSftp channelSftp = null;
+
+        try {
+            // Retrieve headers
+            String hostname = ex.getIn().getHeader("hostname", String.class);
+            String username = ex.getIn().getHeader("username", String.class);
+            String privateKeyEncoded = ex.getIn().getHeader("privateKey", String.class);
+            String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
+
+            // Decode private key
+            byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyEncoded);
+
+            // Initialize JSch and set the private key
+            JSch jsch = new JSch();
+            jsch.addIdentity("privateKey", privateKeyBytes, null, null);
+
+            // Create and configure the session
+            session = jsch.getSession(username, hostname, 22);
+
+            Properties config = new Properties();
+            config.put("StrictHostKeyChecking", "no"); // Disable host key checking for simplicity
+            session.setConfig(config);
+            session.connect();
+
+            // Open an SFTP channel
+            channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+
+            // List files in the directory
+            Vector<ChannelSftp.LsEntry> fileList = channelSftp.ls(directoryPath);
+            if (fileList == null || fileList.isEmpty()) {
+                log.infof("No files found in the directory: %s", directoryPath);
+                ex.getIn().setBody(""); // Set empty body
+                ex.getIn().setHeader(Exchange.FILE_NAME, null);
+                ex.getIn().setHeader("CamelFtpReplyCode", "204"); // 204 - No Content
+                ex.getIn().setHeader("CamelFtpReplyString", "No files found");
+                return;
+            }
+
+            // Check if there is only one file
+            if (fileList.size() != 1) {
+                throw new IllegalStateException("Expected exactly one file, but found: " + fileList.size());
+            }
+
+            // Fetch the only file
+            ChannelSftp.LsEntry fileEntry = fileList.get(0);
+            String fileName = fileEntry.getFilename();
+            String remoteFilePath = directoryPath + "/" + fileName;
+
+            // Download the file content
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            channelSftp.get(remoteFilePath, outputStream);
+            String fileContent = outputStream.toString("UTF-8"); // Adjust encoding if necessary
+
+            // Set the file content and name in the exchange
+            ex.getIn().setBody(fileContent);
+            ex.getIn().setHeader(Exchange.FILE_NAME, fileName);
+
+            ex.getIn().setHeader("CamelFtpReplyCode", "200");
+            ex.getIn().setHeader("CamelFtpReplyString", "File fetched successfully");
+
+            log.infof("File '%s' fetched successfully from directory: %s", fileName, directoryPath);
+
+        } catch (Exception e) {
+            log.error("Error during SFTP fetch: {}", e.getMessage(), e);
+            ex.setException(e);
+            ex.getIn().setHeader("CamelFtpReplyCode", "500");
+            ex.getIn().setHeader("CamelFtpReplyString", "Error during SFTP fetch");
+
+        } finally {
+            if (channelSftp != null) {
+                channelSftp.disconnect();
+            }
+            if (session != null) {
+                session.disconnect();
+            }
+        }
     }
 }
