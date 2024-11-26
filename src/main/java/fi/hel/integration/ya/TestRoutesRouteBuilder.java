@@ -196,10 +196,27 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         String hostname = ex.getIn().getHeader("hostname", String.class);
         String username = ex.getIn().getHeader("username", String.class);
         String password = ex.getIn().getHeader("password", String.class);
+        String privateKeyEncoded = ex.getIn().getHeader("privateKey", String.class);
+        String privateKey = null;
+        
+        if(privateKeyEncoded != null) {
+           privateKey = new String(Base64.getDecoder().decode(privateKeyEncoded));
+        }
+
+        // Check for missing or invalid headers
+        if (directoryPath == null || hostname == null || username == null || (password == null && privateKey == null)) {
+            throw new IllegalArgumentException("Missing one or more required SFTP headers (directoryPath, hostname, username, and either password or privateKey.");
+        }
 
         JSch jsch = new JSch();
+        if (privateKey != null) {
+            jsch.addIdentity("sftp-identity", privateKey.getBytes(), null, null);
+        }
+
         Session session = jsch.getSession(username, hostname, 22);
-        session.setPassword( password );
+        if (password != null) {
+            session.setPassword(password);
+        }
         session.setConfig("StrictHostKeyChecking", "no");
         session.connect();
 
@@ -401,7 +418,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{AHR_SFTP_USER}}")
             .setHeader("privateKey").simple("{{AHR_SFTP_PRIVATEKEY}}")
             .setHeader("directoryPath").simple("{{AHR_DIRECTORY_PATH}}")
-            .to("direct:fetchDirectoriesFromSftp")            
+            .to("direct:fetchFileNamesFromSftp")            
         ;
 
         from("timer://testSapSftp?repeatCount=1&delay=5000")
