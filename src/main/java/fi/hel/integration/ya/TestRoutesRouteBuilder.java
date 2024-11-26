@@ -228,7 +228,11 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         String username = ex.getIn().getHeader("username", String.class);
         String password = ex.getIn().getHeader("password", String.class);
         String privateKeyEncoded = ex.getIn().getHeader("privateKey", String.class);
-        String privateKey = new String(Base64.getDecoder().decode(privateKeyEncoded));
+        String privateKey = null;
+        
+        if(privateKeyEncoded != null) {
+           privateKey = new String(Base64.getDecoder().decode(privateKeyEncoded));
+        }
 
         java.util.Properties sftpConfig = ex.getIn().getHeader("sftp_config", java.util.Properties.class);
 
