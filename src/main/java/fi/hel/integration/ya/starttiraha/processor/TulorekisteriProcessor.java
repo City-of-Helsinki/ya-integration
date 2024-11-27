@@ -249,7 +249,7 @@ public class TulorekisteriProcessor {
 
             System.out.println("Garnishment amount :: " + garnishmentAmount);
 
-            if(!garnishmentAmount.isEmpty()) {
+            if(!garnishmentAmount.equals("0,00")) {
                 transactionBasicGarnishment.setTransactionCode(TRANSACTIONCODEGARNISHMENT);
                 garnishmentAmount = garnishmentAmount.replaceAll(",", ".");
                 transactionBasicGarnishment.setAmount(garnishmentAmount);
