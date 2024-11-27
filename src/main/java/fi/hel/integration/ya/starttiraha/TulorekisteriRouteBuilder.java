@@ -81,12 +81,13 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
             .setHeader("hostname", simple("{{AHR_SFTP_HOST}}"))
             .setHeader("username", simple("{{AHR_SFTP_USER}}"))
             .setHeader("privateKey", simple("{{AHR_SFTP_PRIVATEKEY}}"))
-            .setHeader("directoryPath", constant("/Out"))
+            .setHeader("directoryPath", simple("{{AHR_DIRECTORY_PATH}}"))
             .bean(trProcessor, "fetchFileFromSftp")
             .choice()
                 .when(simple("${body} != ''"))
                     .log("Fetched file content: ${body}")
                     .log("Fetched file name: ${header.CamelFileName}")
+                    //.to("direct:tulorekisteri.controller")
                 .otherwise()
                     .log("No files found in the remote directory");
 
@@ -112,8 +113,8 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
         from("direct:out.tulorekisteri")
             //.to("file:outbox/starttiraha")
             .log("Sending tulorekisteri file to verkkolevy sftp")
-            .to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/ture?username={{VERKKOLEVY_SFTP_USER}}&password={{VERKKOLEVY_SFTP_PASSWORD}}&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no")
-            .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
+            //.to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/ture?username={{VERKKOLEVY_SFTP_USER}}&password={{VERKKOLEVY_SFTP_PASSWORD}}&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no")
+            //.log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
         ;
 
         from("direct:create-map")

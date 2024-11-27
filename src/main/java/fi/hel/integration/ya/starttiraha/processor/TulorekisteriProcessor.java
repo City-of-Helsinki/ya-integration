@@ -302,29 +302,29 @@ public class TulorekisteriProcessor {
             channelSftp.connect();
 
             // List files in the directory
-            Vector<ChannelSftp.LsEntry> fileList = channelSftp.ls(directoryPath);
+            /* Vector<ChannelSftp.LsEntry> fileList = channelSftp.ls(directoryPath);
             List<ChannelSftp.LsEntry> filesOnly = fileList.stream()
                 .filter(entry -> !entry.getAttrs().isDir()) // Exclude directories
-                .toList();
+                .toList(); */
 
-            if (filesOnly == null || filesOnly.isEmpty()) {
+            /* if (filesOnly == null || filesOnly.isEmpty()) {
                 log.infof("No files found in the directory: %s", directoryPath);
                 ex.getIn().setBody(""); // Set empty body
                 ex.getIn().setHeader(Exchange.FILE_NAME, null);
                 ex.getIn().setHeader("CamelFtpReplyCode", "204"); // 204 - No Content
                 ex.getIn().setHeader("CamelFtpReplyString", "No files found");
                 return;
-            }
+            } */
 
             // Check if there is only one file
-            if (filesOnly.size() != 1) {
+            /* if (filesOnly.size() != 1) {
                 throw new IllegalStateException("Expected exactly one file, but found: " + filesOnly.size());
-            }
+            } */
 
             // Fetch the only file
-            ChannelSftp.LsEntry fileEntry = filesOnly.get(0);
-            String fileName = fileEntry.getFilename();
-            String remoteFilePath = directoryPath + "/" + fileName;
+            //ChannelSftp.LsEntry fileEntry = filesOnly.get(0);
+            //String fileName = fileEntry.getFilename();
+            String remoteFilePath = directoryPath + "/MepcoPro_Fuse_Starttiraha_tulorekisteri_2024-11-27T12-21-23.csv";
 
             // Download the file content
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -333,12 +333,12 @@ public class TulorekisteriProcessor {
 
             // Set the file content and name in the exchange
             ex.getIn().setBody(fileContent);
-            ex.getIn().setHeader(Exchange.FILE_NAME, fileName);
+            ex.getIn().setHeader(Exchange.FILE_NAME, "MepcoPro_Fuse_Starttiraha_tulorekisteri_2024-11-27T12-21-23.csv");
 
             ex.getIn().setHeader("CamelFtpReplyCode", "200");
             ex.getIn().setHeader("CamelFtpReplyString", "File fetched successfully");
 
-            log.infof("File '%s' fetched successfully from directory: %s", fileName, directoryPath);
+            log.infof("File '%s' fetched successfully from directory: %s", directoryPath);
 
         } catch (Exception e) {
             log.error("Error during SFTP fetch: {}", e.getMessage(), e);
