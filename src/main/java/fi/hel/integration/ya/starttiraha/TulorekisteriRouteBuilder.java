@@ -87,7 +87,7 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
                 .when(simple("${body} != ''"))
                     .log("Fetched file content: ${body}")
                     .log("Fetched file name: ${header.CamelFileName}")
-                    //.to("direct:tulorekisteri.controller")
+                    .to("direct:tulorekisteri.controller")
                 .otherwise()
                     .log("No files found in the remote directory");
 
@@ -105,8 +105,8 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
             .bean(xmlValidator, "validateXml(*," +  SCHEMA_FILE + ")")
             .log("is valid :: ${header.isXmlValid}")
             .setHeader(Exchange.FILE_NAME, simple("${header.CamelFileName.replaceAll('.csv$', '.xml')}"))
-            //.log("XML BODY :: ${body}")
-            .to(outTulorekisteriXml)
+            .log("XML BODY :: ${body}")
+            //.to(outTulorekisteriXml)
             
         ;
 
