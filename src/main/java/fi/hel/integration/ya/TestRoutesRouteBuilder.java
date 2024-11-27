@@ -418,8 +418,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{AHR_SFTP_USER}}")
             .setHeader("privateKey").simple("{{AHR_SFTP_PRIVATEKEY}}")
             .setHeader("directoryPath").simple("{{AHR_DIRECTORY_PATH}}")
-            .to("direct:fetchDirectoriesFromSftp")
-            //.to("direct:fetchFileNamesFromSftp")            
+            //.to("direct:fetchDirectoriesFromSftp")
+            .to("direct:fetchFileNamesFromSftp")            
         ;
 
         from("timer://testSapSftp?repeatCount=1&delay=5000")
