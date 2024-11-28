@@ -28,7 +28,6 @@
 				<xsd:simpleType>
 					<xsd:restriction base="xsd:string">
 						<xsd:maxLength value="2"/>
-						<xsd:minLength value="1"/>
 					</xsd:restriction>
 				</xsd:simpleType>
 			</xsd:element>
@@ -100,7 +99,6 @@
 				<xsd:simpleType>
 					<xsd:restriction base="xsd:string">
 						<xsd:maxLength value="10"/>
-						<xsd:minLength value="1"/>
 					</xsd:restriction>
 				</xsd:simpleType>
 			</xsd:element>
@@ -144,7 +142,6 @@
 				<xsd:simpleType>
 					<xsd:restriction base="xsd:string">
 						<xsd:maxLength value="10"/>
-						<xsd:minLength value="1"/>
 					</xsd:restriction>
 				</xsd:simpleType>
 			</xsd:element>
