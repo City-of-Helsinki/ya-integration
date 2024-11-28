@@ -1,18 +1,25 @@
 package fi.hel.integration.ya.maksuliikenne.processor;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.camel.Exchange;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
+
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Session;
 
 import fi.hel.integration.ya.Utils;
 import fi.hel.integration.ya.maksuliikenne.models.kirjanpitoSAP.LineItemType;
@@ -317,5 +324,63 @@ public class KirjanpitoProcessor {
         return glAccount;
 
     }
-}
 
+    public void writeFileSapSftp(Exchange ex) {
+        Session session = null;
+        ChannelSftp channelSftp = null;
+
+        try {
+            // Retrieve headers and body
+            String hostname = ex.getIn().getHeader("hostname", String.class);
+            String username = ex.getIn().getHeader("username", String.class);
+            String password = ex.getIn().getHeader("password", String.class); 
+            String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
+            String fileName = ex.getIn().getHeader(Exchange.FILE_NAME, String.class);
+            String body = ex.getIn().getBody(String.class);
+
+            // Initialize JSch and set the private key
+            JSch jsch = new JSch();
+
+            // Create and configure the session
+            session = jsch.getSession(username, hostname, 22);
+
+            Properties config = new Properties();
+            config.put("StrictHostKeyChecking", "no");
+            config.put("kex", "diffie-hellman-group1-sha1,diffie-hellman-group14-sha1");
+            config.put("server_host_key", "ssh-rsa");
+
+            session.setConfig(config);
+            session.setPassword(password);  
+            session.connect();
+
+            // Open an SFTP channel
+            channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+
+            // Upload the file as an InputStream
+            String remoteFilePath = directoryPath + fileName;
+            try (ByteArrayInputStream fileStream = new ByteArrayInputStream(body.getBytes())) {
+                channelSftp.put(fileStream, remoteFilePath);
+            }
+
+            ex.getIn().setHeader("CamelFtpReplyCode", "200");
+            ex.getIn().setHeader("CamelFtpReplyString", "File uploaded successfully");
+
+            log.infof("File uploaded successfully to %s: %s", directoryPath, fileName);
+
+        } catch (Exception e) {
+            log.error("Error during SFTP upload: {}", e.getMessage(), e);
+            ex.setException(e);
+            ex.getIn().setHeader("CamelFtpReplyCode", "500");
+            ex.getIn().setHeader("CamelFtpReplyString", "Error during SFTP upload");
+    
+        } finally {
+            if (channelSftp != null) {
+                channelSftp.disconnect();
+            }
+            if (session != null) {
+                session.disconnect();
+            }
+        }
+    }
+}

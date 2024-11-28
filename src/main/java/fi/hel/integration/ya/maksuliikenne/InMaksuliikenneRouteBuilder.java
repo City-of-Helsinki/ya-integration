@@ -62,7 +62,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     Sentry.captureException(cause);
                 });
 
-                //Sentry.flush(2000);
+                Sentry.flush(2000);
 
             })
             .log("JsonValidationException occurred: ${exception.message}")
@@ -90,7 +90,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
                 + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
-                + "&antInclude=YA_p24_091_20241031*"
+                + "&antInclude=YA_p24_091_20241030*"
             )   
             .routeId("kipa-P24") 
             .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
