@@ -2,9 +2,6 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "properties": {
-      "claimType": {
-        "type": "string"
-      },
       "delivery": {
         "type": "object",
         "properties": {
@@ -88,7 +85,7 @@
         "type": "object",
         "properties": {
           "profitCenterCode": {
-            "type": ["integer", "null"]
+            "type": "integer"
           },
           "bankAccount": {
             "type": "object",
@@ -114,14 +111,15 @@
                 "type": "string"
               }
             },
-            "required": ["firstName"]
+            "required": ["firstName", "lastName"]
           },
           "socialSecurityNumber": {
-            "type": ["string", "null"]
+            "type": ["string", "null"],
+            "maxLength": 11
           },
           "businessId": {
-            "type": ["string"],
-            "maxLength": 11
+            "type": "string",
+            "maxLength": 9
           },
           "postalAddress": {
             "type": "object",
@@ -133,7 +131,8 @@
                 }
               },
               "postalCode": {
-                "type": "string"
+                "type": "string",
+                "maxLength": 5
               },
               "postOffice": {
                 "type": "string"
@@ -146,7 +145,7 @@
             "required": ["addressLine", "postalCode", "postOffice", "country"]
           },
           "number": {
-            "type": "integer"
+            "type": ["integer", "null"]
           }
         },
         "required": ["profitCenterCode", "bankAccount", "name", "businessId", "postalAddress"]
@@ -164,10 +163,10 @@
                   "minimum": 0
                 },
                 "businessBookkeepingAccount": {
-                  "type": "integer"
+                  "type": ["integer", "null"]
                 },
                 "financeAssessmentAccount": {
-                  "type": "integer"
+                  "type": ["integer", "null"]
                 },
                 "followUpCode1": {
                   "type": ["integer", "null"]
@@ -185,10 +184,10 @@
                   "type": ["string", "null"]
                 },
                 "operationUnit": {
-                  "type": "integer"
+                  "type": ["integer", "null"]
                 },
                 "projectCode": {
-                  "type": "string"
+                  "type": ["string", "null"]
                 },
                 "municipalityCode": {
                   "type": "string",
@@ -213,10 +212,10 @@
         "type": "object",
         "properties": {
           "type": {
-            "type": "string"
+            "type": ["string", "null"]
           },
           "roadName": {
-            "type": "string"
+            "type": ["string", "null"]
           },
           "roadId": {
             "type": ["string", "null"]
@@ -228,14 +227,13 @@
             "type": "object",
             "properties": {
               "value": {
-                "type": "string"
+                "type": ["string", "null"]
               },
               "code": {
-                "type": "string",
+                "type": ["string", "null"],
                 "maxLength": 3
               }
-            },
-            "required": ["value", "code"]
+            }
           },
           "paymentDecisionRecordNumber": {
             "type": "string"
@@ -251,7 +249,7 @@
             "type": "object",
             "properties": {
               "value": {
-                "type": ["string", "null"]
+                "type": "string"
               },
               "code": {
                 "type": "integer",
@@ -440,6 +438,9 @@
       "version": {
         "type": "string"
       },
+      "claimType": {
+        "type": "string"
+      },
       "auraAccount": {
         "type": "string"
       },
@@ -455,12 +456,18 @@
         "maxLength": 3
       },
       "employmentMunicipality": {
-        "type": "string",
+        "type": ["string", "null"],
         "maxLength": 3
+      },
+      "payerBusinessId": {
+        "type": ["string", "null"],
+        "maxLength": 9
+      },
+      "acculturingStatus": {
+        "type": "boolean"
       }
     },
     "required": [
-      "claimType",
       "bizTalkPipe",
       "invoiceNumber",
       "invoiceDate",
@@ -473,11 +480,11 @@
       "posting",
       "view",
       "version",
+      "claimType",
       "auraAccount",
       "sectorIdentifier",
       "participantHomeMunicipality",
-      "recipientMunicipality",
-      "employmentMunicipality"
+      "recipientMunicipality"
     ]
   }
   
