@@ -249,7 +249,7 @@ public class TulorekisteriProcessor {
 
             System.out.println("Garnishment amount :: " + garnishmentAmount);
 
-            if(!garnishmentAmount.equals("0,00")) {
+            if(!garnishmentAmount.equals("0,00") && !garnishmentAmount.equals("0")) {
                 transactionBasicGarnishment.setTransactionCode(TRANSACTIONCODEGARNISHMENT);
                 garnishmentAmount = garnishmentAmount.replaceAll(",", ".");
                 transactionBasicGarnishment.setAmount(garnishmentAmount);
@@ -355,4 +355,48 @@ public class TulorekisteriProcessor {
             }
         }
     }
+
+    public void removeFileFromSftp(Exchange ex) {
+        Session session = null;
+        ChannelSftp channelSftp = null;
+    
+        try {
+
+            String hostname = ex.getIn().getHeader("hostname", String.class);
+            String username = ex.getIn().getHeader("username", String.class);
+            String privateKeyEncoded = ex.getIn().getHeader("privateKey", String.class);
+            String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
+    
+            byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyEncoded);
+    
+            JSch jsch = new JSch();
+            jsch.addIdentity("privateKey", privateKeyBytes, null, null);
+    
+            session = jsch.getSession(username, hostname, 22);
+    
+            Properties config = new Properties();
+            config.put("StrictHostKeyChecking", "no");
+            session.setConfig(config);
+            session.connect();
+    
+            channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+    
+            channelSftp.rm(directoryPath);
+    
+            log.infof("File '%s' removed successfully from SFTP server", directoryPath);
+    
+        } catch (Exception e) {
+            log.error("Error during SFTP file deletion: {}", e.getMessage(), e);
+            ex.setException(e);
+    
+        } finally {
+            if (channelSftp != null) {
+                channelSftp.disconnect();
+            }
+            if (session != null) {
+                session.disconnect();
+            }
+        }
+    }    
 }

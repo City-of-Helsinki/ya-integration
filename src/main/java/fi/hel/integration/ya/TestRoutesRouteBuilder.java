@@ -21,6 +21,7 @@ import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
 import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
+import fi.hel.integration.ya.starttiraha.processor.TulorekisteriProcessor;
 import io.sentry.Sentry;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -33,6 +34,9 @@ import java.util.Properties;
 // These routes are for testing (e.g.connections)
 @ApplicationScoped
 public class TestRoutesRouteBuilder extends RouteBuilder {
+
+   @Inject
+   TulorekisteriProcessor tProcessor; 
 
     public boolean testSFTPConnection(Exchange exchange) {
         // Extract SFTP connection details from Exchange headers
@@ -420,7 +424,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("privateKey").simple("{{AHR_SFTP_PRIVATEKEY}}")
             .setHeader("directoryPath").simple("{{AHR_DIRECTORY_PATH}}")
             //.to("direct:fetchDirectoriesFromSftp")
-            .to("direct:fetchFileNamesFromSftp")            
+            //.to("direct:fetchFileNamesFromSftp")
+            .bean(tProcessor, "removeFileFromSftp(*)")            
         ;
 
         from("timer://testSapSftp?repeatCount=1&delay=5000")
