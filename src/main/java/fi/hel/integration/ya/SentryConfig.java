@@ -24,7 +24,7 @@ public class SentryConfig {
     public void init() {
         Sentry.init(options -> {
             options.setDsn(dsn); 
-            options.setDebug(true);
+            options.setDebug(false);
             options.setEnvironment("dev");
             options.setTracesSampleRate(1.0);  
             options.setSampleRate(1.0);  
@@ -32,15 +32,9 @@ public class SentryConfig {
             // Disable the DuplicateEventDetectionEventProcessor to allow each error (even if similar) 
             // to be reported as a separate event in Sentry.
             List<EventProcessor> processorsWithoutDuplicateDetection = options.getEventProcessors().stream()
-                // Filter out the DuplicateEventDetectionEventProcessor, which is responsible for blocking duplicate events.
                 .filter(p -> !(p instanceof io.sentry.DuplicateEventDetectionEventProcessor))
-                // Collect the modified list, excluding the duplicate detection processor.
                 .collect(Collectors.toList());
-
-            // Clear the current event processors list in Sentry's options.
-            // This prepares Sentry to accept a custom list that excludes duplicate detection.
             options.getEventProcessors().clear();
-            // Add back only the filtered list of processors, now without the DuplicateEventDetectionEventProcessor.
             options.getEventProcessors().addAll(processorsWithoutDuplicateDetection);
             
         });
