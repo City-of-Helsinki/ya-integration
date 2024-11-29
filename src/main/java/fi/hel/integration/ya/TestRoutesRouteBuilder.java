@@ -424,8 +424,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("privateKey").simple("{{AHR_SFTP_PRIVATEKEY}}")
             .setHeader("directoryPath").simple("{{AHR_DIRECTORY_PATH}}")
             //.to("direct:fetchDirectoriesFromSftp")
-            //.to("direct:fetchFileNamesFromSftp")
-            .bean(tProcessor, "removeFileFromSftp(*)")            
+            .to("direct:fetchFileNamesFromSftp")
+            //.bean(tProcessor, "removeFileFromSftp(*)")            
         ;
 
         from("timer://testSapSftp?repeatCount=1&delay=5000")
