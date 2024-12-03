@@ -54,7 +54,7 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
 
         // Henkilötietojen käsittely
         from("direct:processPersonalData")
-            .log("process body :: ${body}")
+            .log("process personal data")
             .unmarshal(new JacksonDataFormat())
             .bean(srProcessor, "createPersonalInfoMap")
             .marshal(csv)
@@ -77,7 +77,7 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
 
         // Palkkatapahtumien käsittely
         from("direct:processPayrollTransaction")
-            //.log("Received message: ${body}")
+            .log("process payroll transaction")
             .unmarshal(new JacksonDataFormat())
             .bean(srProcessor, "createPayrollTransactionMap")
             .marshal(csv)
@@ -99,12 +99,14 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
 
         from("direct:out.starttiraha")
             .log("Sending the csv file to AHR")
-            .setHeader("hostname").simple("{{AHR_SFTP_HOST}}")
-            .setHeader("username").simple("{{AHR_SFTP_USER}}")
-            .setHeader("privateKey").simple("{{AHR_SFTP_PRIVATEKEY}}")
-            .setHeader("directoryPath").simple("{{AHR_DIRECTORY_PATH}}")
-            .bean(srProcessor, "writeFileSftp(*)")
-            .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
+            .log("Csv has been sent to AHR :: ${body}")
+            //.to("file:outbox/starttiraha")
+            //.setHeader("hostname").simple("{{AHR_SFTP_HOST}}")
+            //.setHeader("username").simple("{{AHR_SFTP_USER}}")
+            //.setHeader("privateKey").simple("{{AHR_SFTP_PRIVATEKEY}}")
+            //.setHeader("directoryPath").simple("{{AHR_DIRECTORY_PATH}}")
+            //.bean(srProcessor, "writeFileSftp(*)")
+            //.log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
         ;
     }
 }

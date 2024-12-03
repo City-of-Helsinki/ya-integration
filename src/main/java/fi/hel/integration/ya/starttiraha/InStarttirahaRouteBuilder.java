@@ -61,6 +61,11 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
         // The route is triggered by dropping json file/files into folder inbox/kipa/P22
         from("file:inbox/kipa/P22")
             //.log("body :: ${body}")
+            .setVariable("originalFileName", simple("${header.CamelFileName}"))
+            .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
+            .to("direct:saveJsonData-P22")
+            .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
+            .log("Validating json file :: ${header.CamelFileName}")
             .to("direct:validate-json-P22")
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
@@ -83,21 +88,26 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
             )   
             .routeId("kipa-P22") 
             .autoStartup("{{STARTTIRAHA_IN_AUTOSTARTUP}}")
+            .log("File fecthed from kipa")
+            .setVariable("originalFileName", simple("${header.CamelFileName}"))
+            .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
+            .to("direct:saveJsonData-P22")
+            .setHeader(Exchange.FILE_NAME, simple("${header.originalFileName}"))
             .to("direct:validate-json-P22")
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
                     .log("Json is valid continue processing ${header.CamelFileName}")
-                    //.setVariable("kipa_dir").simple("processed")
-                    //.to("direct:readSFTPFileAndMove-P22")
-                    //.log("file moved to processed")
+                    .setVariable("kipa_dir").simple("processed")
+                    .to("direct:readSFTPFileAndMove-P22")
+                    .log("file moved to processed")
                     .to("direct:continue-processing-P22Data")
              
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
                     .throwException(new JsonValidationException("Invalid json file", SentryLevel.ERROR, "jsonValidationError"))
-                    //.setVariable("kipa_dir").simple("errors")
-                    //.to("direct:readSFTPFileAndMove-P22")
-                    //.log("file moved to errors")
+                    .setVariable("kipa_dir").simple("errors")
+                    .to("direct:readSFTPFileAndMove-P22")
+                    .log("file moved to errors")
                     //.to("file:outbox/invalidJson")
         ;
 
@@ -153,6 +163,20 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
             .log("Combined jsons :: ${body}")
             .setVariable("kipa_p22_data").simple("${body}")
             .to("direct:starttiraha-controller")
+        ;
+
+        from("direct:saveJsonData-P22")
+            .log("send json via sftp")
+            //.to("file:outbox/logs")
+            .to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/logs?username={{VERKKOLEVY_SFTP_USER}}&password={{VERKKOLEVY_SFTP_PASSWORD}}&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no")
+            .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
+        ;
+
+        from("direct:readSFTPFileAndMove-P22")
+            .pollEnrich()
+                .simple("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P22}}?username={{KIPA_SFTP_USER_P22}}&password={{KIPA_SFTP_PASSWORD_P22}}&strictHostKeyChecking=no&fileName=${headers.CamelFileName}&move=../${variable.kipa_dir}")
+                .timeout(10000)
+            .log("CamelFtpReplyString: ${headers.CamelFtpReplyString}")
         ;
 
     }
