@@ -87,11 +87,11 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                     .choice()
                         .when(simple("${header.CamelFtpReplyString} == 'OK'"))
                             .log("The pain xml has been sent to Banking")
-                            //.to("direct:sendMaksuliikenneReportEmail")
+                            .to("direct:sendMaksuliikenneReportEmail")
                             // Restore the Kipa data to the route and direct it to the accounting mapping
                             .setBody().variable("kipa_p24_data")
                             .log("kirjanpito data :: ${body}")
-                            .to("direct:kirjanpito.controller")
+                            //.to("direct:kirjanpito.controller")
                         .otherwise()
                             .log("Error occurred  while sending the xml file to Banking")
                     .endChoice()

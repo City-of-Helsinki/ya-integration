@@ -112,7 +112,7 @@ public class MaksuliikenneProcessor {
             Map<String,Object> delivery = (Map<String, Object>) body.get(0).get("delivery");
             String fileName = (String) delivery.get("fileName");
             // file name prefix, e.g. YA_P24_091
-            String fileNamePrefix = fileName.substring(0, 10);
+            String fileNamePrefix = fileName.substring(0, 10).replaceAll("_", "");
 
             Document document = new Document();
             MessageRoot messageRoot = new MessageRoot();
@@ -177,7 +177,7 @@ public class MaksuliikenneProcessor {
             pmtInf.setChrgBr(CHARGE_BEARER);
 
             // duedate + file name prefix, e.g. 20240612_YA_P24_091
-            pmtInf.setPmtInfId(utils.convertDate(duedate, ORIGINAL_DATE_FORMAT, "yyyyMMdd") + "_" + fileNamePrefix);
+            pmtInf.setPmtInfId(utils.convertDate(duedate, ORIGINAL_DATE_FORMAT, "yyyyMMdd") + fileNamePrefix);
             
             pmtInf.setPmtMtd(PAYMENT_METHOD);
             pmtInf.setBtchBookg(BATCH_BOOKING);

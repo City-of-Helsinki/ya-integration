@@ -72,10 +72,6 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
         // The route is triggered by dropping json file/files into folder inbox/kipa/P24
         from("file:inbox/kipa/P24")
             //.log("body :: ${body}")
-            .setVariable("originalFileName", simple("${header.CamelFileName}"))
-            .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
-            .to("direct:saveJsonData-P24")
-            .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
             .log("Validating json file :: ${header.CamelFileName}")
             .to("direct:validate-json-P24")
             .choice()
@@ -95,7 +91,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
                 + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
-                + "&antInclude=YA_p24_091_20241031*"
+                + "&antInclude=YA_p24_091_20241024*"
             )   
             .routeId("kipa-P24") 
             .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
