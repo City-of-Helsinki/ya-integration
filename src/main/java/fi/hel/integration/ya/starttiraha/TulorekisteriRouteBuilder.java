@@ -72,7 +72,7 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
             .stop(); // Stop routing processing for this error.
 
         from("file:inbox/starttiraha/tulorekisteri?readLock=changed")
-            .log("Data ::  ${body}")
+            //.log("Data ::  ${body}")
             .to("direct:tulorekisteri.controller")
         ;
 
@@ -85,7 +85,7 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
             .bean(trProcessor, "fetchFileFromSftp")
             .choice()
                 .when(simple("${body} != ''"))
-                    .log("Fetched file content: ${body}")
+                    //.log("Fetched file content: ${body}")
                     .log("Fetched file name: ${header.CamelFileName}")
                     .to("direct:tulorekisteri.controller")
                 .otherwise()
@@ -96,25 +96,39 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
             .setHeader("columns", constant(COLUMNS))
             .bean(csvValidator, "validateCsv(*)")
             .log("IS CSV VALID :: ${header.isCsvValid}")
-            .to("direct:create-map")
-            .bean(trProcessor, "mapIncomeRegisterData")
-            .marshal().jacksonXml(BenefitReportsRequestToIR.class)
-            .log("xml body :: ${body}")
-            .convertBodyTo(String.class)
-            .setBody().groovy("'" + XML_DECLARATION + "'" + " + body")
-            .bean(xmlValidator, "validateXml(*," +  SCHEMA_FILE + ")")
-            .log("is valid :: ${header.isXmlValid}")
-            .setHeader(Exchange.FILE_NAME, simple("${header.CamelFileName.replaceAll('.csv$', '.xml')}"))
-            .log("XML BODY :: ${body}")
-            .to(outTulorekisteriXml)
-            
-        ;
+            .choice()
+                .when(simple("${header.isCsvValid} == 'true'"))
+                    .log("csv is valid")
+                    //.to("mock:processPersonalData.result")
+                    //.log("payroll data csv :: ${body}")
+                    .to("direct:create-map")
+                    .bean(trProcessor, "mapIncomeRegisterData")
+                    .marshal().jacksonXml(BenefitReportsRequestToIR.class)
+                    //.log("xml body :: ${body}")
+                    .convertBodyTo(String.class)
+                    .setBody().groovy("'" + XML_DECLARATION + "'" + " + body")
+                    .bean(xmlValidator, "validateXml(*," +  SCHEMA_FILE + ")")
+                    .log("is valid :: ${header.isXmlValid}")
+                    .choice()
+                        .when(simple("${header.isXmlValid} == 'true'"))
+                            .setHeader(Exchange.FILE_NAME, simple("${header.CamelFileName.replaceAll('.csv$', '.xml')}"))
+                            //.log("XML BODY :: ${body}")
+                            .to(outTulorekisteriXml)
+                        .otherwise()
+                            .log("XML is not valid, ${header.CamelFileName}")
+                            .log("Error message :: ${header.xml_error_messages}")
+                    .endChoice()
+            .otherwise()
+                .log("CSV is not valid, ${header.CamelFileName}")   
+;
+           
 
         from("direct:out.tulorekisteri")
             //.to("file:outbox/starttiraha")
             .log("Sending tulorekisteri file to verkkolevy sftp")
-            .to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/ture?username={{VERKKOLEVY_SFTP_USER}}&password={{VERKKOLEVY_SFTP_PASSWORD}}&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no")
-            .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
+            .log("tulorekisteri xml :: ${body}")
+            //.to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/ture?username={{VERKKOLEVY_SFTP_USER}}&password={{VERKKOLEVY_SFTP_PASSWORD}}&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no")
+            //.log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
         ;
 
         from("direct:create-map")
@@ -142,7 +156,7 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
                     exchange.getIn().setBody(mappedData);
                     System.out.println("MAPPED data :: " + mappedData.getClass().getName());
                 })
-            .log("body after adding headers :: ${body}")
+            //.log("body after adding headers :: ${body}")
             .to("mock:create-map.result")
         ;
     }
