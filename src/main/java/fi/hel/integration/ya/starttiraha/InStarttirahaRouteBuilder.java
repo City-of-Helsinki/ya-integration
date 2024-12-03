@@ -84,7 +84,7 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
                 + "&scheduler.cron={{STARTTIRAHA_QUARTZ_TIMER}}" 
-                + "&antInclude=YA_p22_091_2024103*"
+                + "&antInclude=YA_p22_091_20241010*"
             )   
             .routeId("kipa-P22") 
             .autoStartup("{{STARTTIRAHA_IN_AUTOSTARTUP}}")
@@ -145,7 +145,7 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
             .unmarshal(new JacksonDataFormat())
             .aggregate(new GroupedExchangeAggregationStrategy()).constant(true)
                 .completionSize(1000) 
-                .completionTimeout(10000)
+                .completionTimeout(50000)
                 .process(exchange -> {
                     //System.out.println("BODY :: " + exchange.getIn().getBody());
                     List<Exchange> combinedExchanges = exchange.getIn().getBody(List.class);
