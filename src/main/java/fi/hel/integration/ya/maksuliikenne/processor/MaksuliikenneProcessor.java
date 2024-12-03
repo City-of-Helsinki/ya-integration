@@ -177,7 +177,7 @@ public class MaksuliikenneProcessor {
             pmtInf.setChrgBr(CHARGE_BEARER);
 
             // duedate + file name prefix, e.g. 20240612_YA_P24_091
-            pmtInf.setPmtInfId(utils.convertDate(duedate, ORIGINAL_DATE_FORMAT, "yyyyMMdd") + "-" + fileNamePrefix);
+            pmtInf.setPmtInfId(utils.convertDate(duedate, ORIGINAL_DATE_FORMAT, "yyyyMMdd") + "_" + fileNamePrefix);
             
             pmtInf.setPmtMtd(PAYMENT_METHOD);
             pmtInf.setBtchBookg(BATCH_BOOKING);
