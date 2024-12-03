@@ -50,15 +50,15 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
             .log("Preparing to handle accounting data")
             .unmarshal(new JacksonDataFormat())
             .split(body())
-                .log("Splitted body :: ${body}")
+                //.log("Splitted body :: ${body}")
                 .to("direct:mapAccountingData")
                 .bean(xmlValidator, "validateXml(*," +  SCHEMA_FILE + ")")
+                .setVariable("claimTypeCode")
+                    .language("groovy", "def filename = request.headers.jsonFileName; filename.split('_')[-1].replace('.json', '')")
+                .setHeader(Exchange.FILE_NAME, simple(FILE_NAME_PREFIX + SENDER_ID + "_${variable.claimTypeCode}_${date:now:yyyyMMddHHmmssSSS}.xml"))
                 .choice()
                     .when().simple("${header.isXmlValid} == 'true'")
                         .log("is valid :: ${header.isXmlValid}")
-                        .setVariable("claimTypeCode")
-                            .language("groovy", "def filename = request.headers.jsonFileName; filename.split('_')[-1].replace('.json', '')")
-                        .setHeader(Exchange.FILE_NAME, simple(FILE_NAME_PREFIX + SENDER_ID + "_${variable.claimTypeCode}_${date:now:yyyyMMddHHmmssSSS}.xml"))
                         //.to("file:outbox/maksuliikenne/sap")
                         .log("Created kirjanpito xml, file name :: ${header.CamelFileName}")
                         .to("direct:out.maksuliikenne-sap")
@@ -66,6 +66,11 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                     .otherwise()
                         //.to("file:outbox/invalidXml")
                         .log("XML is not valid, errors :: ${header.xml_error_messages}, lines :: ${header.xml_error_line_numbers}, columns :: ${header.xml_error_column_numbers}")
+                .end() 
+            .end()
+            .log("All accounting data processed")
+            .to("direct:sendMaksuliikenneReportEmail")
+            
                 
         ;
 

@@ -85,7 +85,7 @@
         "type": "object",
         "properties": {
           "profitCenterCode": {
-            "type": "integer"
+            "type": ["integer", "null"]
           },
           "bankAccount": {
             "type": "object",

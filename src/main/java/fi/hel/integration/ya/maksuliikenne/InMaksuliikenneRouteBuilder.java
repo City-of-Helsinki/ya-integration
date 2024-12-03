@@ -95,11 +95,11 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
                 + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
-                + "&antInclude=YA_p24_091_2024102410*"
+                + "&antInclude=YA_p24_091_20241031*"
             )   
             .routeId("kipa-P24") 
             .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
-            .log("Maksuliikenne integration started")
+            .log("File fecthed from kipa")
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
             .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
             .to("direct:saveJsonData-P24")
