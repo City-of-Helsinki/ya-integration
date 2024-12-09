@@ -403,7 +403,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
     private void releaseLock() {
         try {
-            redisProcessor.set(LOCK_KEY, null); // Delete the lock key
+            redisProcessor.delete(LOCK_KEY);
         } catch (Exception e) {
             throw new RuntimeException("Failed to release lock from Redis", e);
         }
@@ -581,11 +581,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             })
 
             .filter(header("lockAcquired").isEqualTo(true)) 
-            .log("Starting the timer route in instance: ${header.camelQuarkusInstanceName}")
-            .process(exchange -> {
-                System.out.println("Timer triggered!");
-            })
-            .end()
+            .log("Timer route triggered, start processing")
             .process(exchange -> releaseLock())
         ;
     }     

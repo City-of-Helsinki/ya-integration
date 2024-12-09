@@ -66,6 +66,15 @@ public class RedisProcessor {
         return value;
     }
 
+    public void delete(String key) throws Exception {
+        try (Jedis jedis = jedisPool.getResource()) {
+            jedis.del(key);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to execute Redis operation [delete]", e);
+        }
+    }
+
     @PreDestroy
     public void close() {
         if (jedisPool != null) {
