@@ -35,8 +35,11 @@ import java.util.Properties;
 @ApplicationScoped
 public class TestRoutesRouteBuilder extends RouteBuilder {
 
-   @Inject
-   TulorekisteriProcessor tProcessor; 
+    @Inject
+    TulorekisteriProcessor tProcessor; 
+
+    @Inject
+    RedisProcessor redisProcessor;
 
     public boolean testSFTPConnection(Exchange exchange) {
         // Extract SFTP connection details from Exchange headers
@@ -380,6 +383,32 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         }
     }
 
+    private static final String LOCK_KEY = "timer-route-lock"; // Redis key for the lock
+
+    private boolean acquireLock() {
+        try {
+            String result = redisProcessor.get(LOCK_KEY);
+            if (result == null) {
+                // Lock is available; acquire it by setting the key with a short expiration
+                redisProcessor.set(LOCK_KEY, "locked");
+                return true;
+            } else {
+                // Lock is already held by another instance
+                return false;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to acquire lock from Redis", e);
+        }
+    }
+
+    private void releaseLock() {
+        try {
+            redisProcessor.set(LOCK_KEY, null); // Delete the lock key
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to release lock from Redis", e);
+        }
+    }
+
     @Inject
     MaksuliikenneProcessor mlProcessor;
 
@@ -538,6 +567,26 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                 .simple("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P22}}?username={{KIPA_SFTP_USER_P22}}&password={{KIPA_SFTP_PASSWORD_P22}}&strictHostKeyChecking=no&fileName=${headers.CamelFileName}&move=../${variable.kipa_dir}")
                 .timeout(10000)
             .log("CamelFtpReplyString: ${headers.CamelFtpReplyString}")
+        ;
+
+        from("quartz://test_timer?cron=0+59+11+*+*+?&trigger.timeZone=Europe/Helsinki")
+            .autoStartup("true")
+            .log("Starting the timer route")
+            .process(exchange -> {
+                if (acquireLock()) { 
+                    exchange.getIn().setHeader("lockAcquired", true);
+                } else {
+                    exchange.getIn().setHeader("lockAcquired", false);
+                }
+            })
+
+            .filter(header("lockAcquired").isEqualTo(true)) 
+            .log("Starting the timer route in instance: ${header.camelQuarkusInstanceName}")
+            .process(exchange -> {
+                System.out.println("Timer triggered!");
+            })
+            .end()
+            .process(exchange -> releaseLock())
         ;
     }     
 }
