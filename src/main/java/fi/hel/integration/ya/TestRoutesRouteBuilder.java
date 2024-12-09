@@ -569,8 +569,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .log("CamelFtpReplyString: ${headers.CamelFtpReplyString}")
         ;
 
-        from("quartz://test_timer?cron=0+59+11+*+*+?&trigger.timeZone=Europe/Helsinki")
-            .autoStartup("true")
+        from("{{TEST_QUARTZ_TIMER}}")
+            .autoStartup("{{TEST_QUARTZ_TIMER_AUTOSTARTUP}}")
             .log("Starting the timer route")
             .process(exchange -> {
                 if (acquireLock()) { 
