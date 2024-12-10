@@ -596,7 +596,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .filter(header("lockAcquired").isEqualTo(true)) 
                 .log("Timer route triggered, start processing")
             .end()
-            .process(exchange -> releaseLock())
+            //.process(exchange -> releaseLock())
         ;
     }     
 }
