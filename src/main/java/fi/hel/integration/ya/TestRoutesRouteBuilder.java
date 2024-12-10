@@ -387,14 +387,11 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
     private boolean acquireLock() {
         try {
-            String result = redisProcessor.get(LOCK_KEY);
-            if (result == null) {
-                // Lock is available; acquire it by setting the key with a short expiration
-                redisProcessor.set(LOCK_KEY, "locked", 60);
+            boolean isLocked = redisProcessor.set(LOCK_KEY, "locked", 60); // 60-second TTL
+            if (isLocked) {
                 System.out.println("Lock acquired by pod");
                 return true;
             } else {
-                // Lock is already held by another instance
                 System.out.println("Lock not acquired by pod");
                 return false;
             }

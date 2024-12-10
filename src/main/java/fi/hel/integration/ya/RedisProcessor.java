@@ -42,12 +42,11 @@ public class RedisProcessor {
         this.jedisPool = new JedisPool(poolConfig, host, port, connectionTimeout, password);
     }
 
-    public void set(String key, String value, int ttlSeconds) throws Exception {
-
+    public boolean set(String key, String value, int ttlSeconds) throws Exception {
         try (Jedis jedis = jedisPool.getResource()) {
             SetParams params = new SetParams().nx().ex(ttlSeconds);
-            jedis.set(key, value, params);
-            
+            String result = jedis.set(key, value, params); // Attempt to acquire the lock
+            return "OK".equals(result); // Return true if the lock was acquired
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Failed to execute Redis operation [set]", e);
