@@ -82,12 +82,12 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .choice()
                 .when(simple("${header.isXmlValid} == 'true'"))
                     .log("XML is valid, sending the file to banking ${header.CamelFileName}")
-                    .to("direct:out-banking")
-                    //.setHeader("CamelFtpReplyString").simple("OK")
+                    //.to("direct:out-banking")
+                    .setHeader("CamelFtpReplyString").simple("OK")
                     .choice()
                         .when(simple("${header.CamelFtpReplyString} == 'OK'"))
                             .log("The pain xml has been sent to Banking")
-                            .to("direct:sendMaksuliikenneReportEmail")
+                            //.to("direct:sendMaksuliikenneReportEmail")
                             // Restore the Kipa data to the route and direct it to the accounting mapping
                             .setBody().variable("kipa_p24_data")
                             .log("kirjanpito data :: ${body}")
@@ -98,7 +98,14 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                 .otherwise()
                     .log("XML is not valid, ${header.CamelFileName}")
                     .log("Error message :: ${header.xml_error_messages}")
-                    //.throwException(new XmlValidationException("Invalid xml file", SentryLevel.ERROR, "xmlValidationError"))
+                    .process(exchange -> {
+                        String errorMessages = exchange.getIn().getHeader("xml_error_messages", String.class);
+                        throw new XmlValidationException(
+                            "Invalid XML file. Error messages: " + errorMessages,
+                            SentryLevel.ERROR,
+                            "xmlValidationError"
+                        );
+                    })
             .end()
         ;
          

@@ -12,6 +12,7 @@ import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
 
 import fi.hel.integration.ya.JsonValidator;
+import fi.hel.integration.ya.RedisProcessor;
 import fi.hel.integration.ya.exceptions.JsonValidationException;
 import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
 import io.sentry.Sentry;
@@ -28,6 +29,9 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
     @Inject
     JsonValidator jsonValidator;
 
+    @Inject
+    RedisProcessor redisProcessor;
+
     //private final String testSecret = "{{test_secret}}";
     private final String KIPA_SFTP_HOST = "{{kipa_sftp_host}}";
     private final String KIPA_SFTP_USER_P24 = "{{kipa_sftp_user_p24}}";
@@ -36,6 +40,8 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
 
     private final String SCHEMA_FILE_PT_PT55_TOJT = "schema/kipa/json_schema_PT_PT55_TOJT.json";
     private final String SCHEMA_FILE_MYK_HKK = "schema/kipa/json_schema_MYK_HKK.json";
+
+    private final String LOCK_KEY = "timer-route-lock";
     
     @Override
     public void configure() throws Exception {
@@ -80,7 +86,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     .to("direct:continue-processing-P24Data")
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
-                    //.throwException(new JsonValidationException("Invalid json file", SentryLevel.ERROR, "jsonValidationError"))
+                    .throwException(new JsonValidationException("Invalid json file", SentryLevel.ERROR, "jsonValidationError"))
                     .to("file:outbox/invalidJson")
 
         ;
@@ -91,32 +97,42 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
                 + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
-                + "&antInclude=YA_p24_091_20241024*"
+                + "&antInclude=YA_p24_091_20241114*"
             )   
             .routeId("kipa-P24") 
             .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
-            .log("File fecthed from kipa")
-            .setVariable("originalFileName", simple("${header.CamelFileName}"))
-            .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
-            .to("direct:saveJsonData-P24")
-            .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
-            .log("Body after saving the json to logs :: ${body}")
-            .to("direct:validate-json-P24")
-            .choice()
-                .when(simple("${header.isJsonValid} == 'true'"))
-                    .log("Json is valid continue processing ${header.CamelFileName}")
-                    .setVariable("kipa_dir").simple("processed")
-                    .to("direct:readSFTPFileAndMove-P24")
-                    .log("file moved to processed")
-                    .to("direct:continue-processing-P24Data")
+            .process(exchange -> {
+                if (redisProcessor.acquireLock(LOCK_KEY, 300)) {
+                    System.out.println("Lock acquired for SFTP route, starting processing.");
+                    exchange.getIn().setHeader("lockAcquired", true);
+                } else {
+                    System.out.println("Lock not acquired for SFTP route, skipping processing.");
+                    exchange.getIn().setHeader("lockAcquired", false);
+                }
+            })
+            .filter(header("lockAcquired").isEqualTo(true))
+                .log("File fecthed from kipa")
+                .setVariable("originalFileName", simple("${header.CamelFileName}"))
+                .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
+                .to("direct:saveJsonData-P24")
+                .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
+                .log("Body after saving the json to logs :: ${body}")
+                .to("direct:validate-json-P24")
+                .choice()
+                    .when(simple("${header.isJsonValid} == 'true'"))
+                        .log("Json is valid continue processing ${header.CamelFileName}")
+                        .setVariable("kipa_dir").simple("processed")
+                        .to("direct:readSFTPFileAndMove-P24")
+                        .log("file moved to processed")
+                        .to("direct:continue-processing-P24Data")
              
-                .otherwise()
-                    .log("Json is not valid, ${header.CamelFileName}")
-                    .throwException(new JsonValidationException("Invalid json file", SentryLevel.ERROR, "jsonValidationError"))
-                    .setVariable("kipa_dir").simple("errors")
-                    .to("direct:readSFTPFileAndMove-P24")
-                    .log("file moved to errors")
-                    //.to("file:outbox/invalidJson")
+                    .otherwise()
+                        .log("Json is not valid, ${header.CamelFileName}")
+                        .throwException(new JsonValidationException("Invalid json file", SentryLevel.ERROR, "jsonValidationError"))
+                        .setVariable("kipa_dir").simple("errors")
+                        .to("direct:readSFTPFileAndMove-P24")
+                        .log("file moved to errors")
+                        //.to("file:outbox/invalidJson")
         ;
 
         from("direct:validate-json-P24")
@@ -190,8 +206,5 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/logs?username={{VERKKOLEVY_SFTP_USER}}&password={{VERKKOLEVY_SFTP_PASSWORD}}&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no")
             .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
         ;
-
-
-
     }
 }
