@@ -386,7 +386,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
     private static final String LOCK_KEY = "timer-route-lock"; // Redis key for the lock
 
-    private boolean acquireLock() {
+    /* private boolean acquireLock() {
         try {
             System.out.println("Attempting to acquire lock");
             boolean isLocked = redisProcessor.set(LOCK_KEY, "locked", 120); // 60-second TTL
@@ -401,7 +401,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         } catch (Exception e) {
             throw new RuntimeException("Failed to acquire lock from Redis", e);
         }
-    }
+    } */
 
     private void releaseLock() {
         try {
@@ -582,7 +582,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             })
             .log("Start after delay")
             .process(exchange -> {
-                if (acquireLock()) { 
+                if (redisProcessor.acquireLock(LOCK_KEY, 300)) { 
                     exchange.getIn().setHeader("lockAcquired", true);
                     System.out.println("Lock acquired, processing starts");
 

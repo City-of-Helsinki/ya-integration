@@ -78,6 +78,23 @@ public class RedisProcessor {
         }
     }
 
+    public boolean acquireLock(String key, int ttlSeconds) {
+        try (Jedis jedis = jedisPool.getResource()) {
+                SetParams params = new SetParams().nx().ex(ttlSeconds);
+                String result = jedis.set(key, "locked", params); // 60-second TTL
+            if (result.equals("OK")) {
+                System.out.println("Lock acquired by pod");
+                return true;
+            } else {
+                System.out.println("Lock not acquired by pod");
+                return false;
+            }
+        
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to acquire lock from Redis", e);
+        }
+    }
+
     @PreDestroy
     public void close() {
         if (jedisPool != null) {
