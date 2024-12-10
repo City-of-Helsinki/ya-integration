@@ -30,6 +30,7 @@ import jakarta.mail.internet.*;
 import jakarta.mail.util.ByteArrayDataSource;
 import jakarta.activation.*;
 import java.util.Properties;
+import java.util.Random;
 
 // These routes are for testing (e.g.connections)
 @ApplicationScoped
@@ -573,6 +574,13 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         from("{{TEST_QUARTZ_TIMER}}")
             .autoStartup("{{TEST_QUARTZ_TIMER_AUTOSTARTUP}}")
             .log("Starting the timer route")
+            .process(exchange -> {
+                Random random = new Random();
+                int delayMillis = random.nextInt(500); // Random delay between 0 and 500 ms
+                System.out.println("Random delay: " + delayMillis + "ms");
+                Thread.sleep(delayMillis);
+            })
+            .log("Start after delay")
             .process(exchange -> {
                 if (acquireLock()) { 
                     exchange.getIn().setHeader("lockAcquired", true);
