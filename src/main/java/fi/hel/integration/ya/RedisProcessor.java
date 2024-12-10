@@ -46,6 +46,7 @@ public class RedisProcessor {
         try (Jedis jedis = jedisPool.getResource()) {
             SetParams params = new SetParams().nx().ex(ttlSeconds);
             String result = jedis.set(key, value, params); // Attempt to acquire the lock
+            System.out.println("Redis set result for key '" + key + "': " + result);
             return "OK".equals(result); // Return true if the lock was acquired
         } catch (Exception e) {
             e.printStackTrace();

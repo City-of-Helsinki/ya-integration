@@ -387,7 +387,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
     private boolean acquireLock() {
         try {
+            System.out.println("Attempting to acquire lock");
             boolean isLocked = redisProcessor.set(LOCK_KEY, "locked", 60); // 60-second TTL
+            System.out.println("Lock acquisition result: " + isLocked);
             if (isLocked) {
                 System.out.println("Lock acquired by pod");
                 return true;
