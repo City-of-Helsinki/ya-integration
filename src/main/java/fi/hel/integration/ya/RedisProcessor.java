@@ -96,6 +96,14 @@ public class RedisProcessor {
         }
     }
 
+    public void releaseLock(String key) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            jedis.del(key);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to release lock from Redis", e);
+        }
+    }
+
     @PreDestroy
     public void close() {
         if (jedisPool != null) {
