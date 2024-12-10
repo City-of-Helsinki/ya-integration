@@ -391,9 +391,11 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             if (result == null) {
                 // Lock is available; acquire it by setting the key with a short expiration
                 redisProcessor.set(LOCK_KEY, "locked");
+                System.out.println("Lock acquired by pod");
                 return true;
             } else {
                 // Lock is already held by another instance
+                System.out.println("Lock not acquired by pod");
                 return false;
             }
         } catch (Exception e) {
@@ -575,8 +577,12 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .process(exchange -> {
                 if (acquireLock()) { 
                     exchange.getIn().setHeader("lockAcquired", true);
+                    System.out.println("Lock acquired, processing starts");
+
                 } else {
                     exchange.getIn().setHeader("lockAcquired", false);
+                    System.out.println("Lock not acquired, skipping processing");
+
                 }
             })
 
