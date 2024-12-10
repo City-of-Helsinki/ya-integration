@@ -153,8 +153,9 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     .simple("sftp://{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}"
                             + "&password={{KIPA_SFTP_PASSWORD_P24}}"
                             + "&noop=true"  
-                            + "&antInclude=YA_p24_091_*")
+                            + "&antInclude=YA_p24_091_20241030*")
                     .timeout(10000)
+                .log("Body after polling sftp :: ${body}")
                 .split(body()) 
                     .setVariable("originalFileName", simple("${header.CamelFileName}"))
                     .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
