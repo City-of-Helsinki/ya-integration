@@ -389,7 +389,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
     private boolean acquireLock() {
         try {
             System.out.println("Attempting to acquire lock");
-            boolean isLocked = redisProcessor.set(LOCK_KEY, "locked", 60); // 60-second TTL
+            boolean isLocked = redisProcessor.set(LOCK_KEY, "locked", 120); // 60-second TTL
             System.out.println("Lock acquisition result: " + isLocked);
             if (isLocked) {
                 System.out.println("Lock acquired by pod");
@@ -576,7 +576,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .log("Starting the timer route")
             .process(exchange -> {
                 Random random = new Random();
-                int delayMillis = random.nextInt(500); // Random delay between 0 and 500 ms
+                int delayMillis = random.nextInt(10000); // Random delay between 0 and 500 ms
                 System.out.println("Random delay: " + delayMillis + "ms");
                 Thread.sleep(delayMillis);
             })
