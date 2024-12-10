@@ -80,9 +80,10 @@ public class RedisProcessor {
 
     public boolean acquireLock(String key, int ttlSeconds) {
         try (Jedis jedis = jedisPool.getResource()) {
+                String result = jedis.get(key);
+            if (result == null) {
                 SetParams params = new SetParams().nx().ex(ttlSeconds);
-                String result = jedis.set(key, "locked", params); // 60-second TTL
-            if (result.equals("OK")) {
+                jedis.set(key, "locked", params);
                 System.out.println("Lock acquired by pod");
                 return true;
             } else {
