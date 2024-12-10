@@ -390,7 +390,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             String result = redisProcessor.get(LOCK_KEY);
             if (result == null) {
                 // Lock is available; acquire it by setting the key with a short expiration
-                redisProcessor.set(LOCK_KEY, "locked");
+                redisProcessor.set(LOCK_KEY, "locked", 60);
                 System.out.println("Lock acquired by pod");
                 return true;
             } else {

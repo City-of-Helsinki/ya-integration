@@ -11,6 +11,7 @@ import jakarta.inject.Named;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.params.SetParams;
 
 @ApplicationScoped
 @Named("redisProcessor")
@@ -41,10 +42,11 @@ public class RedisProcessor {
         this.jedisPool = new JedisPool(poolConfig, host, port, connectionTimeout, password);
     }
 
-    public void set(String key, String value) throws Exception {
+    public void set(String key, String value, int ttlSeconds) throws Exception {
 
         try (Jedis jedis = jedisPool.getResource()) {
-            jedis.set(key, value);
+            SetParams params = new SetParams().nx().ex(ttlSeconds);
+            jedis.set(key, value, params);
             
         } catch (Exception e) {
             e.printStackTrace();
