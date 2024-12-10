@@ -92,7 +92,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
         ;
 
         // Reads files from the YA Kipa API
-        from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}"
+        /* from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}"
                 + "&password={{KIPA_SFTP_PASSWORD_P24}}"
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
@@ -133,7 +133,58 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         .to("direct:readSFTPFileAndMove-P24")
                         .log("file moved to errors")
                         //.to("file:outbox/invalidJson")
-        ;
+        ; */
+
+        from("{{MAKSULIIKENNE_QUARTZ_TIMER}}")
+            .routeId("kipa-P24") 
+            .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
+            .process(exchange -> {
+                if (redisProcessor.acquireLock(LOCK_KEY, 300)) {
+                    System.out.println("Lock acquired for SFTP route, starting processing.");
+                    exchange.getIn().setHeader("lockAcquired", true);
+                } else {
+                    System.out.println("Lock not acquired for SFTP route, skipping processing.");
+                    exchange.getIn().setHeader("lockAcquired", false);
+                }
+            })
+            .filter(header("lockAcquired").isEqualTo(true))
+                .log("Fetching files from SFTP")
+                .pollEnrich()
+                    .simple("sftp://{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}"
+                            + "&password={{KIPA_SFTP_PASSWORD_P24}}"
+                            + "&noop=true"  
+                            + "&antInclude=YA_p24_091_*")
+                    .timeout(10000)
+                .split(body()) 
+                    .setVariable("originalFileName", simple("${header.CamelFileName}"))
+                    .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
+                    .to("direct:saveJsonData-P24")
+                    .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
+                    .log("Body after saving the JSON to logs :: ${body}")
+                    .to("direct:validate-json-P24")
+                    .choice()
+                        .when(simple("${header.isJsonValid} == 'true'"))
+                            .log("JSON is valid, continue processing ${header.CamelFileName}")
+                            .setVariable("kipa_dir").simple("processed")
+                            .to("direct:readSFTPFileAndMove-P24")
+                            .log("File moved to processed")
+                            .to("direct:continue-processing-P24Data")
+                        .otherwise()
+                            .log("JSON is not valid, ${header.CamelFileName}")
+                            .setVariable("kipa_dir").simple("errors")
+                            .to("direct:readSFTPFileAndMove-P24")
+                            .log("File moved to errors")
+                    .end()
+                .end() // End of split
+            .end() // End of filter
+            .onCompletion()
+                .process(exchange -> {
+                    redisProcessor.releaseLock(LOCK_KEY);
+                    System.out.println("Lock released after batch processing.");
+                })
+        .end()
+    ;
+
 
         from("direct:validate-json-P24")
             .log("Start to validate json file")

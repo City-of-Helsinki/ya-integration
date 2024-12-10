@@ -78,7 +78,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader(Exchange.FILE_NAME, simple(FILE_NAME_PREFIX + "${date:now:yyyyMMddHHmmss}.xml"))
             .to("mock:sendMaksuliikenneXml")
             //.to("file:outbox/maksuliikenne")
-            //.log("Pain xml :: ${body}")
+            .log("Pain xml :: ${body}")
             .choice()
                 .when(simple("${header.isXmlValid} == 'true'"))
                     .log("XML is valid, sending the file to banking ${header.CamelFileName}")
