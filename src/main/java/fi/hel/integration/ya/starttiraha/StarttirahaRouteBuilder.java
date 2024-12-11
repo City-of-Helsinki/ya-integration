@@ -1,6 +1,7 @@
 package fi.hel.integration.ya.starttiraha;
 
-import java.util.Base64;
+import java.util.Arrays;
+import java.util.UUID;
 
 import org.apache.camel.Endpoint;
 import org.apache.camel.EndpointInject;
@@ -10,7 +11,11 @@ import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.apache.camel.model.dataformat.CsvDataFormat;
 
 import fi.hel.integration.ya.CsvValidator;
+import fi.hel.integration.ya.exceptions.JsonValidationException;
+import fi.hel.integration.ya.exceptions.CsvValidationException;
 import fi.hel.integration.ya.starttiraha.processor.StarttirahaProcessor;
+import io.sentry.Sentry;
+import io.sentry.SentryLevel;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -45,6 +50,28 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
             .handled(true) // The error is not passed on to other error handlers.
             .stop(); // Stop routing processing for this error.
 
+            onException(CsvValidationException.class)
+            .handled(true)
+            .process(exchange -> {
+                CsvValidationException cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, CsvValidationException.class);
+
+                Sentry.withScope(scope -> {
+                    String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
+                    String uniqueId = UUID.randomUUID().toString(); // Generate a unique ID for the error
+
+                    scope.setLevel(cause.getSentryLevel());
+                    scope.setTag("error.type", cause.getTag());
+                    scope.setTag("context.fileName", fileName);
+                    scope.setFingerprint(Arrays.asList(uniqueId)); 
+                    Sentry.captureException(cause);
+                });
+
+                Sentry.flush(2000);
+
+            })
+            .log("CsvValidationException occurred: ${exception.message}")
+        ;
+
         from("direct:starttiraha-controller")
             .multicast().stopOnException().parallelProcessing(false)
                 .to("direct:processPersonalData")
@@ -64,6 +91,7 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
             .setHeader("emptyColumns", constant(PERSONALDATAEMPTYCOLUMNS))
             .bean(csvValidator, "validateCsv(*)")
             .log("IS CSV VALID :: ${header.isCsvValid}")
+            .to("mock:processPersonalData.result")
             .choice()
                 .when(simple("${header.isCsvValid} == 'true'"))
                     .log("csv is valid")
@@ -72,6 +100,7 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
                     //.log("personal data csv :: ${body}")
                 .otherwise()
                     .log("CSV is not valid, ${header.CamelFileName}")
+                    .throwException(new CsvValidationException("Invalid csv file", SentryLevel.ERROR, "csvValidationError"))
             
         ;
 
@@ -87,6 +116,7 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
             .bean(csvValidator, "validateCsv(*)")
             //.log("payroll body :: ${body}")
             .log("IS CSV VALID :: ${header.isCsvValid}")
+            .to("mock:processPayrollTransaction.result")
             .choice()
                 .when(simple("${header.isCsvValid} == 'true'"))
                     .log("csv is valid")
