@@ -1,11 +1,10 @@
 package fi.hel.integration.ya.maksuliikenne.processor;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,6 +91,7 @@ public class KirjanpitoProcessor {
     private static final String HKK = "HARKINNANVARAINEN_KULUKORVAUS";
     private static final String MYK = "MATKA_JA_YOPYMISKUSTANNUSTENKORVAUS";
     private static final String TOJT = "TYOOLOSUHTEIDEN_JARJESTELYTUKI";
+    private static final String PARTNERCODE_FILE_PATH = "sap/kumppanikoodilistaus 16.8.2024.xlsx";
 
     @SuppressWarnings("unchecked")
     public void mapAccountigData(Exchange ex) {
@@ -160,22 +160,19 @@ public class KirjanpitoProcessor {
 
             lineItemTypeDebit.setLineText(cutOurReference);
 
-            // TODO: hae kumppanikoodilistaus verkkoasemalta
-            /* String filePath = "src/main/resources/kumppanikoodilistaus 16.8.2024.xlsx";
+
+            // Kumppanikoodi
             Map<String, Object> receiver = (Map<String, Object>) body.get("receiver");
             String businessId = (String) receiver.get("businessId");
             //System.out.println("BUSINESS ID :: " + businessId);
-            businessId = "0668319-4";
-            String partnerCode = getPartnerCode(businessId, filePath);
+            String partnerCode = getPartnerCode(businessId, PARTNERCODE_FILE_PATH);
             System.out.println("partnercode :: " + partnerCode);
 
             if (partnerCode == null || partnerCode.isEmpty()) {
-                lineItemType.setTradingPartner(EMPTY);
+                lineItemTypeDebit.setTradingPartner(EMPTY);
             } else {
-                lineItemType.setTradingPartner(partnerCode);
-            } */
-
-            lineItemTypeDebit.setTradingPartner(EMPTY);
+                lineItemTypeDebit.setTradingPartner(partnerCode);
+            } 
 
             // kirjaustunniste (sisäinen tilaus), pituus 10 numeroa, pakollinen
             // mäpätään claimTypen perusteella
@@ -214,25 +211,31 @@ public class KirjanpitoProcessor {
     }
 
     public String getPartnerCode(String businessId, String filePath) {
-        //String filePath = "src/main/resources/kumppanikoodilistaus 16.8.2024.xlsx";
+        try {
+            InputStream fileStream = loadFileFromClasspath(filePath);
         
-        Map<String, String> kumppanikoodit = readExcelFile(filePath);
+            Map<String, String> kumppanikoodit = readExcelFile(fileStream);
 
-        String partnerCode = kumppanikoodit.get(businessId);
-        System.out.println("Partner code :: " + partnerCode);
-        return partnerCode;
+            String partnerCode = kumppanikoodit.get(businessId);
+            System.out.println("Partner code :: " + partnerCode);
+            return partnerCode;
 
+        } catch (IOException e) {
+            System.err.println("Error loading file from classpath: " + e.getMessage());
+            e.printStackTrace();
+            return null; 
+        }
     }
 
-    private static Map<String, String> readExcelFile(String filePath) {
+    private static Map<String, String> readExcelFile(InputStream inputStream) {
         Map<String, String> kumppanikoodit = new HashMap<>();
 
-        try (Workbook workbook = new XSSFWorkbook(Files.newInputStream(Paths.get(filePath)))) {
+        try (Workbook workbook = new XSSFWorkbook(inputStream)) {
             Sheet sheet = workbook.getSheetAt(0);
 
             for (Row row : sheet) {
-                Cell ytunnusCell = row.getCell(1); // Y-tunnus is in the 2nd column
-                Cell kumppanikoodiCell = row.getCell(2); // kumppanikoodi is in the 3rd column
+                Cell ytunnusCell = row.getCell(0); // Y-tunnus is in the 1st column
+                Cell kumppanikoodiCell = row.getCell(1); // kumppanikoodi is in the 2nd column
 
                 if (ytunnusCell != null && kumppanikoodiCell != null) {
                     String ytunnus = ytunnusCell.getStringCellValue().trim();
@@ -323,6 +326,15 @@ public class KirjanpitoProcessor {
 
         return glAccount;
 
+    }
+
+    private InputStream loadFileFromClasspath(String filePath) throws IOException {
+        // Get the file from the classpath (from "sap" folder)
+        InputStream fileInputStream = getClass().getClassLoader().getResourceAsStream(filePath);
+        if (fileInputStream == null) {
+            throw new FileNotFoundException("File not found in classpath: " + filePath);
+        }
+        return fileInputStream;
     }
 
     public void writeFileSapSftp(Exchange ex) {
