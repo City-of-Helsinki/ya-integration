@@ -20,12 +20,15 @@ public class SentryConfig {
     @ConfigProperty(name = "SENTRY_DSN")
     String dsn;
 
+    @ConfigProperty(name = "SENTRY_ENV")
+    String env;
+
     @Startup
     public void init() {
         Sentry.init(options -> {
             options.setDsn(dsn); 
             options.setDebug(false);
-            options.setEnvironment("dev");
+            options.setEnvironment(env);
             options.setTracesSampleRate(1.0);  
             options.setSampleRate(1.0);  
 
