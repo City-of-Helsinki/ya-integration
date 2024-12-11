@@ -4,6 +4,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Route;
 import org.apache.camel.spi.RoutePolicy;
 import org.apache.camel.support.service.ServiceSupport;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -14,7 +15,7 @@ public class RedisLockRoutePolicy extends ServiceSupport implements RoutePolicy 
     private final String lockKey;
     private final int lockTimeout;
 
-    public RedisLockRoutePolicy(RedisProcessor redisProcessor, String lockKey, int lockTimeout) {
+    public RedisLockRoutePolicy(RedisProcessor redisProcessor, @ConfigProperty(name = "REDIS_LOCK_KEY") String lockKey, @ConfigProperty(name = "REDIS_LOCK_TIMEOUT") int lockTimeout) {
         this.redisProcessor = redisProcessor;
         this.lockKey = lockKey;
         this.lockTimeout = lockTimeout;
