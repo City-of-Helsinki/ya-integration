@@ -1,5 +1,7 @@
 package fi.hel.integration.ya;
 
+import java.util.Random;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.Route;
 import org.apache.camel.spi.RoutePolicy;
@@ -23,6 +25,14 @@ public class RedisLockRoutePolicy extends ServiceSupport implements RoutePolicy 
 
     @Override
     public void onStart(Route route) {
+        try {
+            Random rand = new Random();
+            int randomDelay = rand.nextInt(4000) + 1000; // Random delay between 1000ms (1 second) and 5000ms (5 seconds)
+            System.out.println("Delaying route start by " + randomDelay + " milliseconds.");
+            Thread.sleep(randomDelay);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         if (!redisProcessor.acquireLock(lockKey, lockTimeout)) {
             System.out.println("Lock not acquired for route: " + route.getId() + ". Route will not start.");
             throw new IllegalStateException("Could not acquire lock for route: " + route.getId());
