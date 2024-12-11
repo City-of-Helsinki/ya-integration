@@ -12,9 +12,9 @@ public class RedisLockRoutePolicy extends ServiceSupport implements RoutePolicy 
 
     private final RedisProcessor redisProcessor;
     private final String lockKey;
-    private final long lockTimeout;
+    private final int lockTimeout;
 
-    public RedisLockRoutePolicy(RedisProcessor redisProcessor, String lockKey, long lockTimeout) {
+    public RedisLockRoutePolicy(RedisProcessor redisProcessor, String lockKey, int lockTimeout) {
         this.redisProcessor = redisProcessor;
         this.lockKey = lockKey;
         this.lockTimeout = lockTimeout;
