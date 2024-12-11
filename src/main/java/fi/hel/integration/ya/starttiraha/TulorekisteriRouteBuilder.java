@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.camel.Endpoint;
@@ -15,8 +16,12 @@ import org.apache.camel.dataformat.csv.CsvDataFormat;
 import fi.hel.integration.ya.CsvValidator;
 import fi.hel.integration.ya.Utils;
 import fi.hel.integration.ya.XmlValidator;
+import fi.hel.integration.ya.exceptions.CsvValidationException;
+import fi.hel.integration.ya.exceptions.XmlValidationException;
 import fi.hel.integration.ya.starttiraha.models.tulorekisteri.BenefitReportsRequestToIR;
 import fi.hel.integration.ya.starttiraha.processor.TulorekisteriProcessor;
+import io.sentry.Sentry;
+import io.sentry.SentryLevel;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -71,6 +76,51 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
             .handled(true) // The error is not passed on to other error handlers.
             .stop(); // Stop routing processing for this error.
 
+        onException(CsvValidationException.class)
+            .handled(true)
+            .process(exchange -> {
+                CsvValidationException cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, CsvValidationException.class);
+
+                Sentry.withScope(scope -> {
+                    String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
+                    String uniqueId = UUID.randomUUID().toString(); // Generate a unique ID for the error
+
+                    scope.setLevel(cause.getSentryLevel());
+                    scope.setTag("error.type", cause.getTag());
+                    scope.setTag("context.fileName", fileName);
+                    scope.setFingerprint(Arrays.asList(uniqueId)); 
+                    Sentry.captureException(cause);
+                });
+
+                Sentry.flush(2000);
+
+            })
+            .log("CsvValidationException occurred: ${exception.message}")
+        ;
+
+        onException(XmlValidationException.class)
+            .handled(true)
+            .process(exchange -> {
+                XmlValidationException cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, XmlValidationException.class);
+
+                Sentry.withScope(scope -> {
+                    String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
+                    String uniqueId = UUID.randomUUID().toString(); // Generate a unique ID for the error
+
+                    scope.setLevel(cause.getSentryLevel());
+                    scope.setTag("error.type", cause.getTag());
+                    scope.setTag("context.fileName", fileName);
+                    scope.setFingerprint(Arrays.asList(uniqueId)); 
+                    Sentry.captureException(cause);
+                });
+
+                Sentry.flush(2000);
+
+            })
+            .log("XmlValidationException occurred: ${exception.message}")
+        ;
+
+
         from("file:inbox/starttiraha/tulorekisteri?readLock=changed")
             //.log("Data ::  ${body}")
             .to("direct:tulorekisteri.controller")
@@ -117,9 +167,13 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
                         .otherwise()
                             .log("XML is not valid, ${header.CamelFileName}")
                             .log("Error message :: ${header.xml_error_messages}")
+                            .throwException(new XmlValidationException("Invalid xml file", SentryLevel.ERROR, "xmlValidationError"))
+
                     .endChoice()
             .otherwise()
-                .log("CSV is not valid, ${header.CamelFileName}")   
+                .log("CSV is not valid, ${header.CamelFileName}")
+                .throwException(new CsvValidationException("Invalid csv file", SentryLevel.ERROR, "csvValidationError"))
+
 ;
            
 

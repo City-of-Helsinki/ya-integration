@@ -73,7 +73,7 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
                     .to("direct:continue-processing-P22Data")
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
-                    //.throwException(new JsonValidationException("Invalid json file", SentryLevel.ERROR, "jsonValidationError"))
+                    .throwException(new JsonValidationException("Invalid json file", SentryLevel.ERROR, "jsonValidationError"))
                     .to("file:outbox/invalidJson")
 
         ;
@@ -92,7 +92,7 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
             .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
             .to("direct:saveJsonData-P22")
-            .setHeader(Exchange.FILE_NAME, simple("${header.originalFileName}"))
+            .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
             .to("direct:validate-json-P22")
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))

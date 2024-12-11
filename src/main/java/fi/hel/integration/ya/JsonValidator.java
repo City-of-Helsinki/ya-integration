@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.camel.Exchange;
 import org.everit.json.schema.Schema;
@@ -21,40 +23,41 @@ import jakarta.inject.Named;
 @Named("jsonValidator")
 public class JsonValidator {
     
-     public void validateJson(Exchange ex, String schemaFile) throws FileNotFoundException {
-    
+    public void validateJson(Exchange ex, String schemaFile) throws FileNotFoundException {
+        List<String> errorMessages = new ArrayList<>();
+
         try {
             String json = ex.getIn().getBody(String.class);
-            //System.out.println("json string :: " + json);
             JSONObject jsonData = new JSONObject(new JSONTokener(json));
-            //System.out.println("jsonData :: " + jsonData );
-            //System.out.println("Schemafile :: " + schemaFile);
             Schema schema = loadJsonSchema(schemaFile);
-            //System.out.println("Schema :: " + schema);
             schema.validate(jsonData);
             ex.getIn().setHeader("isJsonValid", true);
 
         } catch (IOException e  ) {
             e.printStackTrace();
+            errorMessages.add("IOException: " + e.getMessage());
             ex.getIn().setHeader("isJsonValid", false);
 
         } catch (JSONException e) {
             // Catch JSON parsing errors
             e.printStackTrace();
             System.out.println("Invalid JSON format: " + e.getMessage());
+            errorMessages.add("Invalid JSON format: " + e.getMessage());
             ex.getIn().setHeader("isJsonValid", false);
 
         } catch (ValidationException e) {
             e.printStackTrace();
-            logValidationExceptions(e);
+            logValidationExceptions(e, errorMessages);
             ex.getIn().setHeader("isJsonValid", false);
         }
 
+        if (!errorMessages.isEmpty()) {
+            ex.getIn().setHeader("jsonValidationErrors", String.join(", ", errorMessages));
+        }
     }
 
     private Schema loadJsonSchema(String schemaFilename) throws FileNotFoundException, IOException {
         String schemaString = readResource(schemaFilename);
-        //System.out.println("schemaString :: " + schemaString);
         JSONObject rawSchema = new JSONObject(new JSONTokener(schemaString));
         Schema schema = SchemaLoader.load(rawSchema);
         return schema;
@@ -77,11 +80,16 @@ public class JsonValidator {
     }
 
 
-    private void logValidationExceptions(ValidationException e) {
+    private void logValidationExceptions(ValidationException e, List<String> errorMessages) {
         System.out.println("Validation failed with " + e.getViolationCount() + " violations:");
         e.getCausingExceptions().stream()
             .map(ValidationException::getMessage)
-            .forEach(System.out::println);
+            .forEach(message -> {
+                System.out.println(message); 
+                errorMessages.add(message);
+            });
         System.out.println("Root exception message: " + e.getMessage());
+        errorMessages.add("Root exception message: " + e.getMessage());
+
     }
 }

@@ -1,5 +1,8 @@
 package fi.hel.integration.ya.maksuliikenne;
 
+import java.util.Arrays;
+import java.util.UUID;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.file.remote.SftpComponent;
@@ -9,8 +12,11 @@ import org.apache.camel.component.jackson.JacksonDataFormat;
 import com.jcraft.jsch.JSch;
 
 import fi.hel.integration.ya.XmlValidator;
+import fi.hel.integration.ya.exceptions.XmlValidationException;
 import fi.hel.integration.ya.maksuliikenne.models.kirjanpitoSAP.SBO_SimpleAccountingContainer;
 import fi.hel.integration.ya.maksuliikenne.processor.KirjanpitoProcessor;
+import io.sentry.Sentry;
+import io.sentry.SentryLevel;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -38,6 +44,28 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
             .log("An error occurred: ${exception}") // Log error.
             .handled(true) // The error is not passed on to other error handlers.
             .stop(); // Stop routing processing for this error.
+
+        onException(XmlValidationException.class)
+            .handled(true)
+            .process(exchange -> {
+                XmlValidationException cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, XmlValidationException.class);
+
+                Sentry.withScope(scope -> {
+                    String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
+                    String uniqueId = UUID.randomUUID().toString(); // Generate a unique ID for the error
+
+                    scope.setLevel(cause.getSentryLevel());
+                    scope.setTag("error.type", cause.getTag());
+                    scope.setTag("context.fileName", fileName);
+                    scope.setFingerprint(Arrays.asList(uniqueId)); 
+                    Sentry.captureException(cause);
+                });
+
+                Sentry.flush(2000);
+
+            })
+            .log("XmlValidationException occurred: ${exception.message}")
+        ;
     
         // This route is for local testing
         from("file:inbox/maksuliikenne/kirjanpito?readLock=changed")
@@ -65,13 +93,20 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                         //.log("Kirjanpito xml :: ${body}")
                     .otherwise()
                         //.to("file:outbox/invalidXml")
-                        .log("XML is not valid, errors :: ${header.xml_error_messages}, lines :: ${header.xml_error_line_numbers}, columns :: ${header.xml_error_column_numbers}")
+                        .log("XML is not valid, ${header.CamelFileName}")
+                        .log("Error message :: ${header.xml_error_messages}")
+                        .process(exchange -> {
+                            String errorMessages = exchange.getIn().getHeader("xml_error_messages", String.class);
+                            throw new XmlValidationException(
+                                "Invalid XML file. Error messages: " + errorMessages,
+                                SentryLevel.ERROR,
+                                "xmlValidationError"
+                            );
+                        })
                 .end() 
             .end()
             .log("All accounting data processed")
-            .to("direct:sendMaksuliikenneReportEmail")
-            
-                
+            .to("direct:sendMaksuliikenneReportEmail")   
         ;
 
         from("direct:mapAccountingData")
