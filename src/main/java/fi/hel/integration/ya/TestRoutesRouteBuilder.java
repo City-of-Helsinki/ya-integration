@@ -442,9 +442,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{VERKKOLEVY_SFTP_USER}}")
             .setHeader("password").simple("{{VERKKOLEVY_SFTP_PASSWORD}}")
             .setHeader("directoryPath").simple("{{VERKKOLEVY_DIRECTORY_PATH}}")
-            //.bean(this, "testSFTPConnection")
+            .bean(this, "testSFTPConnection")
             //.to("direct:fetchDirectoriesFromSftp")
-            .to("direct:fetchFileNamesFromSftp")    
+            //.to("direct:fetchFileNamesFromSftp")    
         ;
 
         from("timer://testAHRSftp?repeatCount=1&delay=5000")
@@ -454,8 +454,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{AHR_SFTP_USER}}")
             .setHeader("privateKey").simple("{{AHR_SFTP_PRIVATEKEY}}")
             .setHeader("directoryPath").simple("{{AHR_DIRECTORY_PATH}}")
+            .bean(this, "testSFTPConnectionWithPrivateKey")
             //.to("direct:fetchDirectoriesFromSftp")
-            .to("direct:fetchFileNamesFromSftp")
+            //.to("direct:fetchFileNamesFromSftp")
             //.bean(tProcessor, "removeFileFromSftp(*)")            
         ;
 
@@ -473,8 +474,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                 config.put("server_host_key", "ssh-rsa");
                 ex.getIn().setHeader("sftp_config", config);
             })
-            //.bean(this, "testSFTPConnection")
-            .to("direct:fetchDirectoriesFromSftp")            
+            .bean(this, "testSFTPConnection")
+            //.to("direct:fetchDirectoriesFromSftp")            
         ;
 
         from("timer://testP24Route?repeatCount=1")
@@ -574,13 +575,6 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         from("{{TEST_QUARTZ_TIMER}}")
             .autoStartup("{{TEST_QUARTZ_TIMER_AUTOSTARTUP}}")
             .log("Starting the timer route")
-            .process(exchange -> {
-                Random random = new Random();
-                int delayMillis = random.nextInt(10000); // Random delay between 0 and 500 ms
-                System.out.println("Random delay: " + delayMillis + "ms");
-                Thread.sleep(delayMillis);
-            })
-            .log("Start after delay")
             .process(exchange -> {
                 if (redisProcessor.acquireLock(LOCK_KEY, 300)) { 
                     exchange.getIn().setHeader("lockAcquired", true);
