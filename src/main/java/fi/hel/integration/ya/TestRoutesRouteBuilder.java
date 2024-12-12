@@ -592,5 +592,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .end()
             //.process(exchange -> releaseLock())
         ;
+
+        from("timer://test?repeatCount=1&delay=5000")
+            .log("Test user :: {{TEST_USER}}")
+        ;
     }     
 }
