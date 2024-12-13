@@ -99,7 +99,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                 .otherwise()
                     .log("XML is not valid, ${header.CamelFileName}")
                     .log("Error message :: ${header.error_messages}")
-                    .setHeader("messageSubject", simple("Ya-integration, maksuliikenne: virhe xml-sanomassa (Banking)"))
+                    .setHeader("messageSubject", simple("Ya-integraatio, maksuliikenne: virhe xml-sanomassa (Banking)"))
                     .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
                     .to("direct:sendErrorReport")
                     .process(exchange -> {
