@@ -27,7 +27,7 @@ public class EmailRouteBuilder extends RouteBuilder {
                 String fileName = ex.getIn().getHeader("CamelFileName", String.class);
                 String errorMessage = ex.getIn().getHeader("error_messages", String.class);
                 String message = "<b>Virheellinen tiedosto:</b>: " + fileName + "<br>" 
-                               + "<b>Virhe</b>: Invalid file, " + errorMessage + "<br><br><br><br><br>"
+                               + "<b>Virhe</b>: Invalid file, " + errorMessage + "<br><br><br>"
                                + "Tämä on YA-integraation lähettämä automaattinen viesti";
                 
                 ex.getIn().setHeader("emailMessage", message);
