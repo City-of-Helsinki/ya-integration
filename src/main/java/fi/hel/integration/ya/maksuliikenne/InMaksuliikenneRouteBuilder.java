@@ -99,11 +99,11 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
                 + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
-                + "&antInclude=YA_p24_091_20241209105800_091_PT"
+                + "&antInclude=YA_p24_091_20241209105800_091_PT*"
             )   
             .routeId("kipa-P24") 
             .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
-            .routePolicy(new RedisLockRoutePolicy(redisProcessor, LOCK_KEY, 300))
+            //.routePolicy(new RedisLockRoutePolicy(redisProcessor, LOCK_KEY, 300))
             .log("File fecthed from kipa")
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
             .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))

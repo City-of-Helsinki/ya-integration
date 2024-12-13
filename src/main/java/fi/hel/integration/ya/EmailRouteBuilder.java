@@ -3,8 +3,10 @@ package fi.hel.integration.ya;
 import org.apache.camel.builder.RouteBuilder;
 
 import fi.hel.integration.ya.maksuliikenne.processor.SendEmail;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+@ApplicationScoped
 public class EmailRouteBuilder extends RouteBuilder {
     
     @Inject
