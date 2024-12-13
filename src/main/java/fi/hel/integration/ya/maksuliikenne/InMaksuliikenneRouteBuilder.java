@@ -99,7 +99,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
                 + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
-                + "&antInclude=YA_p24_091_20241209105802_091_MYK*"
+                + "&antInclude=YA_p24_091_20241209105802_091_PT55*"
             )   
             .routeId("kipa-P24") 
             .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")

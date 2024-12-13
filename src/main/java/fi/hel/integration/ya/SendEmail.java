@@ -1,14 +1,11 @@
-package fi.hel.integration.ya.maksuliikenne.processor;
+package fi.hel.integration.ya;
 
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
 import java.util.Properties;
 
 import org.apache.camel.Exchange;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import jakarta.activation.DataHandler;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
@@ -20,9 +17,6 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import jakarta.mail.Message;
 import jakarta.mail.Multipart;
-
-
-
 
 @ApplicationScoped
 @Named("sendEmail")

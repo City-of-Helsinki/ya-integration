@@ -9,12 +9,12 @@ import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jackson.JacksonDataFormat;
 
+import fi.hel.integration.ya.SendEmail;
 import fi.hel.integration.ya.Utils;
 import fi.hel.integration.ya.XmlValidator;
 import fi.hel.integration.ya.exceptions.XmlValidationException;
 import fi.hel.integration.ya.maksuliikenne.models.pain.Document;
 import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
-import fi.hel.integration.ya.maksuliikenne.processor.SendEmail;
 import io.sentry.Sentry;
 import io.sentry.SentryLevel;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -91,8 +91,8 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                             //.to("direct:sendMaksuliikenneReportEmail")
                             // Restore the Kipa data to the route and direct it to the accounting mapping
                             .setBody().variable("kipa_p24_data")
-                            .log("kirjanpito data :: ${body}")
-                            //.to("direct:kirjanpito.controller")
+                            //.log("kirjanpito data :: ${body}")
+                            .to("direct:kirjanpito.controller")
                         .otherwise()
                             .log("Error occurred  while sending the xml file to Banking")
                     .endChoice()
@@ -135,6 +135,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
 
         from("direct:sendMaksuliikenneReportEmail")
             .log("Creating email message")
+            .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
             .process(ex -> {
                 Map<String,Object> totalAmounts = ex.getIn().getHeader("reportData", Map.class);
                 String dueDate = ex.getIn().getHeader("dueDate", String.class);
