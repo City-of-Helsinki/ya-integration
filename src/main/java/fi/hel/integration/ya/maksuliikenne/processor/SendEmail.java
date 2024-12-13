@@ -31,8 +31,8 @@ public class SendEmail {
     @Inject
     Logger log; 
 
-    @ConfigProperty(name="MAKSULIIKENNE_EMAIL_RECIPIENTS", defaultValue = "recipient")
-    String recipients;
+    //@ConfigProperty(name="MAKSULIIKENNE_EMAIL_RECIPIENTS", defaultValue = "recipient")
+    //String recipients;
 
     @ConfigProperty(name="MAIL_SMTP_HOST", defaultValue = "host")
     String host;
@@ -50,6 +50,7 @@ public class SendEmail {
             //byte[] byteArray = ex.getIn().getBody(byte[].class);
             String messageSubject = (String) ex.getIn().getHeader("messageSubject");
             String emailMessage = (String) ex.getIn().getHeader("emailMessage");
+            String recipients = (String) ex.getIn().getHeader("emailRecipients");
             System.out.println("Sending email to " + recipients);
 
             Properties prop = new Properties();
@@ -86,7 +87,7 @@ public class SendEmail {
         
         } catch (Exception e) {
             log.error(e);
-            e.printStackTrace();
+            //e.printStackTrace();
             ex.setException(e);
         }
     }

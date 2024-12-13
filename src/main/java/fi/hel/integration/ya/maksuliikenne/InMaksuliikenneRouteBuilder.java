@@ -33,12 +33,6 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
     @Inject
     RedisProcessor redisProcessor;
 
-    //private final String testSecret = "{{test_secret}}";
-    private final String KIPA_SFTP_HOST = "{{kipa_sftp_host}}";
-    private final String KIPA_SFTP_USER_P24 = "{{kipa_sftp_user_p24}}";
-    private final String KIPA_SFTP_PASSWORD_P24 = "{{kipa_sftp_password_p24}}";
-    private final String KIPA_DIRECTORY_PATH_P24 = "{{KIPA_DIRECTORY_PATH_P24}}";
-
     private final String SCHEMA_FILE_PT_PT55_TOJT = "schema/kipa/json_schema_PT_PT55_TOJT.json";
     private final String SCHEMA_FILE_MYK_HKK = "schema/kipa/json_schema_MYK_HKK.json";
 
@@ -87,9 +81,16 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     .to("direct:continue-processing-P24Data")
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
-                    .throwException(new JsonValidationException("Invalid json file", SentryLevel.ERROR, "jsonValidationError"))
-                    .to("file:outbox/invalidJson")
-
+                    .log("Error message :: ${header.jsonValidationErrors}")
+                    .process(exchange -> {
+                        String errorMessages = exchange.getIn().getHeader("jsonValidationErrors", String.class);
+                        throw new JsonValidationException(
+                            "Invalid json file. Error messages: " + errorMessages,
+                            SentryLevel.ERROR,
+                            "jsonValidationError"
+                        );
+                    })
+                //.to("file:outbox/invalidJson")
         ;
 
         // Reads files from the YA Kipa API
@@ -98,7 +99,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
                 + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
-                + "&antInclude=YA_p24_091_20241011*"
+                + "&antInclude=YA_p24_091_20241209105800_091_PT"
             )   
             .routeId("kipa-P24") 
             .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
@@ -106,9 +107,9 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .log("File fecthed from kipa")
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
             .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
-            .to("direct:saveJsonData-P24")
+            //.to("direct:saveJsonData-P24")
             .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
-            .log("Body after saving the json to logs :: ${body}")
+            //.log("Body after saving the json to logs :: ${body}")
             .to("direct:validate-json-P24")
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
@@ -120,9 +121,17 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
              
             .otherwise()
                 .log("Json is not valid, ${header.CamelFileName}")
-                .throwException(new JsonValidationException("Invalid json file", SentryLevel.ERROR, "jsonValidationError"))
+                .log("Error message :: ${header.jsonValidationErrors}")
+                .process(exchange -> {
+                    String errorMessages = exchange.getIn().getHeader("jsonValidationErrors", String.class);
+                    throw new JsonValidationException(
+                        "Invalid json file. Error messages: " + errorMessages,
+                        SentryLevel.ERROR,
+                        "jsonValidationError"
+                    );
+                })
                 .setVariable("kipa_dir").simple("errors")
-                .to("direct:readSFTPFileAndMove-P24")
+                //.to("direct:readSFTPFileAndMove-P24")
                 .log("file moved to errors")
                 //.to("file:outbox/invalidJson")
         ; 

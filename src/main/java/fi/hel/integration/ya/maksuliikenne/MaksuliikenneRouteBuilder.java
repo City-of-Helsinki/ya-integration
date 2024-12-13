@@ -38,6 +38,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
     private final String SCHEMA_FILE = "schema/banking/pain.001.001.03.xsd";
     private final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
     private final String FILE_NAME_PREFIX = "{{MAKSULIIKENNE_BANKING_FILENAMEPREFIX}}";
+    private final String EMAIL_RECIPIENTS = "{{MAKSULIIKENNE_EMAIL_RECIPIENTS}}";
 
     @Override
     public void configure() throws Exception {
@@ -78,7 +79,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader(Exchange.FILE_NAME, simple(FILE_NAME_PREFIX + "${date:now:yyyyMMddHHmmss}.xml"))
             .to("mock:sendMaksuliikenneXml")
             //.to("file:outbox/maksuliikenne")
-            .log("Pain xml :: ${body}")
+            //.log("Pain xml :: ${body}")
             .choice()
                 .when(simple("${header.isXmlValid} == 'true'"))
                     .log("XML is valid, sending the file to banking ${header.CamelFileName}")
@@ -97,9 +98,12 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                     .endChoice()
                 .otherwise()
                     .log("XML is not valid, ${header.CamelFileName}")
-                    .log("Error message :: ${header.xml_error_messages}")
+                    .log("Error message :: ${header.error_messages}")
+                    .setHeader("messageSubject", simple("Ya-integration, maksuliikenne: virhe xml-sanomassa (Banking)"))
+                    .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
+                    .to("direct:sendErrorReport")
                     .process(exchange -> {
-                        String errorMessages = exchange.getIn().getHeader("xml_error_messages", String.class);
+                        String errorMessages = exchange.getIn().getHeader("error_messages", String.class);
                         throw new XmlValidationException(
                             "Invalid XML file. Error messages: " + errorMessages,
                             SentryLevel.ERROR,
@@ -151,5 +155,6 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .log("Email has been sent")
         ;
 
+        
     }
 }

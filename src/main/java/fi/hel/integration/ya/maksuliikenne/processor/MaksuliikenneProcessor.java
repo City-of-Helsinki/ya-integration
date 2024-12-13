@@ -144,7 +144,7 @@ public class MaksuliikenneProcessor {
             initiatingParty.setId(initgPtyId);
 
             // Debtor (Payment info)
-            postalAddress.setCtry(MAAKOODI_MAKSAJA);
+            //postalAddress.setCtry(MAAKOODI_MAKSAJA);
             pmtInfSchmeNm.setCd(MAKSUPALVELUTUNNUS_CODE);
             pmtInfOthr.setId(maksupalvelutunnus);
             pmtInfOthr.setSchmeNm(pmtInfSchmeNm);
