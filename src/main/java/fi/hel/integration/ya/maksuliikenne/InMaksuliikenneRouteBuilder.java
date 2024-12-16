@@ -260,6 +260,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 .otherwise()
                     .log("No matching case found, skipping processing")
                     .setHeader("isJsonValid", constant(false))
+                    .setHeader("jsonValidationErrors", simple("Unrecognized claim type abbreviation"))
             .end()
             .log("is valid :: ${header.isJsonValid}")
         ;
