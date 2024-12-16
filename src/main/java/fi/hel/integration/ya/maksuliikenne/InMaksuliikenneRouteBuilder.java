@@ -123,7 +123,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
-            .setHeader("filePrefix", constant("YA_p24_091_20241209105804"))
+            .setHeader("filePrefix", constant("YA_p24_091_20241209105807"))
             .bean("sftpProcessor", "getAllSFTPFileNames")
             .process(exchange -> exchange.setVariable("kipa_P24_data", new ArrayList<String>()))
             .split(body())
