@@ -128,70 +128,62 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
             .setHeader("filePrefix", constant("YA_p24_091_20241209105808"))
             .setHeader("filePrefix2", constant("YA_p23_091_20241209110907_091_ATVK"))
+            .log("Fetching file names from Kipa")
             .bean("sftpProcessor", "getAllSFTPFileNames")
-            .process(exchange -> exchange.setVariable("combinedJsons", new ArrayList<String>()))
-            .split(body())
-                .aggregationStrategy((oldExchange, newExchange) -> {
-                
-                    if (oldExchange == null) {
-                        return newExchange; // First exchange, initialize the aggregation
-                    }
-                    List<Map<String, Object>> combinedJsons = oldExchange.getVariable("combinedJsons", List.class);
-                    oldExchange.getIn().setBody(combinedJsons); // Pass combined JSONs in oldExchange
-                    return oldExchange;
-                })
-                .log("Processing file: ${body}") // Log each file name
-                .setHeader("CamelFileName", simple("${body}")) // Set the file name for pollEnrich
-                .pollEnrich()
-                    .simple("sftp://{{KIPA_SFTP_HOST}}/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}&password={{KIPA_SFTP_PASSWORD_P24}}&fileName=${header.CamelFileName}") 
-                    .timeout(60000)
-                .log("File fecthed from kipa")
-                .setVariable("originalFileName", simple("${header.CamelFileName}"))
-                .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
-                //.to("direct:saveJsonData-P24")
-                .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
-                .to("direct:validate-json-P24")
-                .choice()
-                    .when(simple("${header.isJsonValid} == 'true'"))
-                        .log("Json is valid continue processing ${header.CamelFileName}")
-                        .setVariable("kipa_dir").simple("processed")
-                        //.to("direct:readSFTPFileAndMove-P24")
-                        //.log("file moved to processed")
-                        .unmarshal(new JacksonDataFormat())
-                        .process(exchange -> {
-                            // Get the file content
-                            Map<String,Object> fileContent = exchange.getIn().getBody(Map.class);
-                            List<Map<String,Object>> combinedJsons = exchange.getVariable("combinedJsons", List.class);
-
-                            combinedJsons.add(fileContent);
-                        })
-            
-                    .otherwise()
-                        .log("Json is not valid, ${header.CamelFileName}")
-                        .log("Error message :: ${header.jsonValidationErrors}")
-/*                         .process(exchange -> {
-                            String errorMessages = exchange.getIn().getHeader("jsonValidationErrors", String.class);
-                            throw new JsonValidationException(
-                                "Invalid json file. Error messages: " + errorMessages,
-                                SentryLevel.ERROR,
-                                "jsonValidationError"
-                            );
-                        }) */
-                        .setVariable("kipa_dir").simple("errors")
-                        .wireTap("direct:readSFTPFileAndMove-P24")
-                        .log("file moved to errors")
-                        //.to("file:outbox/invalidJson")
-                .end()
-            .end()
-            .process(exchange -> {
-                // After all splits, set the combined JSONs as the body
-                List<Map<String, Object>> combinedJsons = exchange.getVariable("combinedJsons", List.class);
-                exchange.getIn().setBody(combinedJsons);
-            })
+            .log("Fetching and combining the json data")
+            .bean(sftpProcessor, "fetchAllFilesFromSftpByFileName")
             .marshal(new JacksonDataFormat())
             .setVariable("kipa_p24_data").simple("${body}")
             .log("Body before continue processing :: ${body}")
             //.to("direct:maksuliikenne-controller")
+        ;
+
+        from("direct:poll-and-validate-file")
+            .log("Processing file: ${body}") // Log each file name
+            .setHeader("CamelFileName", simple("${body}")) // Set the file name for pollEnrich
+            .pollEnrich()
+                .simple("sftp://{{KIPA_SFTP_HOST}}/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}&password={{KIPA_SFTP_PASSWORD_P24}}&fileName=${header.CamelFileName}") 
+                .timeout(60000)
+            .log("File fecthed from kipa")
+            .setVariable("originalFileName", simple("${header.CamelFileName}"))
+            .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
+            //.to("direct:saveJsonData-P24")
+            .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
+            .to("direct:validate-json-P24")
+            .choice()
+                .when(simple("${header.isJsonValid} == 'true'"))
+                    .log("Json is valid continue processing ${header.CamelFileName}")
+                    .setVariable("kipa_dir").simple("processed")
+                    //.to("direct:readSFTPFileAndMove-P24")
+                    //.log("file moved to processed")
+                    .unmarshal(new JacksonDataFormat())
+                    .process(exchange -> {
+                        Map<String, Object> fileContent = exchange.getIn().getBody(Map.class);
+                        exchange.getIn().setBody(Map.of("isJsonValid", true, "fileContent", fileContent));
+                    })
+    
+            .otherwise()
+                .log("Json is not valid, ${header.CamelFileName}")
+                .log("Error message :: ${header.jsonValidationErrors}")
+/*              .process(exchange -> {
+                    String errorMessages = exchange.getIn().getHeader("jsonValidationErrors", String.class);
+                    throw new JsonValidationException(
+                        "Invalid json file. Error messages: " + errorMessages,
+                        SentryLevel.ERROR,
+                        "jsonValidationError"
+                    );
+                }) */
+                .setVariable("kipa_dir").simple("errors")
+                .wireTap("direct:readSFTPFileAndMove-P24")
+                .log("file moved to errors")
+                .process(exchange -> {
+                    String errorMessage = exchange.getIn().getHeader("jsonValidationErrors", String.class);
+                    exchange.getIn().setBody(Map.of(
+                        "isJsonValid", false,
+                        "errorMessage", errorMessage
+                    ));
+                })
+                //.to("file:outbox/invalidJson")
         ;
 
         // Reads files from the YA Kipa API

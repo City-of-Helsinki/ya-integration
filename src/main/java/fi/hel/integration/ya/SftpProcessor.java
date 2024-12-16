@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.ProducerTemplate;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
@@ -15,11 +17,15 @@ import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
 @ApplicationScoped
 @Named ("sftpProcessor")
 public class SftpProcessor {
+
+    @Inject
+    ProducerTemplate producerTemplate;
 
     public List<String> getAllSFTPFileNames(Exchange ex) throws JSchException, SftpException, IOException {
         String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
@@ -73,5 +79,24 @@ public class SftpProcessor {
         session.disconnect();
 
         return fileNames;
+    }
+
+    public void fetchAllFilesFromSftpByFileName(Exchange ex) {
+        List<String> fileNames = ex.getIn().getBody(List.class);
+        List<Map<String, Object>> combinedJsons = new ArrayList<>();
+
+        for (String fileName : fileNames) {
+            Map<String, Object> result = producerTemplate.requestBody("direct:poll-and-validate-file", fileName, Map.class);
+
+            Boolean isJsonValid = (Boolean) result.get("isJsonValid");
+            if (isJsonValid != null && isJsonValid) {
+                combinedJsons.add((Map<String, Object>) result.get("fileContent"));
+            } else {
+                String errorMessage = (String) result.get("errorMessage");
+                System.out.println("Invalid JSON: " + errorMessage);
+            }
+        }
+
+        ex.getIn().setBody(combinedJsons);
     }
 }
