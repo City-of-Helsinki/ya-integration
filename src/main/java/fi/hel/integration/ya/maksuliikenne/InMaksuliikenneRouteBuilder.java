@@ -127,10 +127,19 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
             .setHeader("filePrefix", constant("YA_p24_091_20241209105808"))
-            .setHeader("filePrefix2", constant("YA_p23_091_20241209110954_091_ATVK"))
+            .setHeader("filePrefix2", constant("YA_p23_091_20241209110907_091_ATVK"))
             .bean("sftpProcessor", "getAllSFTPFileNames")
             .process(exchange -> exchange.setVariable("combinedJsons", new ArrayList<String>()))
             .split(body())
+                .aggregationStrategy((oldExchange, newExchange) -> {
+                
+                    if (oldExchange == null) {
+                        return newExchange; // First exchange, initialize the aggregation
+                    }
+                    List<Map<String, Object>> combinedJsons = oldExchange.getVariable("combinedJsons", List.class);
+                    oldExchange.getIn().setBody(combinedJsons); // Pass combined JSONs in oldExchange
+                    return oldExchange;
+                })
                 .log("Processing file: ${body}") // Log each file name
                 .setHeader("CamelFileName", simple("${body}")) // Set the file name for pollEnrich
                 .pollEnrich()
@@ -156,7 +165,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
 
                             combinedJsons.add(fileContent);
                         })
-                        .stop()
+            
                     .otherwise()
                         .log("Json is not valid, ${header.CamelFileName}")
                         .log("Error message :: ${header.jsonValidationErrors}")
@@ -171,7 +180,6 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         .setVariable("kipa_dir").simple("errors")
                         .wireTap("direct:readSFTPFileAndMove-P24")
                         .log("file moved to errors")
-                        .stop()
                         //.to("file:outbox/invalidJson")
                 .endChoice()
             .end()
