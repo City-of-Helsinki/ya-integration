@@ -123,7 +123,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
-            .setHeader("filePrefix", constant("YA_p24_091_20241209105807"))
+            //.setHeader("filePrefix", constant("YA_p24_091_20241209105807"))
             .bean("sftpProcessor", "getAllSFTPFileNames")
             .process(exchange -> exchange.setVariable("combinedJsons", new ArrayList<String>()))
             .split(body())
@@ -155,16 +155,16 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     .otherwise()
                         .log("Json is not valid, ${header.CamelFileName}")
                         .log("Error message :: ${header.jsonValidationErrors}")
-                        .process(exchange -> {
+/*                         .process(exchange -> {
                             String errorMessages = exchange.getIn().getHeader("jsonValidationErrors", String.class);
                             throw new JsonValidationException(
                                 "Invalid json file. Error messages: " + errorMessages,
                                 SentryLevel.ERROR,
                                 "jsonValidationError"
                             );
-                        })
+                        }) */
                         .setVariable("kipa_dir").simple("errors")
-                        //.to("direct:readSFTPFileAndMove-P24")
+                        .wireTap("direct:readSFTPFileAndMove-P24")
                         .log("file moved to errors")
                         //.to("file:outbox/invalidJson")
                 .end()
@@ -173,7 +173,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .marshal(new JacksonDataFormat())
             .setVariable("kipa_p24_data").simple("${body}")
             .log("Body before continue processing :: ${body}")
-            .to("direct:maksuliikenne-controller")
+            //.to("direct:maksuliikenne-controller")
         ;
 
         // Reads files from the YA Kipa API
