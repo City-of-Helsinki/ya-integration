@@ -181,7 +181,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         .wireTap("direct:readSFTPFileAndMove-P24")
                         .log("file moved to errors")
                         //.to("file:outbox/invalidJson")
-                .endChoice()
+                .end()
             .end()
             .process(exchange -> {
                 // After all splits, set the combined JSONs as the body

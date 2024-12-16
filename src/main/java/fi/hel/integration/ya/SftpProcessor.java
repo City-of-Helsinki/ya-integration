@@ -29,7 +29,7 @@ public class SftpProcessor {
         String privateKeyEncoded = ex.getIn().getHeader("privateKey", String.class);
         String privateKey = null;
         String filePrefix = ex.getIn().getHeader("filePrefix", String.class);
-        String filePrefix2 = ex.getIn().getHeader("filePrefix", String.class);
+        String filePrefix2 = ex.getIn().getHeader("filePrefix2", String.class);
         
         if(privateKeyEncoded != null) {
            privateKey = new String(Base64.getDecoder().decode(privateKeyEncoded));
