@@ -135,7 +135,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 .setHeader("CamelFileName", simple("${body}")) // Set the file name for pollEnrich
                 .pollEnrich()
                     .simple("sftp://{{KIPA_SFTP_HOST}}/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}&password={{KIPA_SFTP_PASSWORD_P24}}&fileName=${header.CamelFileName}") 
-                    .timeout(30000)
+                    .timeout(60000)
                 .log("File fecthed from kipa")
                 .setVariable("originalFileName", simple("${header.CamelFileName}"))
                 .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
@@ -156,6 +156,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
 
                             combinedJsons.add(fileContent);
                         })
+                        .stop()
                     .otherwise()
                         .log("Json is not valid, ${header.CamelFileName}")
                         .log("Error message :: ${header.jsonValidationErrors}")
