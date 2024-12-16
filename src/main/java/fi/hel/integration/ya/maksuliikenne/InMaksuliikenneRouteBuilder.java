@@ -109,8 +109,11 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         );
                     })
             .end()
-            //.setBody().simple("${variable.combinedJsons}")
-            //.log("Body before continue processing :: ${body}")
+            .process(exchange -> {
+                List<Map<String, Object>> combinedJsons = exchange.getVariable("combinedJsons", List.class);
+                exchange.getIn().setBody(combinedJsons);
+            })
+            .log("Body before continue processing :: ${body}")
             .to("direct:continue-processing-P24Data")
                 //.to("file:outbox/invalidJson")
         ;
@@ -166,6 +169,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         .setVariable("kipa_dir").simple("errors")
                         .wireTap("direct:readSFTPFileAndMove-P24")
                         .log("file moved to errors")
+                        .stop()
                         //.to("file:outbox/invalidJson")
                 .endChoice()
             .end()
