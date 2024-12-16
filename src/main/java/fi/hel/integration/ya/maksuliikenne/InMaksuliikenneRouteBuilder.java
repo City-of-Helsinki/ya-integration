@@ -123,7 +123,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
-            //.setHeader("filePrefix", constant("YA_p24_091_20241209105807"))
+            .setHeader("filePrefix", constant("YA_p23_091"))
             .bean("sftpProcessor", "getAllSFTPFileNames")
             .process(exchange -> exchange.setVariable("combinedJsons", new ArrayList<String>()))
             .split(body())
@@ -131,7 +131,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 .setHeader("CamelFileName", simple("${body}")) // Set the file name for pollEnrich
                 .pollEnrich()
                     .simple("sftp://{{KIPA_SFTP_HOST}}/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}&password={{KIPA_SFTP_PASSWORD_P24}}&fileName=${header.CamelFileName}") 
-                    .timeout(5000)
+                    .timeout(30000)
                 .log("File fecthed from kipa")
                 .setVariable("originalFileName", simple("${header.CamelFileName}"))
                 .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
