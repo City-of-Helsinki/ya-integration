@@ -167,9 +167,13 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         .wireTap("direct:readSFTPFileAndMove-P24")
                         .log("file moved to errors")
                         //.to("file:outbox/invalidJson")
-                .end()
+                .endChoice()
             .end()
-            .setBody().simple("${variable.combinedJsons}")
+            .process(exchange -> {
+                // After all splits, set the combined JSONs as the body
+                List<Map<String, Object>> combinedJsons = exchange.getVariable("combinedJsons", List.class);
+                exchange.getIn().setBody(combinedJsons);
+            })
             .marshal(new JacksonDataFormat())
             .setVariable("kipa_p24_data").simple("${body}")
             .log("Body before continue processing :: ${body}")
