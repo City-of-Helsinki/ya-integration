@@ -14,6 +14,7 @@ import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
 import fi.hel.integration.ya.JsonValidator;
 import fi.hel.integration.ya.RedisLockRoutePolicy;
 import fi.hel.integration.ya.RedisProcessor;
+import fi.hel.integration.ya.SftpProcessor;
 import fi.hel.integration.ya.exceptions.JsonValidationException;
 import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
 import io.sentry.Sentry;
@@ -32,6 +33,9 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
 
     @Inject
     RedisProcessor redisProcessor;
+
+    @Inject
+    SftpProcessor sftpProcessor;
 
     private final String SCHEMA_FILE_PT_PT55_TOJT = "schema/kipa/json_schema_PT_PT55_TOJT.json";
     private final String SCHEMA_FILE_MYK_HKK = "schema/kipa/json_schema_MYK_HKK.json";
@@ -74,11 +78,25 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
         from("file:inbox/kipa/P24")
             //.log("body :: ${body}")
             .log("Validating json file :: ${header.CamelFileName}")
+            .process(exchange -> exchange.setVariable("combinedJsons", new ArrayList<Map<String,Object>>()))
+            .log("Body before validating :: ${body}")
             .to("direct:validate-json-P24")
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
+                    .log("Body after validating :: ${body}")
                     .log("Json is valid continue processing ${header.CamelFileName}")
-                    .to("direct:continue-processing-P24Data")
+                    .unmarshal(new JacksonDataFormat())
+                    .process(exchange -> {
+                        // Get the file content
+                        Map<String,Object> fileContent = exchange.getIn().getBody(Map.class);
+                        System.out.println("file content :: " + fileContent);
+                        ArrayList<Map<String,Object>> combinedJsons = exchange.getVariable("combinedJsons", ArrayList.class);
+
+                        combinedJsons.add(fileContent);
+                        //exchange.setVariable("combinedJsons", combinedJsons);
+                    })
+                    .log("Variable jsons :: ${variable.combinedJsons}")
+                    //.to("direct:continue-processing-P24Data")
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
                     .log("Error message :: ${header.jsonValidationErrors}")
@@ -90,18 +108,82 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                             "jsonValidationError"
                         );
                     })
+            .end()
+            //.setBody().simple("${variable.combinedJsons}")
+            //.log("Body before continue processing :: ${body}")
+            .to("direct:continue-processing-P24Data")
                 //.to("file:outbox/invalidJson")
         ;
 
+        from("timer://kipa_P24?repeatCount=1")
+            .routeId("kipa-P24")
+            .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
+            .log("Start route to fetch files from kipa P24")
+            .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
+            .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
+            .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
+            .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
+            .setHeader("filePrefix", constant("YA_p24_091_20241209105804"))
+            .bean("sftpProcessor", "getAllSFTPFileNames")
+            .process(exchange -> exchange.setVariable("kipa_P24_data", new ArrayList<String>()))
+            .split(body())
+                .log("Processing file: ${body}") // Log each file name
+                .setHeader("CamelFileName", simple("${body}")) // Set the file name for pollEnrich
+                .pollEnrich()
+                    .simple("sftp://{{KIPA_SFTP_HOST}}/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}&password={{KIPA_SFTP_PASSWORD_P24}}&fileName=${header.CamelFileName}") 
+                    .timeout(5000)
+                .log("File fecthed from kipa")
+                .setVariable("originalFileName", simple("${header.CamelFileName}"))
+                .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
+                //.to("direct:saveJsonData-P24")
+                .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
+                .to("direct:validate-json-P24")
+                .choice()
+                    .when(simple("${header.isJsonValid} == 'true'"))
+                        .log("Json is valid continue processing ${header.CamelFileName}")
+                        .setVariable("kipa_dir").simple("processed")
+                        //.to("direct:readSFTPFileAndMove-P24")
+                        //.log("file moved to processed")
+                        .unmarshal(new JacksonDataFormat())
+                        .process(exchange -> {
+                            // Get the file content
+                            Map<String,Object> fileContent = exchange.getIn().getBody(Map.class);
+                            List<Map<String,Object>> combinedJsons = exchange.getVariable("kipa_P24_data", List.class);
+
+                            combinedJsons.add(fileContent);
+                        })
+                    .otherwise()
+                        .log("Json is not valid, ${header.CamelFileName}")
+                        .log("Error message :: ${header.jsonValidationErrors}")
+                        .process(exchange -> {
+                            String errorMessages = exchange.getIn().getHeader("jsonValidationErrors", String.class);
+                            throw new JsonValidationException(
+                                "Invalid json file. Error messages: " + errorMessages,
+                                SentryLevel.ERROR,
+                                "jsonValidationError"
+                            );
+                        })
+                        .setVariable("kipa_dir").simple("errors")
+                        //.to("direct:readSFTPFileAndMove-P24")
+                        .log("file moved to errors")
+                        //.to("file:outbox/invalidJson")
+                .end()
+            .end()
+            .setBody().simple("${variable.kipa_P24_data}")
+            .marshal(new JacksonDataFormat())
+            .log("Body before continue processing :: ${body}")
+            .to("direct:maksuliikenne-controller")
+        ;
+
         // Reads files from the YA Kipa API
-        from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}"
+        /* from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}"
                 + "&password={{KIPA_SFTP_PASSWORD_P24}}"
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
                 + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
                 + "&antInclude=YA_p24_091_20241209105802_091_PT55*"
             )   
-            .routeId("kipa-P24") 
+            //.routeId("kipa-P24") 
             .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
             //.routePolicy(new RedisLockRoutePolicy(redisProcessor, LOCK_KEY, 300))
             .log("File fecthed from kipa")
@@ -134,7 +216,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 //.to("direct:readSFTPFileAndMove-P24")
                 .log("file moved to errors")
                 //.to("file:outbox/invalidJson")
-        ; 
+        ;  */
 
         from("direct:validate-json-P24")
             .log("Start to validate json file")
@@ -171,7 +253,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
         ;
 
         from("direct:continue-processing-P24Data")
-            .unmarshal(new JacksonDataFormat())
+            //.unmarshal(new JacksonDataFormat())
             .aggregate(new GroupedExchangeAggregationStrategy()).constant(true)
                 .completionSize(1000) 
                 .completionTimeout(10000)

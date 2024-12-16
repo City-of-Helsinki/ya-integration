@@ -76,7 +76,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
         ;
 
         from("direct:kirjanpito.controller")
-            //.log("BODY :: ${body}")
+            //.log("Kirjanpito BODY :: ${body}")
             .log("Preparing to handle accounting data")
             .unmarshal(new JacksonDataFormat())
             .split(body())
@@ -92,7 +92,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                         //.to("file:outbox/maksuliikenne/sap")
                         .log("Created kirjanpito xml, file name :: ${header.CamelFileName}")
                         .to("direct:out.maksuliikenne-sap")
-                        //.log("Kirjanpito xml :: ${body}")
+                        .log("Kirjanpito xml :: ${body}")
                     .otherwise()
                         //.to("file:outbox/invalidXml")
                         .log("XML is not valid, ${header.CamelFileName}")
@@ -101,7 +101,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                         .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
                         .to("direct:sendErrorReport")
                         .process(exchange -> {
-                            String errorMessages = exchange.getIn().getHeader("xml_error_messages", String.class);
+                            String errorMessages = exchange.getIn().getHeader("error_messages", String.class);
                             throw new XmlValidationException(
                                 "Invalid XML file. Error messages: " + errorMessages,
                                 SentryLevel.ERROR,
@@ -125,6 +125,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
 
         from("direct:out.maksuliikenne-sap")
             .log("Sending file to sap")
+            //.to("file:outbox/maksuliikenne/kirjanpito")
             .setHeader("hostname").simple("{{SAP_SFTP_HOST}}")
             .setHeader("username").simple("{{SAP_SFTP_USER}}")
             .setHeader("password").simple("{{SAP_SFTP_PASSWORD}}")

@@ -41,6 +41,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
     @Inject
     RedisProcessor redisProcessor;
+    
+    @Inject
+    SftpProcessor sftpProcessor;
 
     public boolean testSFTPConnection(Exchange exchange) {
         // Extract SFTP connection details from Exchange headers
@@ -199,7 +202,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         }
     }
 
-    public List<String> getAllSFTPFileNames(Exchange ex) throws JSchException, SftpException, IOException {
+    /* public List<String> getAllSFTPFileNames(Exchange ex) throws JSchException, SftpException, IOException {
         String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
         String hostname = ex.getIn().getHeader("hostname", String.class);
         String username = ex.getIn().getHeader("username", String.class);
@@ -245,7 +248,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
         return fileNames;
     }
-    
+     */
 
     public List<String> getAllSFTPDirectories(Exchange ex) throws JSchException, SftpException, IOException {
         String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
@@ -501,7 +504,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
 
         from("direct:fetchFileNamesFromSftp")
-            .bean(this, "getAllSFTPFileNames(*)")
+            .bean(sftpProcessor, "getAllSFTPFileNames(*)")
             .log("File names :: ${body}")
         ;
 

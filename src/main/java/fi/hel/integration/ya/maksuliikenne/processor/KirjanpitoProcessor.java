@@ -153,7 +153,7 @@ public class KirjanpitoProcessor {
             
             sumAsString = sumAsString.replaceAll("\\.", ",");
             System.out.println("sumAsString :: " + sumAsString);
-            //lineItemTypeDebit.setAmountInDocumentCurrency(sumAsString);
+            lineItemTypeDebit.setAmountInDocumentCurrency(sumAsString);
 
             String ourRefence = (String) body.get("ourReference");
             String cutOurReference = ourRefence.length() > 50 ? ourRefence.substring(0, 50) : ourRefence;
