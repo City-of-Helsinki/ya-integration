@@ -125,7 +125,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
             .setHeader("filePrefix", constant("YA_p24_091_20241209105807"))
             .bean("sftpProcessor", "getAllSFTPFileNames")
-            .process(exchange -> exchange.setVariable("kipa_P24_data", new ArrayList<String>()))
+            .process(exchange -> exchange.setVariable("combinedJsons", new ArrayList<String>()))
             .split(body())
                 .log("Processing file: ${body}") // Log each file name
                 .setHeader("CamelFileName", simple("${body}")) // Set the file name for pollEnrich
@@ -148,7 +148,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         .process(exchange -> {
                             // Get the file content
                             Map<String,Object> fileContent = exchange.getIn().getBody(Map.class);
-                            List<Map<String,Object>> combinedJsons = exchange.getVariable("kipa_P24_data", List.class);
+                            List<Map<String,Object>> combinedJsons = exchange.getVariable("combinedJsons", List.class);
 
                             combinedJsons.add(fileContent);
                         })
@@ -169,8 +169,9 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         //.to("file:outbox/invalidJson")
                 .end()
             .end()
-            .setBody().simple("${variable.kipa_P24_data}")
+            .setBody().simple("${variable.combinedJsons}")
             .marshal(new JacksonDataFormat())
+            .setVariable("kipa_p24_data").simple("${body}")
             .log("Body before continue processing :: ${body}")
             .to("direct:maksuliikenne-controller")
         ;

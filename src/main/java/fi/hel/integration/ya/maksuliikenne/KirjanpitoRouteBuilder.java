@@ -76,7 +76,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
         ;
 
         from("direct:kirjanpito.controller")
-            //.log("Kirjanpito BODY :: ${body}")
+            .log("Kirjanpito BODY :: ${body}")
             .log("Preparing to handle accounting data")
             .unmarshal(new JacksonDataFormat())
             .split(body())

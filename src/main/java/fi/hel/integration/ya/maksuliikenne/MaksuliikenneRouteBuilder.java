@@ -91,7 +91,6 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                             //.to("direct:sendMaksuliikenneReportEmail")
                             // Restore the Kipa data to the route and direct it to the accounting mapping
                             .setBody().variable("kipa_p24_data")
-                            .marshal(new JacksonDataFormat())
                             //.log("kirjanpito data :: ${body}")
                             .to("direct:kirjanpito.controller")
                         .otherwise()
