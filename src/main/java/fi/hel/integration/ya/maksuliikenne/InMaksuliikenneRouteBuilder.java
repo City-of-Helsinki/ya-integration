@@ -340,6 +340,8 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                             + "&move=../${variable.kipa_dir}"
                             + "&streamDownload=true" 
                             + "&stepwise=false"
+                            + "&maximumReconnectAttempts=5"
+                            + "&reconnectDelay=1000"
                             + "&disconnect=true")
                 .timeout(10000) 
             .log("CamelFtpReplyString: ${headers.CamelFtpReplyString}")
