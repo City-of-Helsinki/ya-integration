@@ -127,7 +127,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
             .setHeader("filePrefix", constant("YA_p24_091_20241209105808"))
-            .setHeader("filePrefix2", constant("YA_p23_091_20241209110909_091_ATVK"))
+            .setHeader("filePrefix2", constant("YA_p23_091_20241209110911_091_ATVK"))
             .log("Fetching file names from Kipa")
             .bean("sftpProcessor", "getAllSFTPFileNames")
             .log("Fetching and combining the json data")
@@ -177,8 +177,8 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 .doCatch(JsonValidationException.class)
                     .log("Caught JsonValidationException: ${exception.message}")
                     .setVariable("kipa_dir").simple("errors")
-                    .wireTap("direct:readSFTPFileAndMove-P24")
-                    .log("file moved to errors")
+                    //.wireTap("direct:readSFTPFileAndMove-P24")
+                    //.log("file moved to errors")
                     .process(exchange -> {
                         String errorMessage = exchange.getIn().getHeader("jsonValidationErrors", String.class);
                         exchange.getIn().setBody(Map.of(
