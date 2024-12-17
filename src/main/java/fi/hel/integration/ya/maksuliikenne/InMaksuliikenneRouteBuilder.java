@@ -127,8 +127,8 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
-            .setHeader("filePrefix", constant("YA_p23_091"))
-            //.setHeader("filePrefix2", constant("YA_p23_091_20241209110918_091_ATVK"))
+            .setHeader("filePrefix", constant("YA_p24_091_20241209105818"))
+            .setHeader("filePrefix2", constant("YA_p23_091_20241209110714_091_ATVK"))
             .log("Fetching file names from Kipa")
             .bean("sftpProcessor", "getAllSFTPFileNames")
             .choice()
@@ -324,7 +324,14 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
 
         from("direct:readSFTPFileAndMove-P24")
             .log("Moving file ${header.CamelFileName} to Kipa ${variable.kipa_dir} directory")
-            .pollEnrich()
+            .toD("sftp://{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}"
+                    + "?username={{KIPA_SFTP_USER_P24}}"
+                    + "&password={{KIPA_SFTP_PASSWORD_P24}}"
+                    + "&streamDownload=true"
+                    + "&move=../${variable.kipa_dir}")
+        
+                  
+            /* .pollEnrich()
                 .simple("sftp://{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}"
                             + "?username={{KIPA_SFTP_USER_P24}}"
                             + "&password={{KIPA_SFTP_PASSWORD_P24}}"
@@ -333,7 +340,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                             + "&move=../${variable.kipa_dir}"
                             + "&streamDownload=true" 
                             + "&stepwise=false")
-                .timeout(60000)
+                .timeout(60000) */
             .log("CamelFtpReplyString: ${headers.CamelFtpReplyString}")
         ;
 
