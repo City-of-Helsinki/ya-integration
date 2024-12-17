@@ -130,17 +130,22 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("filePrefix2", constant("YA_p23_091_20241209110912_091_ATVK"))
             .log("Fetching file names from Kipa")
             .bean("sftpProcessor", "getAllSFTPFileNames")
-            .log("Fetching and combining the json data")
-            .bean(sftpProcessor, "fetchAllFilesFromSftpByFileName")
-            .marshal(new JacksonDataFormat())
-            .setVariable("kipa_p24_data").simple("${body}")
-            .log("Body before continue processing :: ${body}")
-            //.to("direct:maksuliikenne-controller")
+            .choice()
+                .when(simple("${body} == null || ${body.size()} == 0"))
+                    .log("No files found in SFTP.")
+                .otherwise()
+                    .log("Files found. Continuing processing.")
+                    .log("Fetching and combining the json data")
+                    .bean(sftpProcessor, "fetchAllFilesFromSftpByFileName")
+                    .setVariable("kipa_p24_data").simple("${body}")
+                    .log("Body before continue processing :: ${body}")
+                    .to("direct:maksuliikenne-controller")
+            .end()
         ;
 
         from("direct:poll-and-validate-file")
-            .log("Processing file: ${body}") // Log each file name
-            .setHeader("CamelFileName", simple("${body}")) // Set the file name for pollEnrich
+            .log("Processing file: ${body}") 
+            .setHeader("CamelFileName", simple("${body}"))
             .pollEnrich()
                 .simple("sftp://{{KIPA_SFTP_HOST}}/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}&password={{KIPA_SFTP_PASSWORD_P24}}&fileName=${header.CamelFileName}") 
                 .timeout(60000)
@@ -200,9 +205,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                             ));
                         })
             .end()
-            .log("Moving file to Kipa ${variable.kipa_dir} directory")
             .wireTap("direct:readSFTPFileAndMove-P24")
-                       
         ;
 
         // Reads files from the YA Kipa API
@@ -309,6 +312,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
         ;
 
         from("direct:readSFTPFileAndMove-P24")
+            .log("Moving file ${header.CamelFileName} to Kipa ${variable.kipa_dir} directory")
             .pollEnrich()
                 .simple("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}&password={{KIPA_SFTP_PASSWORD_P24}}&strictHostKeyChecking=no&fileName=${headers.CamelFileName}&move=../${variable.kipa_dir}")
                 .timeout(10000)
