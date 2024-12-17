@@ -128,7 +128,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
             .setHeader("filePrefix", constant("YA_p23_091"))
-            //.setHeader("filePrefix2", constant("YA_p23_091_20241209110714_091_ATVK"))
+            .setHeader("filePrefix2", constant("YA_p24_091_20241216160819_091_HKK"))
             .log("Fetching file names from Kipa")
             .bean("sftpProcessor", "getAllSFTPFileNames")
             .choice()
@@ -149,8 +149,15 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .log("Processing file: ${body}") 
             .setHeader("CamelFileName", simple("${body}"))
             .pollEnrich()
-                .simple("sftp://{{KIPA_SFTP_HOST}}/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}&password={{KIPA_SFTP_PASSWORD_P24}}&strictHostKeyChecking=no&fileName=${header.CamelFileName}") 
-                .timeout(300000)
+                .simple("sftp://{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}"
+                            + "?username={{KIPA_SFTP_USER_P24}}"
+                            + "&password={{KIPA_SFTP_PASSWORD_P24}}"
+                            + "&strictHostKeyChecking=no"
+                            + "&fileName=${header.CamelFileName}"
+                            + "&streamDownload=true" 
+                            + "&stepwise=false"
+                            + "&disconnect=true") 
+                .timeout(10000)
             .log("File fecthed from kipa")
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
             .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
@@ -334,7 +341,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                             + "&streamDownload=true" 
                             + "&stepwise=false"
                             + "&disconnect=true")
-                .timeout(60000) 
+                .timeout(10000) 
             .log("CamelFtpReplyString: ${headers.CamelFtpReplyString}")
         ;
 
