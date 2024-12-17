@@ -181,7 +181,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     .log("Json is not valid, ${header.CamelFileName}")
                     .log("Error message :: ${variable.error_messages}")
                     .setVariable("kipa_dir").simple("errors")
-                    .to("direct:readSFTPFileAndMove-P24")
+                    //.to("direct:readSFTPFileAndMove-P24")
                     .log("Error message :: ${variable.error_messages}")
                     .setHeader("messageSubject", simple("Ya-integraatio, kipa: virhe json-sanomassa (P24)"))
                     .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
