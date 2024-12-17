@@ -175,6 +175,10 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     .log("Error message :: ${header.error_messages}")
                     .setVariable("kipa_dir").simple("errors")
                     .to("direct:readSFTPFileAndMove-P24")
+                    .log("Error message :: ${header.error_messages}")
+                    .setHeader("messageSubject", simple("Ya-integraatio, kipa: virhe json-sanomassa (P24)"))
+                    .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
+                    .to("direct:sendErrorReport")
                     .doTry()
                         .process(exchange -> {
                             String errorMessage = exchange.getIn().getHeader("error_messages", String.class);
@@ -186,10 +190,6 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         })
                     .doCatch(JsonValidationException.class)
                         .log("Caught JsonValidationException: ${exception.message}")
-                        .log("Error message :: ${header.error_messages}")
-                        .setHeader("messageSubject", simple("Ya-integraatio, kipa: virhe json-sanomassa (P24)"))
-                        .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
-                        .to("direct:sendErrorReport")
                         .process(exchange -> {
                             JsonValidationException cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, JsonValidationException.class);
             
