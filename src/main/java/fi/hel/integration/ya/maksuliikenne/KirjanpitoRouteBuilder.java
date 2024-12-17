@@ -108,7 +108,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                                 "xmlValidationError"
                             );
                         })
-                        //.to("direct:out.maksuliikenne-sap")
+                        .to("direct:out.maksuliikenne-sap")
                 .end() 
             .end()
             .log("All accounting data processed")
