@@ -144,6 +144,7 @@ public class SftpProcessor {
             System.out.println("File fetched successfully: " + fileName);
 
             ex.getIn().setBody(jsonString);
+            ex.getIn().setHeader("CamelFileName", fileName);
 
         } catch (JSchException | SftpException | IOException e) {
          
