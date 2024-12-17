@@ -127,7 +127,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
             .setHeader("filePrefix", constant("YA_p24_091_20241209105808"))
-            .setHeader("filePrefix2", constant("YA_p23_091_20241209110911_091_ATVK"))
+            .setHeader("filePrefix2", constant("YA_p23_091_20241209110912_091_ATVK"))
             .log("Fetching file names from Kipa")
             .bean("sftpProcessor", "getAllSFTPFileNames")
             .log("Fetching and combining the json data")
@@ -147,63 +147,62 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .log("File fecthed from kipa")
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
             .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
-            //.to("direct:saveJsonData-P24")
+            .wireTap("direct:saveJsonData-P24")
             .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
             .to("direct:validate-json-P24")
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
                     .log("Json is valid continue processing ${header.CamelFileName}")
                     .setVariable("kipa_dir").simple("processed")
-                    //.to("direct:readSFTPFileAndMove-P24")
-                    //.log("file moved to processed")
                     .unmarshal(new JacksonDataFormat())
                     .process(exchange -> {
                         Map<String, Object> fileContent = exchange.getIn().getBody(Map.class);
                         exchange.getIn().setBody(Map.of("isJsonValid", true, "fileContent", fileContent));
                     })
     
-            .otherwise()
-                .log("Json is not valid, ${header.CamelFileName}")
-                .log("Error message :: ${header.jsonValidationErrors}")
-                .doTry()
-                    .process(exchange -> {
-                        String errorMessage = exchange.getIn().getHeader("jsonValidationErrors", String.class);
-                        throw new JsonValidationException(
-                            "Invalid json file. Error messages: " + errorMessage,
-                            SentryLevel.ERROR,
-                        "jsonValidationError"
-                        );
-                    })
-                .doCatch(JsonValidationException.class)
-                    .log("Caught JsonValidationException: ${exception.message}")
-                    .process(exchange -> {
-                        JsonValidationException cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, JsonValidationException.class);
+                .otherwise()
+                    .log("Json is not valid, ${header.CamelFileName}")
+                    .log("Error message :: ${header.jsonValidationErrors}")
+                    .doTry()
+                        .process(exchange -> {
+                            String errorMessage = exchange.getIn().getHeader("jsonValidationErrors", String.class);
+                            throw new JsonValidationException(
+                                "Invalid json file. Error messages: " + errorMessage,
+                                SentryLevel.ERROR,
+                            "jsonValidationError"
+                            );
+                        })
+                    .doCatch(JsonValidationException.class)
+                        .log("Caught JsonValidationException: ${exception.message}")
+                        .process(exchange -> {
+                            JsonValidationException cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, JsonValidationException.class);
             
-                        // Send error to Sentry explicitly
-                        Sentry.withScope(scope -> {
-                            String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
-                            String uniqueId = UUID.randomUUID().toString(); // Generate a unique ID for the error
+                            // Send error to Sentry explicitly
+                            Sentry.withScope(scope -> {
+                                String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
+                                String uniqueId = UUID.randomUUID().toString(); // Generate a unique ID for the error
             
-                            scope.setLevel(cause.getSentryLevel());
-                            scope.setTag("error.type", cause.getTag());
-                            scope.setTag("context.fileName", fileName);
-                            scope.setFingerprint(Arrays.asList(uniqueId));
-                            Sentry.captureException(cause);
-                        });
+                                scope.setLevel(cause.getSentryLevel());
+                                scope.setTag("error.type", cause.getTag());
+                                scope.setTag("context.fileName", fileName);
+                                scope.setFingerprint(Arrays.asList(uniqueId));
+                                Sentry.captureException(cause);
+                            });
             
-                        Sentry.flush(2000);
-                    })
-                    .setVariable("kipa_dir").simple("errors")
-                    //.wireTap("direct:readSFTPFileAndMove-P24")
-                    //.log("file moved to errors")
-                    .process(exchange -> {
-                        String errorMessage = exchange.getIn().getHeader("jsonValidationErrors", String.class);
-                        exchange.getIn().setBody(Map.of(
-                        "isJsonValid", false,
-                        "errorMessage", errorMessage
-                        ));
-                    })
-                    //.to("file:outbox/invalidJson")
+                            Sentry.flush(2000);
+                        })
+                        .setVariable("kipa_dir").simple("errors")
+                        .process(exchange -> {
+                            String errorMessage = exchange.getIn().getHeader("jsonValidationErrors", String.class);
+                            exchange.getIn().setBody(Map.of(
+                            "isJsonValid", false,
+                            "errorMessage", errorMessage
+                            ));
+                        })
+            .end()
+            .log("Moving file to Kipa ${variable.kipa_dir} directory")
+            .wireTap("direct:readSFTPFileAndMove-P24")
+                       
         ;
 
         // Reads files from the YA Kipa API
@@ -320,7 +319,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .log("send json via sftp to logs")
             //.to("file:outbox/logs")
             .to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/logs?username={{VERKKOLEVY_SFTP_USER}}&password={{VERKKOLEVY_SFTP_PASSWORD}}&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no")
-            .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
+            .log("Verkkolevy SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
         ;
     }
 }
