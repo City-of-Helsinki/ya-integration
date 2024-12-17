@@ -1,6 +1,7 @@
 package fi.hel.integration.ya;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.Vector;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.RuntimeCamelException;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
@@ -98,5 +100,58 @@ public class SftpProcessor {
         }
 
         ex.getIn().setBody(combinedJsons);
+    }
+
+
+    public void fetchFile(Exchange ex) {
+        Session session = null;
+        ChannelSftp channelSftp = null;
+
+        String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
+        String hostname = ex.getIn().getHeader("hostname", String.class);
+        String username = ex.getIn().getHeader("username", String.class);
+        String password = ex.getIn().getHeader("password", String.class);
+        String fileName = ex.getIn().getHeader("CamelFileName", String.class);
+        
+        try {
+
+            JSch jsch = new JSch();
+            session = jsch.getSession(username, hostname, 22);
+            session.setPassword(password);
+
+            // Disable strict host key checking
+            session.setConfig("StrictHostKeyChecking", "no");
+
+            System.out.println("Connecting to SFTP server...");
+            session.connect();
+
+            // Open SFTP channel
+            channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+
+            System.out.println("Connected to SFTP server");
+
+            String remoteFilePath = directoryPath + "/" + fileName;
+
+            InputStream inputStream = channelSftp.get(remoteFilePath);
+
+            System.out.println("File fetched successfully: " + fileName);
+
+            ex.getIn().setBody(inputStream);
+
+        } catch (JSchException | SftpException e) {
+         
+            throw new RuntimeCamelException("SFTP operation failed: " + e.getMessage(), e);    
+        
+        } finally {
+            // Cleanup and close SFTP connection
+            if (channelSftp != null) {
+                channelSftp.disconnect();
+            }
+            if (session != null) {
+                session.disconnect();
+            }
+            System.out.println("SFTP connection closed");
+        }
     }
 }

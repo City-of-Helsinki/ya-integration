@@ -148,7 +148,12 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
         from("direct:poll-and-validate-file")
             .log("Processing file: ${body}") 
             .setHeader("CamelFileName", simple("${body}"))
-            .pollEnrich()
+            .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
+            .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
+            .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
+            .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
+            .bean(sftpProcessor, "fetchFile")
+           /*  .pollEnrich()
                 .simple("sftp://{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}"
                             + "?username={{KIPA_SFTP_USER_P24}}"
                             + "&password={{KIPA_SFTP_PASSWORD_P24}}"
@@ -157,7 +162,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                             + "&streamDownload=true" 
                             + "&stepwise=false"
                             + "&disconnect=true") 
-                .timeout(10000)
+                .timeout(10000) */
             .log("File fecthed from kipa")
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
             .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
