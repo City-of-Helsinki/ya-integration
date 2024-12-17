@@ -149,7 +149,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .log("Processing file: ${body}") 
             .setHeader("CamelFileName", simple("${body}"))
             .pollEnrich()
-                .simple("sftp://{{KIPA_SFTP_HOST}}/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}&password={{KIPA_SFTP_PASSWORD_P24}}&fileName=${header.CamelFileName}") 
+                .simple("sftp://{{KIPA_SFTP_HOST}}/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}&password={{KIPA_SFTP_PASSWORD_P24}}&strictHostKeyChecking=no&fileName=${header.CamelFileName}") 
                 .timeout(300000)
             .log("File fecthed from kipa")
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
