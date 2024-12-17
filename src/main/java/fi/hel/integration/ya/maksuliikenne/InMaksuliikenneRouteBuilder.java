@@ -165,25 +165,28 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .otherwise()
                 .log("Json is not valid, ${header.CamelFileName}")
                 .log("Error message :: ${header.jsonValidationErrors}")
-                .process(exchange -> {
-                    String errorMessages = exchange.getIn().getHeader("jsonValidationErrors", String.class);
-                    throw new JsonValidationException(
-                        "Invalid json file. Error messages: " + errorMessages,
-                        SentryLevel.ERROR,
+                .doTry()
+                    .process(exchange -> {
+                        String errorMessage = exchange.getIn().getHeader("jsonValidationErrors", String.class);
+                        throw new JsonValidationException(
+                            "Invalid json file. Error messages: " + errorMessage,
+                            SentryLevel.ERROR,
                         "jsonValidationError"
-                    );
-                })
-                .setVariable("kipa_dir").simple("errors")
-                .wireTap("direct:readSFTPFileAndMove-P24")
-                .log("file moved to errors")
-                .process(exchange -> {
-                    String errorMessage = exchange.getIn().getHeader("jsonValidationErrors", String.class);
-                    exchange.getIn().setBody(Map.of(
+                        );
+                    })
+                .doCatch(JsonValidationException.class)
+                    .log("Caught JsonValidationException: ${exception.message}")
+                    .setVariable("kipa_dir").simple("errors")
+                    .wireTap("direct:readSFTPFileAndMove-P24")
+                    .log("file moved to errors")
+                    .process(exchange -> {
+                        String errorMessage = exchange.getIn().getHeader("jsonValidationErrors", String.class);
+                        exchange.getIn().setBody(Map.of(
                         "isJsonValid", false,
                         "errorMessage", errorMessage
-                    ));
-                })
-                //.to("file:outbox/invalidJson")
+                        ));
+                    })
+                    //.to("file:outbox/invalidJson")
         ;
 
         // Reads files from the YA Kipa API
