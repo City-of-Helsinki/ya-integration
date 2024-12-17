@@ -325,8 +325,15 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
         from("direct:readSFTPFileAndMove-P24")
             .log("Moving file ${header.CamelFileName} to Kipa ${variable.kipa_dir} directory")
             .pollEnrich()
-                .simple("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}&password={{KIPA_SFTP_PASSWORD_P24}}&strictHostKeyChecking=no&fileName=${headers.CamelFileName}&move=../${variable.kipa_dir}")
-                .timeout(10000)
+                .simple("sftp://{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}"
+                            + "?username={{KIPA_SFTP_USER_P24}}"
+                            + "&password={{KIPA_SFTP_PASSWORD_P24}}"
+                            + "&strictHostKeyChecking=no"
+                            + "&fileName=${headers.CamelFileName}"
+                            + "&move=../${variable.kipa_dir}"
+                            + "&streamDownload=true" 
+                            + "&stepwise=false")
+                .timeout(60000)
             .log("CamelFtpReplyString: ${headers.CamelFtpReplyString}")
         ;
 
