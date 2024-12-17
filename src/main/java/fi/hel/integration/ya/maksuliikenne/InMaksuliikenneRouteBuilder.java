@@ -100,9 +100,9 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     //.to("direct:continue-processing-P24Data")
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
-                    .log("Error message :: ${header.error_messages}")
+                    .log("Error message :: ${variable.error_messages}")
                     .process(exchange -> {
-                        String errorMessages = exchange.getIn().getHeader("error_messages", String.class);
+                        String errorMessages = exchange.getVariable("error_messages", String.class);
                         throw new JsonValidationException(
                             "Invalid json file. Error messages: " + errorMessages,
                             SentryLevel.ERROR,
@@ -128,7 +128,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
             .setHeader("filePrefix", constant("YA_p24_091_20241209105812"))
-            .setHeader("filePrefix2", constant("YA_p23_091_20241209110915_091_ATVK"))
+            .setHeader("filePrefix2", constant("YA_p23_091_20241209110917_091_ATVK"))
             .log("Fetching file names from Kipa")
             .bean("sftpProcessor", "getAllSFTPFileNames")
             .choice()
@@ -172,16 +172,16 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
-                    .log("Error message :: ${header.error_messages}")
+                    .log("Error message :: ${variable.error_messages}")
                     .setVariable("kipa_dir").simple("errors")
                     .to("direct:readSFTPFileAndMove-P24")
-                    .log("Error message :: ${header.error_messages}")
+                    .log("Error message :: ${variable.error_messages}")
                     .setHeader("messageSubject", simple("Ya-integraatio, kipa: virhe json-sanomassa (P24)"))
                     .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
                     .to("direct:sendErrorReport")
                     .doTry()
                         .process(exchange -> {
-                            String errorMessage = exchange.getIn().getHeader("error_messages", String.class);
+                            String errorMessage = exchange.getVariable("error_messages", String.class);
                             throw new JsonValidationException(
                                 "Invalid json file. Error messages: " + errorMessage,
                                 SentryLevel.ERROR,
@@ -209,7 +209,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         })
                         
                         .process(exchange -> {
-                            String errorMessage = exchange.getIn().getHeader("error_messages", String.class);
+                            String errorMessage = exchange.getVariable("error_messages", String.class);
                             exchange.getIn().setBody(Map.of(
                             "isJsonValid", false,
                             "errorMessage", errorMessage
