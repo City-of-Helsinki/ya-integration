@@ -12,6 +12,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.RuntimeCamelException;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -21,6 +22,8 @@ import com.jcraft.jsch.SftpException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
+
+
 
 @ApplicationScoped
 @Named ("sftpProcessor")
@@ -99,6 +102,7 @@ public class SftpProcessor {
             }
         }
 
+        System.out.println(("combined jsons :: " + combinedJsons));
         ex.getIn().setBody(combinedJsons);
     }
 
@@ -135,11 +139,13 @@ public class SftpProcessor {
 
             InputStream inputStream = channelSftp.get(remoteFilePath);
 
+            String jsonString = convertInputStreamToJson(inputStream);
+
             System.out.println("File fetched successfully: " + fileName);
 
-            ex.getIn().setBody(inputStream);
+            ex.getIn().setBody(jsonString);
 
-        } catch (JSchException | SftpException e) {
+        } catch (JSchException | SftpException | IOException e) {
          
             throw new RuntimeCamelException("SFTP operation failed: " + e.getMessage(), e);    
         
@@ -153,5 +159,11 @@ public class SftpProcessor {
             }
             System.out.println("SFTP connection closed");
         }
+    }
+
+    private String convertInputStreamToJson(InputStream inputStream) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        // Convert InputStream directly to a JSON String
+        return objectMapper.readTree(inputStream).toString();
     }
 }
