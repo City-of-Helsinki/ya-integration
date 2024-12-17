@@ -39,6 +39,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
 
     private final String SCHEMA_FILE_PT_PT55_TOJT = "schema/kipa/json_schema_PT_PT55_TOJT.json";
     private final String SCHEMA_FILE_MYK_HKK = "schema/kipa/json_schema_MYK_HKK.json";
+    private final String EMAIL_RECIPIENTS = "{{MAKSULIIKENNE_EMAIL_RECIPIENTS}}";
 
     private final String LOCK_KEY = "timer-route-lock";
     
@@ -99,9 +100,9 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     //.to("direct:continue-processing-P24Data")
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
-                    .log("Error message :: ${header.jsonValidationErrors}")
+                    .log("Error message :: ${header.error_messages}")
                     .process(exchange -> {
-                        String errorMessages = exchange.getIn().getHeader("jsonValidationErrors", String.class);
+                        String errorMessages = exchange.getIn().getHeader("error_messages", String.class);
                         throw new JsonValidationException(
                             "Invalid json file. Error messages: " + errorMessages,
                             SentryLevel.ERROR,
@@ -126,8 +127,8 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
-            .setHeader("filePrefix", constant("YA_p24_091_20241209105808"))
-            .setHeader("filePrefix2", constant("YA_p23_091_20241209110912_091_ATVK"))
+            .setHeader("filePrefix", constant("YA_p24_091_20241209105812"))
+            .setHeader("filePrefix2", constant("YA_p23_091_20241209110915_091_ATVK"))
             .log("Fetching file names from Kipa")
             .bean("sftpProcessor", "getAllSFTPFileNames")
             .choice()
@@ -171,12 +172,12 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
-                    .log("Error message :: ${header.jsonValidationErrors}")
+                    .log("Error message :: ${header.error_messages}")
                     .setVariable("kipa_dir").simple("errors")
                     .to("direct:readSFTPFileAndMove-P24")
                     .doTry()
                         .process(exchange -> {
-                            String errorMessage = exchange.getIn().getHeader("jsonValidationErrors", String.class);
+                            String errorMessage = exchange.getIn().getHeader("error_messages", String.class);
                             throw new JsonValidationException(
                                 "Invalid json file. Error messages: " + errorMessage,
                                 SentryLevel.ERROR,
@@ -185,6 +186,10 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         })
                     .doCatch(JsonValidationException.class)
                         .log("Caught JsonValidationException: ${exception.message}")
+                        .log("Error message :: ${header.error_messages}")
+                        .setHeader("messageSubject", simple("Ya-integraatio, kipa: virhe json-sanomassa (P24)"))
+                        .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
+                        .to("direct:sendErrorReport")
                         .process(exchange -> {
                             JsonValidationException cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, JsonValidationException.class);
             
@@ -204,7 +209,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         })
                         
                         .process(exchange -> {
-                            String errorMessage = exchange.getIn().getHeader("jsonValidationErrors", String.class);
+                            String errorMessage = exchange.getIn().getHeader("error_messages", String.class);
                             exchange.getIn().setBody(Map.of(
                             "isJsonValid", false,
                             "errorMessage", errorMessage
@@ -288,7 +293,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 .otherwise()
                     .log("No matching case found, skipping processing")
                     .setHeader("isJsonValid", constant(false))
-                    .setHeader("jsonValidationErrors", simple("Unrecognized claim type abbreviation"))
+                    .setHeader("error_messages", simple("Unrecognized claim type abbreviation"))
             .end()
             .log("is valid :: ${header.isJsonValid}")
         ;
