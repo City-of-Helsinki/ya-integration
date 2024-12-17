@@ -137,9 +137,10 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     .log("Files found. Continuing processing.")
                     .log("Fetching and combining the json data")
                     .bean(sftpProcessor, "fetchAllFilesFromSftpByFileName")
+                    .marshal(new JacksonDataFormat())
                     .setVariable("kipa_p24_data").simple("${body}")
                     .log("Body before continue processing :: ${body}")
-                    .to("direct:maksuliikenne-controller")
+                    //.to("direct:maksuliikenne-controller")
             .end()
         ;
 
@@ -152,19 +153,20 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .log("File fecthed from kipa")
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
             .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
-            .wireTap("direct:saveJsonData-P24")
+            //.wireTap("direct:saveJsonData-P24")
             .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
             .to("direct:validate-json-P24")
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
                     .log("Json is valid continue processing ${header.CamelFileName}")
-                    .setVariable("kipa_dir").simple("processed")
                     .unmarshal(new JacksonDataFormat())
                     .process(exchange -> {
                         Map<String, Object> fileContent = exchange.getIn().getBody(Map.class);
                         exchange.getIn().setBody(Map.of("isJsonValid", true, "fileContent", fileContent));
                     })
-    
+                    .setVariable("kipa_dir").simple("processed")
+                    .to("direct:readSFTPFileAndMove-P24")
+                
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
                     .log("Error message :: ${header.jsonValidationErrors}")
@@ -196,7 +198,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             
                             Sentry.flush(2000);
                         })
-                        .setVariable("kipa_dir").simple("errors")
+                        
                         .process(exchange -> {
                             String errorMessage = exchange.getIn().getHeader("jsonValidationErrors", String.class);
                             exchange.getIn().setBody(Map.of(
@@ -204,8 +206,9 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                             "errorMessage", errorMessage
                             ));
                         })
+                        .setVariable("kipa_dir").simple("errors")
+                        .to("direct:readSFTPFileAndMove-P24")
             .end()
-            .wireTap("direct:readSFTPFileAndMove-P24")
         ;
 
         // Reads files from the YA Kipa API
