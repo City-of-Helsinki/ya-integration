@@ -176,6 +176,23 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     })
                 .doCatch(JsonValidationException.class)
                     .log("Caught JsonValidationException: ${exception.message}")
+                    .process(exchange -> {
+                        JsonValidationException cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, JsonValidationException.class);
+            
+                        // Send error to Sentry explicitly
+                        Sentry.withScope(scope -> {
+                            String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
+                            String uniqueId = UUID.randomUUID().toString(); // Generate a unique ID for the error
+            
+                            scope.setLevel(cause.getSentryLevel());
+                            scope.setTag("error.type", cause.getTag());
+                            scope.setTag("context.fileName", fileName);
+                            scope.setFingerprint(Arrays.asList(uniqueId));
+                            Sentry.captureException(cause);
+                        });
+            
+                        Sentry.flush(2000);
+                    })
                     .setVariable("kipa_dir").simple("errors")
                     //.wireTap("direct:readSFTPFileAndMove-P24")
                     //.log("file moved to errors")
