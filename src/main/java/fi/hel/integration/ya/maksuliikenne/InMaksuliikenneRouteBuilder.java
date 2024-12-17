@@ -159,17 +159,21 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
                     .log("Json is valid continue processing ${header.CamelFileName}")
+                    .setVariable("kipa_dir").simple("processed")
+                    .to("direct:readSFTPFileAndMove-P24")
+                    .log("file content ${body}")
                     .unmarshal(new JacksonDataFormat())
                     .process(exchange -> {
                         Map<String, Object> fileContent = exchange.getIn().getBody(Map.class);
                         exchange.getIn().setBody(Map.of("isJsonValid", true, "fileContent", fileContent));
                     })
-                    .setVariable("kipa_dir").simple("processed")
-                    .to("direct:readSFTPFileAndMove-P24")
+                    
                 
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
                     .log("Error message :: ${header.jsonValidationErrors}")
+                    .setVariable("kipa_dir").simple("errors")
+                    .to("direct:readSFTPFileAndMove-P24")
                     .doTry()
                         .process(exchange -> {
                             String errorMessage = exchange.getIn().getHeader("jsonValidationErrors", String.class);
@@ -206,8 +210,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                             "errorMessage", errorMessage
                             ));
                         })
-                        .setVariable("kipa_dir").simple("errors")
-                        .to("direct:readSFTPFileAndMove-P24")
+                        
             .end()
         ;
 
