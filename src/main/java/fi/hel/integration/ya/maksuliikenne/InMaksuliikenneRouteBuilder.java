@@ -127,8 +127,8 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
-            .setHeader("filePrefix", constant("YA_p24_091_20241209105822"))
-            .setHeader("filePrefix2", constant("YA_p23_091_20241209110922_091_ATVK"))
+            .setHeader("filePrefix", constant("YA_p24_091_20241209105823"))
+            .setHeader("filePrefix2", constant("YA_p23_091_20241209110924_091_ATVK"))
             .log("Fetching file names from Kipa")
             .bean("sftpProcessor", "getAllSFTPFileNames")
             .choice()
@@ -141,7 +141,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     .marshal(new JacksonDataFormat())
                     .setVariable("kipa_p24_data").simple("${body}")
                     .log("Body before continue processing :: ${body}")
-                    //.to("direct:maksuliikenne-controller")
+                    .to("direct:maksuliikenne-controller")
             .end()
         ;
 
@@ -166,7 +166,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .log("File fecthed from kipa")
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
             .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
-            //.wireTap("direct:saveJsonData-P24")
+            .wireTap("direct:saveJsonData-P24")
             .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
             .to("direct:validate-json-P24")
             .choice()
