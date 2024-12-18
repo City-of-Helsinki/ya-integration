@@ -91,6 +91,12 @@ public class SftpProcessor {
         List<Map<String, Object>> combinedJsons = new ArrayList<>();
 
         for (String fileName : fileNames) {
+
+            if (combinedJsons.size() >= 500) {
+                System.out.println("Reached the maximum size of combinedJsons (500). Stopping further processing.");
+                break;
+            }
+    
             Map<String, Object> result = producerTemplate.requestBody("direct:poll-and-validate-file", fileName, Map.class);
 
             Boolean isJsonValid = (Boolean) result.get("isJsonValid");
