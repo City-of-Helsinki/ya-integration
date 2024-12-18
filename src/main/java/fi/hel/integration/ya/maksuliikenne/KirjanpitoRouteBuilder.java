@@ -35,6 +35,8 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
     private final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
     private final String FILE_NAME_PREFIX= "{{MAKSULIIKENNE_KIRJANPITO_FILENAMEPREFIX}}";
     private final String SENDER_ID = "{{MAKSULIIKENNE_KIRJANPITO_SENDERID}}";
+    private final String EMAIL_RECIPIENTS = "{{MAKSULIIKENNE_EMAIL_RECIPIENTS}}";
+
 
     @Override
     public void configure() throws Exception {
@@ -74,7 +76,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
         ;
 
         from("direct:kirjanpito.controller")
-            //.log("BODY :: ${body}")
+            //.log("Kirjanpito BODY :: ${body}")
             .log("Preparing to handle accounting data")
             .unmarshal(new JacksonDataFormat())
             .split(body())
@@ -94,15 +96,19 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                     .otherwise()
                         //.to("file:outbox/invalidXml")
                         .log("XML is not valid, ${header.CamelFileName}")
-                        .log("Error message :: ${header.xml_error_messages}")
+                        .log("Error message :: ${header.error_messages}")
+                        .setHeader("messageSubject", simple("Ya-integraatio, maksuliikenne: virhe xml-sanomassa (SAP, kirjanpito)"))
+                        .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
+                        .to("direct:sendErrorReport")
                         .process(exchange -> {
-                            String errorMessages = exchange.getIn().getHeader("xml_error_messages", String.class);
+                            String errorMessages = exchange.getIn().getHeader("error_messages", String.class);
                             throw new XmlValidationException(
                                 "Invalid XML file. Error messages: " + errorMessages,
                                 SentryLevel.ERROR,
                                 "xmlValidationError"
                             );
                         })
+                        .to("direct:out.maksuliikenne-sap")
                 .end() 
             .end()
             .log("All accounting data processed")
@@ -119,6 +125,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
 
         from("direct:out.maksuliikenne-sap")
             .log("Sending file to sap")
+            //.to("file:outbox/maksuliikenne/kirjanpito")
             .setHeader("hostname").simple("{{SAP_SFTP_HOST}}")
             .setHeader("username").simple("{{SAP_SFTP_USER}}")
             .setHeader("password").simple("{{SAP_SFTP_PASSWORD}}")

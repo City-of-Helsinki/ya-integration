@@ -52,7 +52,7 @@ public class JsonValidator {
         }
 
         if (!errorMessages.isEmpty()) {
-            ex.getIn().setHeader("jsonValidationErrors", String.join(", ", errorMessages));
+            ex.setVariable("error_messages", String.join(", ", errorMessages));
         }
     }
 

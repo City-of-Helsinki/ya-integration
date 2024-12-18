@@ -113,7 +113,6 @@ public class KirjanpitoProcessor {
             simpleAccounting.setDocumentType(documentType);
 
             String date = utils.getCurrentTime("YYYYMMdd");
-            System.out.println("date :: " + date);
             simpleAccounting.setDocumentDate(date);
             simpleAccounting.setPostingDate(date);
             
@@ -148,11 +147,9 @@ public class KirjanpitoProcessor {
             lineItemTypeDebit.setTaxCode(vatCode);
 
             double sum = (double) body.get("grossSum");
-            System.out.println("sum :: " + sum);
             String sumAsString = String.valueOf(sum);
             
             sumAsString = sumAsString.replaceAll("\\.", ",");
-            System.out.println("sumAsString :: " + sumAsString);
             lineItemTypeDebit.setAmountInDocumentCurrency(sumAsString);
 
             String ourRefence = (String) body.get("ourReference");
@@ -164,9 +161,7 @@ public class KirjanpitoProcessor {
             // Kumppanikoodi
             Map<String, Object> receiver = (Map<String, Object>) body.get("receiver");
             String businessId = (String) receiver.get("businessId");
-            //System.out.println("BUSINESS ID :: " + businessId);
             String partnerCode = getPartnerCode(businessId, PARTNERCODE_FILE_PATH);
-            System.out.println("partnercode :: " + partnerCode);
 
             if (partnerCode == null || partnerCode.isEmpty()) {
                 lineItemTypeDebit.setTradingPartner(EMPTY);
@@ -217,7 +212,6 @@ public class KirjanpitoProcessor {
             Map<String, String> kumppanikoodit = readExcelFile(fileStream);
 
             String partnerCode = kumppanikoodit.get(businessId);
-            System.out.println("Partner code :: " + partnerCode);
             return partnerCode;
 
         } catch (IOException e) {
@@ -248,7 +242,6 @@ public class KirjanpitoProcessor {
             e.printStackTrace();
         }
 
-        System.out.println("Kumppanikoodit :: " + kumppanikoodit);
         return kumppanikoodit;
     }
 

@@ -1,14 +1,11 @@
-package fi.hel.integration.ya.maksuliikenne.processor;
+package fi.hel.integration.ya;
 
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
 import java.util.Properties;
 
 import org.apache.camel.Exchange;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import jakarta.activation.DataHandler;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
@@ -21,9 +18,6 @@ import jakarta.mail.internet.MimeMultipart;
 import jakarta.mail.Message;
 import jakarta.mail.Multipart;
 
-
-
-
 @ApplicationScoped
 @Named("sendEmail")
 public class SendEmail {
@@ -31,8 +25,8 @@ public class SendEmail {
     @Inject
     Logger log; 
 
-    @ConfigProperty(name="MAKSULIIKENNE_EMAIL_RECIPIENTS", defaultValue = "recipient")
-    String recipients;
+    //@ConfigProperty(name="MAKSULIIKENNE_EMAIL_RECIPIENTS", defaultValue = "recipient")
+    //String recipients;
 
     @ConfigProperty(name="MAIL_SMTP_HOST", defaultValue = "host")
     String host;
@@ -50,7 +44,8 @@ public class SendEmail {
             //byte[] byteArray = ex.getIn().getBody(byte[].class);
             String messageSubject = (String) ex.getIn().getHeader("messageSubject");
             String emailMessage = (String) ex.getIn().getHeader("emailMessage");
-            System.out.println("Sending email to " + recipients);
+            String recipients = (String) ex.getIn().getHeader("emailRecipients");
+            //System.out.println("Sending email to " + recipients);
 
             Properties prop = new Properties();
             prop.put("mail.smtp.starttls.enable", "true");
@@ -86,7 +81,7 @@ public class SendEmail {
         
         } catch (Exception e) {
             log.error(e);
-            e.printStackTrace();
+            //e.printStackTrace();
             ex.setException(e);
         }
     }

@@ -82,9 +82,9 @@ public class XmlValidator {
             // Check if there were any errors
             if (!errorMessages.isEmpty()) {
                 ex.getIn().setHeader("isXmlValid", false);
-                ex.getIn().setHeader("xml_error_messages", String.join(", ", errorMessages));
-                ex.getIn().setHeader("xml_error_line_numbers", errorLineNumbers.toString());
-                ex.getIn().setHeader("xml_error_column_numbers", errorColumnNumbers.toString());
+                ex.getIn().setHeader("error_messages", String.join(", ", errorMessages));
+                ex.getIn().setHeader("error_line_numbers", errorLineNumbers.toString());
+                ex.getIn().setHeader("error_column_numbers", errorColumnNumbers.toString());
             } else {
                 ex.getIn().setHeader("isXmlValid", true);
             }

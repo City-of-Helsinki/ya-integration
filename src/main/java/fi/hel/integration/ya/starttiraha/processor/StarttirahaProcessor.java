@@ -65,11 +65,9 @@ public class StarttirahaProcessor {
         
                 // muoto pp.kk.vvvv
                 String dateOfBirth = day + "." + month + "." + year;
-                System.out.println("dateOfBirth :: " + dateOfBirth);
-            
+
                 String personalId = socialSecurityNo.substring(6);
-                System.out.println("personalId :: " + personalId);
-            
+
                 Map<String,Object> name = (Map<String, Object>) receiver.get("name");
                 String lastName = (String) name.get("lastName");
                 String firstName = (String) name.get("firstName");
@@ -80,13 +78,10 @@ public class StarttirahaProcessor {
             
                 String postalCode = (String) postalAddress.get("postalCode");
                 String postOffice = (String) postalAddress.get("postOffice");
-                String postalCodeAndOffice = postalCode + " " + postOffice;
-                System.out.println("postal code and office :: " + postalCodeAndOffice);
-            
+                String postalCodeAndOffice = postalCode + " " + postOffice;            
             
                 Map<String,Object> bankAccount = (Map<String, Object>) receiver.get("bankAccount");
                 String bankAccountNo = (String) bankAccount.get("value");
-                System.out.println("accountNo :: " + bankAccountNo);
             
                 String paymentPeriodStartDate = (String) item.get("paymentPeriodStartDate");
                 String paymentPeriodEndDate = (String) item.get("paymentPeriodEndDate");
@@ -176,7 +171,6 @@ public class StarttirahaProcessor {
                 
                 double grossSum = (double) item.get("grossSum");
                 String grossSumString = String.valueOf(grossSum).replace('.', ',');
-                System.out.println("GrossSumString :: " + grossSumString);
     
                 Map<String,Object> view = (Map<String, Object>) item.get("view");
                 String grantDecisionRecordNumber = (String) view.get("grantDecisionRecordNumber");
@@ -196,7 +190,7 @@ public class StarttirahaProcessor {
 
         } catch (Exception e){
             log.error(e);
-            e.printStackTrace();
+            //e.printStackTrace();
             ex.setException(e);
         }
     }
@@ -206,7 +200,6 @@ public class StarttirahaProcessor {
         ChannelSftp channelSftp = null;
 
         try {
-            // Retrieve headers and body
             String hostname = ex.getIn().getHeader("hostname", String.class);
             String username = ex.getIn().getHeader("username", String.class);
             String privateKeyEncoded = ex.getIn().getHeader("privateKey", String.class);
@@ -214,15 +207,11 @@ public class StarttirahaProcessor {
             String fileName = ex.getIn().getHeader(Exchange.FILE_NAME, String.class);
             String body = ex.getIn().getBody(String.class);
 
-
-            // Decode private key
             byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyEncoded);
 
-            // Initialize JSch and set the private key
             JSch jsch = new JSch();
             jsch.addIdentity("privateKey", privateKeyBytes, null, null);
 
-            // Create and configure the session
             session = jsch.getSession(username, hostname, 22);
 
             Properties config = new Properties();
@@ -230,11 +219,9 @@ public class StarttirahaProcessor {
             session.setConfig(config);
             session.connect();
 
-            // Open an SFTP channel
             channelSftp = (ChannelSftp) session.openChannel("sftp");
             channelSftp.connect();
 
-            // Upload the file as an InputStream
             String remoteFilePath = directoryPath + "/" + fileName;
             try (ByteArrayInputStream fileStream = new ByteArrayInputStream(body.getBytes())) {
                 channelSftp.put(fileStream, remoteFilePath);

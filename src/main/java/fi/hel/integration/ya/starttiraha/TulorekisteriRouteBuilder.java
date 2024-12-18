@@ -131,7 +131,7 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
             .setHeader("hostname", simple("{{AHR_SFTP_HOST}}"))
             .setHeader("username", simple("{{AHR_SFTP_USER}}"))
             .setHeader("privateKey", simple("{{AHR_SFTP_PRIVATEKEY}}"))
-            .setHeader("directoryPath", simple("{{AHR_DIRECTORY_PATH}}"))
+            .setHeader("directoryPath", simple("{{AHR_DIRECTORY_PATH_OUT}}"))
             .bean(trProcessor, "fetchFileFromSftp")
             .choice()
                 .when(simple("${body} != ''"))
@@ -166,7 +166,7 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
                             .to(outTulorekisteriXml)
                         .otherwise()
                             .log("XML is not valid, ${header.CamelFileName}")
-                            .log("Error message :: ${header.xml_error_messages}")
+                            .log("Error message :: ${header.error_messages}")
                             .throwException(new XmlValidationException("Invalid xml file", SentryLevel.ERROR, "xmlValidationError"))
 
                     .endChoice()
@@ -180,15 +180,15 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
         from("direct:out.tulorekisteri")
             //.to("file:outbox/starttiraha")
             .log("Sending tulorekisteri file to verkkolevy sftp")
-            .log("tulorekisteri xml :: ${body}")
-            //.to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/ture?username={{VERKKOLEVY_SFTP_USER}}&password={{VERKKOLEVY_SFTP_PASSWORD}}&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no")
-            //.log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
+            //.log("tulorekisteri xml :: ${body}")
+            .to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/ture?username={{VERKKOLEVY_SFTP_USER}}&password={{VERKKOLEVY_SFTP_PASSWORD}}&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no")
+            .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
         ;
 
         from("direct:create-map")
             .unmarshal(csv)
             .process(exchange -> {
-            // Get the body as a list of lists (rows and columns)
+
                 List<List<String>> csvData = exchange.getIn().getBody(List.class);
 
                 //System.out.println("CSV data ::" + csvData);
@@ -206,7 +206,6 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
                     .collect(Collectors.toList());
                     //System.out.println("Mapped data :: " + mappedData);
             
-                    // Set the mapped data as the body if further processing is needed
                     exchange.getIn().setBody(mappedData);
                     System.out.println("MAPPED data :: " + mappedData.getClass().getName());
                 })

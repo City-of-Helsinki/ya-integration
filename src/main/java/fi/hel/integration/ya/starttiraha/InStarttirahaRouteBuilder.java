@@ -12,6 +12,7 @@ import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
 
 import fi.hel.integration.ya.JsonValidator;
+import fi.hel.integration.ya.SftpProcessor;
 import fi.hel.integration.ya.exceptions.JsonValidationException;
 import io.sentry.Sentry;
 import io.sentry.SentryLevel;
@@ -23,6 +24,9 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
 
     @Inject
     JsonValidator jsonValidator;
+
+    @Inject
+    SftpProcessor sftpProcessor;
 
     private final String SCHEMA_FILE_SR = "schema/kipa/json_schema_SR.json";
 
@@ -78,55 +82,42 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
 
         ;
 
-        // Reads files from the YA Kipa API
-        from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P22}}?username={{KIPA_SFTP_USER_P22}}"
-                + "&password={{KIPA_SFTP_PASSWORD_P22}}"
-                + "&strictHostKeyChecking=no"
-                + "&scheduler=quartz"         
-                + "&scheduler.cron={{STARTTIRAHA_QUARTZ_TIMER}}" 
-                + "&antInclude=YA_p22_091_20241010*"
-            )   
-            .routeId("kipa-P22") 
+        from("timer://kipa_P22?repeatCount=1")
+            .routeId("kipa-P22")
             .autoStartup("{{STARTTIRAHA_IN_AUTOSTARTUP}}")
-            .log("File fecthed from kipa")
-            .setVariable("originalFileName", simple("${header.CamelFileName}"))
-            .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
-            .to("direct:saveJsonData-P22")
-            .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
-            .to("direct:validate-json-P22")
+            .log("Start route to fetch files from kipa P22")
+            .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
+            .setHeader("username").simple("{{KIPA_SFTP_USER_P22}}")
+            .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P22}}")
+            .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P22}}")
+            .setHeader("kipa_container", simple("P22"))
+            .setHeader("filePrefix", constant("YA_p22_091_20241209"))
+            .setHeader("filePrefix2", constant("YA_p22_091_20240531151700_0_SR"))
+            .log("Fetching file names from Kipa")
+            .bean("sftpProcessor", "getAllSFTPFileNames")
             .choice()
-                .when(simple("${header.isJsonValid} == 'true'"))
-                    .log("Json is valid continue processing ${header.CamelFileName}")
-                    .setVariable("kipa_dir").simple("processed")
-                    .to("direct:readSFTPFileAndMove-P22")
-                    .log("file moved to processed")
-                    .to("direct:continue-processing-P22Data")
-             
+                .when(simple("${body} == null || ${body.size()} == 0"))
+                    .log("No files found in SFTP.")
                 .otherwise()
-                    .log("Json is not valid, ${header.CamelFileName}")
-                    .throwException(new JsonValidationException("Invalid json file", SentryLevel.ERROR, "jsonValidationError"))
-                    .setVariable("kipa_dir").simple("errors")
-                    .to("direct:readSFTPFileAndMove-P22")
-                    .log("file moved to errors")
-                    //.to("file:outbox/invalidJson")
+                    .log("Files found. Continuing processing.")
+                    .log("Fetching and combining the json data")
+                    .bean(sftpProcessor, "fetchAllFilesFromSftpByFileName")
+                    .marshal(new JacksonDataFormat())
+                    .setVariable("kipa_p22_data").simple("${body}")
+                    //.log("Body before continue processing :: ${body}")
+                    .to("direct:starttiraha-controller")
+            .end()
         ;
+
 
         from("direct:validate-json-P22")
             .log("Start to validate json file")
             .process(exchange -> {
-                // Get the filename from the header
-                String fileName = exchange.getIn().getHeader("CamelFileNameOnly", String.class);
-        
-                // Remove the file extension to get the base name
+                String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
                 String fileNameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.'));
-        
-                // Split the filename by underscore (_)
                 String[] parts = fileNameWithoutExtension.split("_");
-        
-                // Ensure the parts array is not empty and get the last part
                 String lastPart = (parts.length > 0) ? parts[parts.length - 1] : "";
-        
-                // Set the last part in the exchange header
+                        
                 exchange.getIn().setHeader("lastPart", lastPart);
             })
         
@@ -170,13 +161,6 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
             //.to("file:outbox/logs")
             .to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/logs?username={{VERKKOLEVY_SFTP_USER}}&password={{VERKKOLEVY_SFTP_PASSWORD}}&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no")
             .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
-        ;
-
-        from("direct:readSFTPFileAndMove-P22")
-            .pollEnrich()
-                .simple("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P22}}?username={{KIPA_SFTP_USER_P22}}&password={{KIPA_SFTP_PASSWORD_P22}}&strictHostKeyChecking=no&fileName=${headers.CamelFileName}&move=../${variable.kipa_dir}")
-                .timeout(10000)
-            .log("CamelFtpReplyString: ${headers.CamelFtpReplyString}")
         ;
 
     }

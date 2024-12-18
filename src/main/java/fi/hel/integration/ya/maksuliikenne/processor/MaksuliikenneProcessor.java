@@ -1,23 +1,14 @@
 package fi.hel.integration.ya.maksuliikenne.processor;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.RuntimeCamelException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
-
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
-import com.jcraft.jsch.SftpException;
 
 import fi.hel.integration.ya.Utils;
 import fi.hel.integration.ya.maksuliikenne.models.pain.MessageRoot;
@@ -94,7 +85,7 @@ public class MaksuliikenneProcessor {
 
             // All payments for the current day
             List<Map<String,Object>> body = ex.getIn().getBody(List.class);
-            System.out.println("Start mapping the body :: " + body);
+            //System.out.println("Start mapping the body :: " + body);
             
             String msgId = MSG_ID_PREFIX + utils.getCurrentTime("yyyy-MM-dd'T'HH:mm:ss");
             
@@ -244,7 +235,7 @@ public class MaksuliikenneProcessor {
 
             for (String addressLine : addressList) {
                 if (postalAddressBuilder.length() > 0) {
-                    postalAddressBuilder.append(", "); // Separator between address lines
+                    postalAddressBuilder.append(", "); 
                 }
                 postalAddressBuilder.append(addressLine);
             }
