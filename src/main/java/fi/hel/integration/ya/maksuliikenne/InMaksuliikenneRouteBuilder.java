@@ -119,8 +119,9 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 //.to("file:outbox/invalidJson")
         ;
 
-        from("timer://kipa_P24?repeatCount=1")
+        from("{{MAKSULIIKENNE_QUARTZ_TIMER}}")
             .routeId("kipa-P24")
+            .routePolicy(new RedisLockRoutePolicy(redisProcessor, LOCK_KEY, 300))
             .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
             .log("Start route to fetch files from kipa P24")
             .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
@@ -128,8 +129,8 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
             .setHeader("kipa_container", simple("P24"))
-            .setHeader("filePrefix", constant("YA_p24_091_20241216173703"))
-            .setHeader("filePrefix2", constant("YA_p23_091_20241209110206_091_ATVK"))
+            .setHeader("filePrefix", constant("YA_p24_091_20241216173703_091_TOJT"))
+            .setHeader("filePrefix2", constant("YA_p24_167_20241113090901_2_HKK"))
             .log("Fetching file names from Kipa")
             .bean("sftpProcessor", "getAllSFTPFileNames")
             .choice()
