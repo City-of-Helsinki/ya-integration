@@ -146,7 +146,7 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
             .log("Start to validate json file")
             .process(exchange -> {
                 // Get the filename from the header
-                String fileName = exchange.getIn().getHeader("CamelFileNameOnly", String.class);
+                String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
         
                 // Remove the file extension to get the base name
                 String fileNameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.'));
