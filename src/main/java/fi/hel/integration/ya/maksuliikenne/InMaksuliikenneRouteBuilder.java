@@ -127,8 +127,8 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
-            .setHeader("filePrefix", constant("YA_p23_091"))
-            .setHeader("filePrefix2", constant("YA_p24_091_20241216160819_091_HKK"))
+            .setHeader("filePrefix", constant("YA_p24_091_20241209105822"))
+            .setHeader("filePrefix2", constant("YA_p23_091_20241209110922_091_ATVK"))
             .log("Fetching file names from Kipa")
             .bean("sftpProcessor", "getAllSFTPFileNames")
             .choice()
@@ -172,8 +172,9 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
                     .log("Json is valid continue processing ${header.CamelFileName}")
-                    .setVariable("kipa_dir").simple("processed")
-                    .to("direct:readSFTPFileAndMove-P24")
+                    .setHeader("targetDirectory").simple("out/processed")
+                    .bean(sftpProcessor, "moveFile")
+                    //.to("direct:readSFTPFileAndMove-P24")
                     .log("file content ${body}")
                     .unmarshal(new JacksonDataFormat())
                     .process(exchange -> {
@@ -185,12 +186,13 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
                     .log("Error message :: ${variable.error_messages}")
-                    .setVariable("kipa_dir").simple("errors")
+                    .setHeader("targetDirectory").simple("out/errors")
                     //.to("direct:readSFTPFileAndMove-P24")
+                    .bean(sftpProcessor, "moveFile")
                     .log("Error message :: ${variable.error_messages}")
                     .setHeader("messageSubject", simple("Ya-integraatio, kipa: virhe json-sanomassa (P24)"))
                     .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
-                    //.to("direct:sendErrorReport")
+                    .to("direct:sendErrorReport")
                     .doTry()
                         .process(exchange -> {
                             String errorMessage = exchange.getVariable("error_messages", String.class);
@@ -202,7 +204,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         })
                     .doCatch(JsonValidationException.class)
                         .log("Caught JsonValidationException: ${exception.message}")
-                        /* .process(exchange -> {
+                        .process(exchange -> {
                             JsonValidationException cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, JsonValidationException.class);
             
                             // Send error to Sentry explicitly
@@ -218,7 +220,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                             });
             
                             Sentry.flush(2000);
-                        }) */
+                        })
                         
                         .process(exchange -> {
                             String errorMessage = exchange.getVariable("error_messages", String.class);
