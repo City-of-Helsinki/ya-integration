@@ -80,11 +80,11 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             //.log("body :: ${body}")
             .log("Validating json file :: ${header.CamelFileName}")
             .process(exchange -> exchange.setVariable("combinedJsons", new ArrayList<Map<String,Object>>()))
-            .log("Body before validating :: ${body}")
+            //.log("Body before validating :: ${body}")
             .to("direct:validate-json-P24")
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
-                    .log("Body after validating :: ${body}")
+                    //.log("Body after validating :: ${body}")
                     .log("Json is valid continue processing ${header.CamelFileName}")
                     .unmarshal(new JacksonDataFormat())
                     .process(exchange -> {
@@ -96,8 +96,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         combinedJsons.add(fileContent);
                         //exchange.setVariable("combinedJsons", combinedJsons);
                     })
-                    .log("Variable jsons :: ${variable.combinedJsons}")
-                    //.to("direct:continue-processing-P24Data")
+                    //.log("Variable jsons :: ${variable.combinedJsons}")
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
                     .log("Error message :: ${variable.error_messages}")
@@ -114,9 +113,8 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 List<Map<String, Object>> combinedJsons = exchange.getVariable("combinedJsons", List.class);
                 exchange.getIn().setBody(combinedJsons);
             })
-            .log("Body before continue processing :: ${body}")
             .to("direct:continue-processing-P24Data")
-                //.to("file:outbox/invalidJson")
+            //.to("file:outbox/invalidJson")
         ;
 
         from("{{MAKSULIIKENNE_QUARTZ_TIMER}}")
@@ -142,7 +140,6 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     .bean(sftpProcessor, "fetchAllFilesFromSftpByFileName")
                     .marshal(new JacksonDataFormat())
                     .setVariable("kipa_p24_data").simple("${body}")
-                    .log("Body before continue processing :: ${body}")
                     .to("direct:maksuliikenne-controller")
             .end()
         ;
@@ -150,15 +147,11 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
         from("direct:poll-and-validate-file")
             .log("Processing file: ${body}") 
             .setHeader("CamelFileName", simple("${body}"))
-            //.setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
-            //.setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
-            //.setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
-            //.setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
             .bean(sftpProcessor, "fetchFile")
             .log("File fecthed from kipa")
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
             .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
-            //.wireTap("direct:saveJsonData-P24")
+            .wireTap("direct:saveJsonData-P24")
             .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
             .toD("direct:validate-json-${header.kipa_container}")
             .choice()
@@ -166,8 +159,6 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     .log("Json is valid continue processing ${header.CamelFileName}")
                     .setHeader("targetDirectory").simple("out/processed")
                     .bean(sftpProcessor, "moveFile")
-                    //.to("direct:readSFTPFileAndMove-P24")
-                    .log("file content ${body}")
                     .unmarshal(new JacksonDataFormat())
                     .process(exchange -> {
                         Map<String, Object> fileContent = exchange.getIn().getBody(Map.class);
@@ -179,9 +170,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     .log("Json is not valid, ${header.CamelFileName}")
                     .log("Error message :: ${variable.error_messages}")
                     .setHeader("targetDirectory").simple("out/errors")
-                    //.to("direct:readSFTPFileAndMove-P24")
                     .bean(sftpProcessor, "moveFile")
-                    .log("Error message :: ${variable.error_messages}")
                     .setHeader("messageSubject", simple("Ya-integraatio, kipa: virhe json-sanomassa (P24)"))
                     .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
                     .to("direct:sendErrorReport")
@@ -199,7 +188,6 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         .process(exchange -> {
                             JsonValidationException cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, JsonValidationException.class);
             
-                            // Send error to Sentry explicitly
                             Sentry.withScope(scope -> {
                                 String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
                                 String uniqueId = UUID.randomUUID().toString(); // Generate a unique ID for the error
@@ -225,65 +213,13 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .end()
         ;
 
-        // Reads files from the YA Kipa API
-        /* from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}"
-                + "&password={{KIPA_SFTP_PASSWORD_P24}}"
-                + "&strictHostKeyChecking=no"
-                + "&scheduler=quartz"         
-                + "&scheduler.cron={{MAKSULIIKENNE_QUARTZ_TIMER}}" 
-                + "&antInclude=YA_p24_091_20241209105802_091_PT55*"
-            )   
-            //.routeId("kipa-P24") 
-            .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
-            //.routePolicy(new RedisLockRoutePolicy(redisProcessor, LOCK_KEY, 300))
-            .log("File fecthed from kipa")
-            .setVariable("originalFileName", simple("${header.CamelFileName}"))
-            .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
-            //.to("direct:saveJsonData-P24")
-            .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
-            //.log("Body after saving the json to logs :: ${body}")
-            .to("direct:validate-json-P24")
-            .choice()
-                .when(simple("${header.isJsonValid} == 'true'"))
-                    .log("Json is valid continue processing ${header.CamelFileName}")
-                    .setVariable("kipa_dir").simple("processed")
-                    .to("direct:readSFTPFileAndMove-P24")
-                    .log("file moved to processed")
-                    .to("direct:continue-processing-P24Data")
-             
-            .otherwise()
-                .log("Json is not valid, ${header.CamelFileName}")
-                .log("Error message :: ${header.jsonValidationErrors}")
-                .process(exchange -> {
-                    String errorMessages = exchange.getIn().getHeader("jsonValidationErrors", String.class);
-                    throw new JsonValidationException(
-                        "Invalid json file. Error messages: " + errorMessages,
-                        SentryLevel.ERROR,
-                        "jsonValidationError"
-                    );
-                })
-                .setVariable("kipa_dir").simple("errors")
-                //.to("direct:readSFTPFileAndMove-P24")
-                .log("file moved to errors")
-                //.to("file:outbox/invalidJson")
-        ;  */
-
         from("direct:validate-json-P24")
             .log("Start to validate json file")
             .process(exchange -> {
-                // Get the filename from the header
                 String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
-        
-                // Remove the file extension to get the base name
                 String fileNameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.'));
-        
-                // Split the filename by underscore (_)
                 String[] parts = fileNameWithoutExtension.split("_");
-        
-                // Ensure the parts array is not empty and get the last part
                 String lastPart = (parts.length > 0) ? parts[parts.length - 1] : "";
-        
-                // Set the last part in the exchange header
                 exchange.getIn().setHeader("lastPart", lastPart);
             })
         
@@ -326,24 +262,6 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .log("Combined jsons :: ${body}")
             .setVariable("kipa_p24_data").simple("${body}")
             .to("direct:maksuliikenne-controller")
-        ;
-
-        from("direct:readSFTPFileAndMove-P24")
-            .log("Moving file ${header.CamelFileName} to Kipa ${variable.kipa_dir} directory")
-            .pollEnrich()
-                .simple("sftp://{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}"
-                            + "?username={{KIPA_SFTP_USER_P24}}"
-                            + "&password={{KIPA_SFTP_PASSWORD_P24}}"
-                            + "&strictHostKeyChecking=no"
-                            + "&fileName=${headers.CamelFileName}"
-                            + "&move=../${variable.kipa_dir}"
-                            + "&streamDownload=true" 
-                            + "&stepwise=false"
-                            + "&maximumReconnectAttempts=5"
-                            + "&reconnectDelay=1000"
-                            + "&disconnect=true")
-                .timeout(10000) 
-            .log("CamelFtpReplyString: ${headers.CamelFtpReplyString}")
         ;
 
         from("direct:saveJsonData-P24")

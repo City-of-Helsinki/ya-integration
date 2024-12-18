@@ -51,9 +51,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         String username = exchange.getIn().getHeader("username", String.class);
         String password = exchange.getIn().getHeader("password", String.class);
         int port = exchange.getIn().getHeader("port", 22, Integer.class);  // Default to 22 if not provided
-
-        System.out.println("hostname :: " + hostname);
-        // Check if mandatory headers are present
+        java.util.Properties sftpConfig = exchange.getIn().getHeader("sftp_config", java.util.Properties.class);
+       
         if (hostname == null || username == null || password == null) {
             throw new IllegalArgumentException("Missing SFTP connection details (hostname, username, or password).");
         }
@@ -75,11 +74,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             session.setPassword(password);
             session.setConfig("StrictHostKeyChecking", "no");   
             
-            // Configure algorithms for compatibility with the server
-            java.util.Properties config = new java.util.Properties();
-            config.put("kex", "diffie-hellman-group1-sha1,diffie-hellman-group14-sha1");
-            config.put("server_host_key", "ssh-rsa");
-            session.setConfig(config);
+            if (sftpConfig != null && !sftpConfig.isEmpty()) {
+                session.setConfig(sftpConfig); 
+            }
             
             session.connect();
 
@@ -201,54 +198,6 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             }
         }
     }
-
-    /* public List<String> getAllSFTPFileNames(Exchange ex) throws JSchException, SftpException, IOException {
-        String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
-        String hostname = ex.getIn().getHeader("hostname", String.class);
-        String username = ex.getIn().getHeader("username", String.class);
-        String password = ex.getIn().getHeader("password", String.class);
-        String privateKeyEncoded = ex.getIn().getHeader("privateKey", String.class);
-        String privateKey = null;
-        
-        if(privateKeyEncoded != null) {
-           privateKey = new String(Base64.getDecoder().decode(privateKeyEncoded));
-        }
-
-        // Check for missing or invalid headers
-        if (directoryPath == null || hostname == null || username == null || (password == null && privateKey == null)) {
-            throw new IllegalArgumentException("Missing one or more required SFTP headers (directoryPath, hostname, username, and either password or privateKey.");
-        }
-
-        JSch jsch = new JSch();
-        if (privateKey != null) {
-            jsch.addIdentity("sftp-identity", privateKey.getBytes(), null, null);
-        }
-
-        Session session = jsch.getSession(username, hostname, 22);
-        if (password != null) {
-            session.setPassword(password);
-        }
-        session.setConfig("StrictHostKeyChecking", "no");
-        session.connect();
-
-        ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
-        channelSftp.connect();
-
-        List<String> fileNames = new ArrayList<>();
-        Vector<ChannelSftp.LsEntry> files = channelSftp.ls(directoryPath);
-        for (ChannelSftp.LsEntry file : files) {
-            if (!file.getAttrs().isDir()) {
-                fileNames.add(file.getFilename());
-                System.out.println(file.getFilename());
-            }        
-        }
-
-        channelSftp.exit();
-        session.disconnect();
-
-        return fileNames;
-    }
-     */
 
     public List<String> getAllSFTPDirectories(Exchange ex) throws JSchException, SftpException, IOException {
         String directoryPath = ex.getIn().getHeader("directoryPath", String.class);

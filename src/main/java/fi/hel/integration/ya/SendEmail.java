@@ -45,7 +45,7 @@ public class SendEmail {
             String messageSubject = (String) ex.getIn().getHeader("messageSubject");
             String emailMessage = (String) ex.getIn().getHeader("emailMessage");
             String recipients = (String) ex.getIn().getHeader("emailRecipients");
-            System.out.println("Sending email to " + recipients);
+            //System.out.println("Sending email to " + recipients);
 
             Properties prop = new Properties();
             prop.put("mail.smtp.starttls.enable", "true");

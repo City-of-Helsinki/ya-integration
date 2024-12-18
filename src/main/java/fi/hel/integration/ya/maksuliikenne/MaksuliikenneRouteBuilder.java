@@ -83,12 +83,11 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .choice()
                 .when(simple("${header.isXmlValid} == 'true'"))
                     .log("XML is valid, sending the file to banking ${header.CamelFileName}")
-                    //.to("direct:out-banking")
-                    .setHeader("CamelFtpReplyString").simple("OK")
+                    .to("direct:out-banking")
+                    //.setHeader("CamelFtpReplyString").simple("OK")
                     .choice()
                         .when(simple("${header.CamelFtpReplyString} == 'OK'"))
                             .log("The pain xml has been sent to Banking")
-                            //.to("direct:sendMaksuliikenneReportEmail")
                             // Restore the Kipa data to the route and direct it to the accounting mapping
                             .setBody().variable("kipa_p24_data")
                             //.log("kirjanpito data :: ${body}")
@@ -150,12 +149,8 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                 ex.getIn().setHeader("messageSubject", subject);
                 ex.getIn().setHeader("emailMessage", message);
             })
-            //.log("email message subject :: ${header.messageSubject}")
-            //.log("email message :: ${header.emailMessage}")
             .bean(sendEmail, "sendEmail")
             .log("Email has been sent")
         ;
-
-        
     }
 }

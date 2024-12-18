@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
@@ -76,7 +75,7 @@ public class SftpProcessor {
                 if (filePrefix == null || filePrefix2 == null || 
                     fileName.startsWith(filePrefix) || fileName.startsWith(filePrefix2)) {
                     fileNames.add(fileName);
-                    System.out.println(fileName);
+                    //System.out.println(fileName);
                 }
             }        
         }
@@ -93,12 +92,10 @@ public class SftpProcessor {
 
         List<Map<String, Object>> combinedJsons = new ArrayList<>();
 
-
-
         for (String fileName : fileNames) {
 
-            if (combinedJsons.size() >= 600) {
-                System.out.println("Reached the maximum size of combinedJsons (600). Stopping further processing.");
+            if (combinedJsons.size() >= 500) {
+                System.out.println("Reached the maximum size of combinedJsons (500). Stopping further processing.");
                 break;
             }
     
@@ -113,7 +110,7 @@ public class SftpProcessor {
             }
         }
 
-        System.out.println(("combined jsons :: " + combinedJsons));
+        //System.out.println(("combined jsons :: " + combinedJsons));
         ex.getIn().setBody(combinedJsons);
     }
 

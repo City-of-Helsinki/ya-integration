@@ -2,7 +2,6 @@ package fi.hel.integration.ya.starttiraha.processor;
 
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -104,7 +103,6 @@ public class TulorekisteriProcessor {
             }
             String deliveryId = utils.getCurrentTime("yyyy-MM-dd'T'HH-mm-ss");
 
-            System.out.println("DELIVERY ID :: " + deliveryId);
             BenefitReportsRequestToIR benefitReportsRequestToIR = new BenefitReportsRequestToIR();
             DeliveryData deliveryData = new DeliveryData();
             DeliveryDataOwner deliveryDataOwner = new DeliveryDataOwner();
@@ -125,7 +123,6 @@ public class TulorekisteriProcessor {
             deliveryData.setProductionEnvironment(PRODUCTION_ENVIRONMENT);
             deliveryDataOwner.setType(DELIVERY_DATA_OWNER_TYPE);
             deliveryDataOwner.setCode(payerId);
-            System.out.println("Raw payerId :: [" + deliveryDataOwner.getCode() + "]");
             deliveryDataCreator.setType(DELIVERY_DATA_CREATOR_TYPE);
             deliveryDataCreator.setCode(payerId);
             deliveryDataSender.setType(DELIVERY_DATA_SENDER_TYPE);
@@ -247,8 +244,6 @@ public class TulorekisteriProcessor {
 
             String garnishmentAmount = (String) payment.get("garnishmentAmount");
 
-            System.out.println("Garnishment amount :: " + garnishmentAmount);
-
             if(!garnishmentAmount.equals("0,00") && !garnishmentAmount.equals("0")) {
                 transactionBasicGarnishment.setTransactionCode(TRANSACTIONCODEGARNISHMENT);
                 garnishmentAmount = garnishmentAmount.replaceAll(",", ".");
@@ -276,20 +271,16 @@ public class TulorekisteriProcessor {
         ChannelSftp channelSftp = null;
 
         try {
-            // Retrieve headers
             String hostname = ex.getIn().getHeader("hostname", String.class);
             String username = ex.getIn().getHeader("username", String.class);
             String privateKeyEncoded = ex.getIn().getHeader("privateKey", String.class);
             String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
 
-            // Decode private key
             byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyEncoded);
 
-            // Initialize JSch and set the private key
             JSch jsch = new JSch();
             jsch.addIdentity("privateKey", privateKeyBytes, null, null);
 
-            // Create and configure the session
             session = jsch.getSession(username, hostname, 22);
 
             Properties config = new Properties();
@@ -297,43 +288,37 @@ public class TulorekisteriProcessor {
             session.setConfig(config);
             session.connect();
 
-            // Open an SFTP channel
             channelSftp = (ChannelSftp) session.openChannel("sftp");
             channelSftp.connect();
 
-            // List files in the directory
             Vector<ChannelSftp.LsEntry> fileList = channelSftp.ls(directoryPath);
             List<ChannelSftp.LsEntry> filesOnly = fileList.stream()
-                .filter(entry -> !entry.getAttrs().isDir()) // Exclude directories
+                .filter(entry -> !entry.getAttrs().isDir()) 
                 .toList();
 
             if (filesOnly == null || filesOnly.isEmpty()) {
                 log.infof("No files found in the directory: %s", directoryPath);
-                ex.getIn().setBody(""); // Set empty body
+                ex.getIn().setBody(""); 
                 ex.getIn().setHeader(Exchange.FILE_NAME, null);
                 ex.getIn().setHeader("CamelFtpReplyCode", "204"); // 204 - No Content
                 ex.getIn().setHeader("CamelFtpReplyString", "No files found");
                 return;
             }
 
-            // Check if there is only one file
             if (filesOnly.size() != 1) {
                 throw new IllegalStateException("Expected exactly one file, but found: " + filesOnly.size());
             }
 
-            // Fetch the only file
             ChannelSftp.LsEntry fileEntry = filesOnly.get(0);
             String fileName = fileEntry.getFilename();
             String remoteFilePath = directoryPath + "/" + fileName;
 
-            // Download the file content
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             channelSftp.get(remoteFilePath, outputStream);
-            String fileContent = outputStream.toString("UTF-8"); // Adjust encoding if necessary
+            String fileContent = outputStream.toString("UTF-8");
 
-            // Set the file content and name in the exchange
             ex.getIn().setBody(fileContent);
-            ex.getIn().setHeader(Exchange.FILE_NAME, "MepcoPro_Fuse_Starttiraha_tulorekisteri_2024-11-27T12-21-23.csv");
+            ex.getIn().setHeader(Exchange.FILE_NAME, fileName);
 
             ex.getIn().setHeader("CamelFtpReplyCode", "200");
             ex.getIn().setHeader("CamelFtpReplyString", "File fetched successfully");
