@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
@@ -92,8 +93,8 @@ public class SftpProcessor {
 
         for (String fileName : fileNames) {
 
-            if (combinedJsons.size() >= 500) {
-                System.out.println("Reached the maximum size of combinedJsons (500). Stopping further processing.");
+            if (combinedJsons.size() >= 600) {
+                System.out.println("Reached the maximum size of combinedJsons (600). Stopping further processing.");
                 break;
             }
     

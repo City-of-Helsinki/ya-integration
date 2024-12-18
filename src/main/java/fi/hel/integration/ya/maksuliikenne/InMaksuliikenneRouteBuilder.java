@@ -128,7 +128,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
             .setHeader("filePrefix", constant("YA_p24_091_20241209"))
-            .setHeader("filePrefix2", constant("YA_p23_091_20241209110746_091_ATVK"))
+            .setHeader("filePrefix2", constant("YA_p23_091_20241209110747_091_ATVK"))
             .log("Fetching file names from Kipa")
             .bean("sftpProcessor", "getAllSFTPFileNames")
             .choice()
