@@ -127,8 +127,9 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
-            .setHeader("filePrefix", constant("YA_p24_091_20241209"))
-            .setHeader("filePrefix2", constant("YA_p23_091_20241209110747_091_ATVK"))
+            .setHeader("kipa_container", simple("P24"))
+            .setHeader("filePrefix", constant("YA_p24_091_20241216173703"))
+            .setHeader("filePrefix2", constant("YA_p23_091_20241209110206_091_ATVK"))
             .log("Fetching file names from Kipa")
             .bean("sftpProcessor", "getAllSFTPFileNames")
             .choice()
@@ -148,27 +149,18 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
         from("direct:poll-and-validate-file")
             .log("Processing file: ${body}") 
             .setHeader("CamelFileName", simple("${body}"))
-            .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
-            .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
-            .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
-            .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
+            //.setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
+            //.setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
+            //.setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
+            //.setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
             .bean(sftpProcessor, "fetchFile")
-           /*  .pollEnrich()
-                .simple("sftp://{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}"
-                            + "?username={{KIPA_SFTP_USER_P24}}"
-                            + "&password={{KIPA_SFTP_PASSWORD_P24}}"
-                            + "&strictHostKeyChecking=no"
-                            + "&fileName=${header.CamelFileName}"
-                            + "&streamDownload=true" 
-                            + "&stepwise=false"
-                            + "&disconnect=true") 
-                .timeout(10000) */
             .log("File fecthed from kipa")
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
             .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
             //.wireTap("direct:saveJsonData-P24")
             .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
-            .to("direct:validate-json-P24")
+            .setHeader("dynamicRoute", simple("direct:validate-json-${header.kipa_container}"))
+            .to("${header.dynamicRoute}")
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
                     .log("Json is valid continue processing ${header.CamelFileName}")

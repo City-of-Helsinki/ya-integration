@@ -89,7 +89,11 @@ public class SftpProcessor {
 
     public void fetchAllFilesFromSftpByFileName(Exchange ex) {
         List<String> fileNames = ex.getIn().getBody(List.class);
+        Map<String, Object> headers = ex.getIn().getHeaders();
+
         List<Map<String, Object>> combinedJsons = new ArrayList<>();
+
+
 
         for (String fileName : fileNames) {
 
@@ -98,7 +102,7 @@ public class SftpProcessor {
                 break;
             }
     
-            Map<String, Object> result = producerTemplate.requestBody("direct:poll-and-validate-file", fileName, Map.class);
+            Map<String, Object> result = producerTemplate.requestBodyAndHeaders("direct:poll-and-validate-file", fileName, headers, Map.class);
 
             Boolean isJsonValid = (Boolean) result.get("isJsonValid");
             if (isJsonValid != null && isJsonValid) {
