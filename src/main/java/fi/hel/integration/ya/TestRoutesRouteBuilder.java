@@ -488,7 +488,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
-            .to("direct:fetchFileNamesFromSftp")
+            //.to("direct:fetchFileNamesFromSftp")
+            .to("direct:fetchDirectoriesFromSftp")
         ;
 
         from("timer://testP22Route?repeatCount=1")
