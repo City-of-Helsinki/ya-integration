@@ -524,7 +524,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         ;
 
         from("{{TEST_QUARTZ_TIMER}}")
-            .autoStartup("{{TEST_QUARTZ_TIMER_AUTOSTARTUP}}")
+            //.autoStartup("{{TEST_QUARTZ_TIMER_AUTOSTARTUP}}")
             .routePolicy(redisLockRoutePolicy)
             .log("Starting the timer route")
             .log("Start processing...")
