@@ -119,7 +119,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
 
         from("{{MAKSULIIKENNE_QUARTZ_TIMER}}")
             .routeId("kipa-P24")
-            .routePolicy(new RedisLockRoutePolicy(redisProcessor, LOCK_KEY, 300))
+            //.routePolicy(new RedisLockRoutePolicy(redisProcessor, LOCK_KEY, 300))
             .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
             .log("Start route to fetch files from kipa P24")
             .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
