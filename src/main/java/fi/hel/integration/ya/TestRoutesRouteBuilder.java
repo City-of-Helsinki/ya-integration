@@ -12,6 +12,7 @@ import java.util.Vector;
 import org.apache.camel.Exchange;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.spi.RoutePolicy;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import com.jcraft.jsch.ChannelSftp;
@@ -44,6 +45,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
     
     @Inject
     SftpProcessor sftpProcessor;
+
+    private static final String LOCK_KEY = "timer-route-lock"; // Redis key for the lock
+    RoutePolicy redisLockRoutePolicy = new RedisLockRoutePolicy(redisProcessor, LOCK_KEY, 300);
 
     public boolean testSFTPConnection(Exchange exchange) {
         // Extract SFTP connection details from Exchange headers
@@ -336,8 +340,6 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         }
     }
 
-    private static final String LOCK_KEY = "timer-route-lock"; // Redis key for the lock
-
     /* private boolean acquireLock() {
         try {
             System.out.println("Attempting to acquire lock");
@@ -530,7 +532,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
         from("{{TEST_QUARTZ_TIMER}}")
             .autoStartup("{{TEST_QUARTZ_TIMER_AUTOSTARTUP}}")
-            .routePolicy(new RedisLockRoutePolicy(redisProcessor, LOCK_KEY, 300))
+            .routePolicy(redisLockRoutePolicy)
             .log("Starting the timer route")
             .log("Start processing...")
             
