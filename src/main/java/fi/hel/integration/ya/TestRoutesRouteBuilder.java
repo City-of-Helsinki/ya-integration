@@ -530,8 +530,11 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
         from("{{TEST_QUARTZ_TIMER}}")
             .autoStartup("{{TEST_QUARTZ_TIMER_AUTOSTARTUP}}")
+            .routePolicy(new RedisLockRoutePolicy(redisProcessor, LOCK_KEY, 300))
             .log("Starting the timer route")
-            .process(exchange -> {
+            .log("Start Processing")
+
+            /* .process(exchange -> {
                 if (redisProcessor.acquireLock(LOCK_KEY, 300)) { 
                     exchange.getIn().setHeader("lockAcquired", true);
                     System.out.println("Lock acquired, processing starts");
@@ -546,11 +549,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .filter(header("lockAcquired").isEqualTo(true)) 
                 .log("Timer route triggered, start processing")
             .end()
-            //.process(exchange -> releaseLock())
-        ;
-
-        from("timer://test?repeatCount=1&delay=5000")
-            .log("Test user :: {{TEST_USER}}")
+            //.process(exchange -> releaseLock()) */
         ;
     }     
 }
