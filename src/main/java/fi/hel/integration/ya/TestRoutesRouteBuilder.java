@@ -46,8 +46,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
     @Inject
     SftpProcessor sftpProcessor;
 
-    private static final String LOCK_KEY = "timer-route-lock"; // Redis key for the lock
-    RoutePolicy redisLockRoutePolicy = new RedisLockRoutePolicy(redisProcessor, LOCK_KEY, 300);
+    @Inject
+    RedisLockRoutePolicy redisLockRoutePolicy;
 
     public boolean testSFTPConnection(Exchange exchange) {
         // Extract SFTP connection details from Exchange headers
@@ -357,13 +357,6 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         }
     } */
 
-    private void releaseLock() {
-        try {
-            redisProcessor.delete(LOCK_KEY);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to release lock from Redis", e);
-        }
-    }
 
     @Inject
     MaksuliikenneProcessor mlProcessor;
