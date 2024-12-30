@@ -400,10 +400,10 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("hostname").simple("{{AHR_SFTP_HOST}}")
             .setHeader("username").simple("{{AHR_SFTP_USER}}")
             .setHeader("privateKey").simple("{{AHR_SFTP_PRIVATEKEY}}")
-            .setHeader("directoryPath").simple("{{AHR_DIRECTORY_PATH}}")
-            .bean(this, "testSFTPConnectionWithPrivateKey")
+            .setHeader("directoryPath").simple("{{AHR_DIRECTORY_PATH_OUT}}")
+            //.bean(this, "testSFTPConnectionWithPrivateKey")
             //.to("direct:fetchDirectoriesFromSftp")
-            //.to("direct:fetchFileNamesFromSftp")
+            .to("direct:fetchFileNamesFromSftp")
             //.bean(tProcessor, "removeFileFromSftp(*)")            
         ;
 
