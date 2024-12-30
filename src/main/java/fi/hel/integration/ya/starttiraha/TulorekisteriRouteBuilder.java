@@ -14,6 +14,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
 
 import fi.hel.integration.ya.CsvValidator;
+import fi.hel.integration.ya.RedisProcessor;
 import fi.hel.integration.ya.Utils;
 import fi.hel.integration.ya.XmlValidator;
 import fi.hel.integration.ya.exceptions.CsvValidationException;
@@ -30,6 +31,9 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
 
     @Inject
     TulorekisteriProcessor trProcessor;
+
+    @Inject 
+    RedisProcessor redisProcessor;
 
     @Inject
     Utils utils;
@@ -60,6 +64,8 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
     private static final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>";
     private static final String SCHEMA_FILE = "schema/tulorekisteri/BenefitReportsToIR.xsd";
     private static final int COLUMNS = 11;
+
+    private final String LOCK_KEY = "timer-route-lock";
 
     @Override
     public void configure() throws Exception {
@@ -128,18 +134,32 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
 
         from("{{TULOREKISTERI_QUARTZ_TIMER}}")
             .autoStartup("{{TULOREKISTERI_IN_AUTOSTARTUP}}")
-            .setHeader("hostname", simple("{{AHR_SFTP_HOST}}"))
-            .setHeader("username", simple("{{AHR_SFTP_USER}}"))
-            .setHeader("privateKey", simple("{{AHR_SFTP_PRIVATEKEY}}"))
-            .setHeader("directoryPath", simple("{{AHR_DIRECTORY_PATH_OUT}}"))
-            .bean(trProcessor, "fetchFileFromSftp")
-            .choice()
-                .when(simple("${body} != ''"))
-                    //.log("Fetched file content: ${body}")
-                    .log("Fetched file name: ${header.CamelFileName}")
-                    .to("direct:tulorekisteri.controller")
-                .otherwise()
-                    .log("No files found in the remote directory");
+            .process(exchange -> {
+                if (redisProcessor.acquireLock(LOCK_KEY, 300)) { 
+                    exchange.getIn().setHeader("lockAcquired", true);
+                    System.out.println("Lock acquired, processing starts");
+
+                } else {
+                    exchange.getIn().setHeader("lockAcquired", false);
+                    System.out.println("Lock not acquired, skipping processing");
+                }
+            })
+            .filter(header("lockAcquired").isEqualTo(true))
+                .setHeader("hostname", simple("{{AHR_SFTP_HOST}}"))
+                .setHeader("username", simple("{{AHR_SFTP_USER}}"))
+                .setHeader("privateKey", simple("{{AHR_SFTP_PRIVATEKEY}}"))
+                .setHeader("directoryPath", simple("{{AHR_DIRECTORY_PATH_OUT}}"))
+                .bean(trProcessor, "fetchFileFromSftp")
+                .choice()
+                    .when(simple("${body} != ''"))
+                        //.log("Fetched file content: ${body}")
+                        .log("Fetched file name: ${header.CamelFileName}")
+                        .to("direct:tulorekisteri.controller")
+                    .otherwise()
+                        .log("No files found in the remote directory")
+                .end()
+            .end()
+        ;
 
         from("direct:tulorekisteri.controller")
             .log("file name :: ${header.CamelFileName}")
@@ -162,8 +182,8 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
                     .choice()
                         .when(simple("${header.isXmlValid} == 'true'"))
                             .setHeader(Exchange.FILE_NAME, simple("${header.CamelFileName.replaceAll('.csv$', '.xml')}"))
-                            //.log("XML BODY :: ${body}")
-                            .to(outTulorekisteriXml)
+                            .log("XML BODY :: ${body}")
+                            //.to(outTulorekisteriXml)
                         .otherwise()
                             .log("XML is not valid, ${header.CamelFileName}")
                             .log("Error message :: ${header.error_messages}")
@@ -181,8 +201,8 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
             //.to("file:outbox/starttiraha")
             .log("Sending tulorekisteri file to verkkolevy sftp")
             //.log("tulorekisteri xml :: ${body}")
-            .to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/ture?username={{VERKKOLEVY_SFTP_USER}}&password={{VERKKOLEVY_SFTP_PASSWORD}}&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no")
-            .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
+            //.to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/ture?username={{VERKKOLEVY_SFTP_USER}}&password={{VERKKOLEVY_SFTP_PASSWORD}}&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no")
+            //.log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
         ;
 
         from("direct:create-map")
