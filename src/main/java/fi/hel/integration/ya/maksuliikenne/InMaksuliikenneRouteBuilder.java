@@ -1,5 +1,6 @@
 package fi.hel.integration.ya.maksuliikenne;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -14,6 +15,7 @@ import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
 import fi.hel.integration.ya.JsonValidator;
 import fi.hel.integration.ya.RedisLockRoutePolicy;
 import fi.hel.integration.ya.RedisProcessor;
+import fi.hel.integration.ya.SendEmail;
 import fi.hel.integration.ya.SftpProcessor;
 import fi.hel.integration.ya.exceptions.JsonValidationException;
 import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
@@ -36,6 +38,9 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
 
     @Inject
     SftpProcessor sftpProcessor;
+
+    @Inject
+    SendEmail sendEmail;
 
     private final String SCHEMA_FILE_PT_PT55_TOJT = "schema/kipa/json_schema_PT_PT55_TOJT.json";
     private final String SCHEMA_FILE_MYK_HKK = "schema/kipa/json_schema_MYK_HKK.json";
@@ -84,63 +89,62 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .to("direct:validate-json-P24")
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
-                    //.log("Body after validating :: ${body}")
                     .log("Json is valid continue processing ${header.CamelFileName}")
-                    .unmarshal(new JacksonDataFormat())
-                    .process(exchange -> {
-                        // Get the file content
-                        Map<String,Object> fileContent = exchange.getIn().getBody(Map.class);
-                        System.out.println("file content :: " + fileContent);
-                        ArrayList<Map<String,Object>> combinedJsons = exchange.getVariable("combinedJsons", ArrayList.class);
-
-                        combinedJsons.add(fileContent);
-                        //exchange.setVariable("combinedJsons", combinedJsons);
-                    })
-                    //.log("Variable jsons :: ${variable.combinedJsons}")
+                    .to("direct:continue-processing-P24Data")
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
-                    .log("Error message :: ${variable.error_messages}")
-                    .process(exchange -> {
-                        String errorMessages = exchange.getVariable("error_messages", String.class);
-                        throw new JsonValidationException(
-                            "Invalid json file. Error messages: " + errorMessages,
-                            SentryLevel.ERROR,
-                            "jsonValidationError"
-                        );
-                    })
-            .end()
-            .process(exchange -> {
-                List<Map<String, Object>> combinedJsons = exchange.getVariable("combinedJsons", List.class);
-                exchange.getIn().setBody(combinedJsons);
-            })
-            .to("direct:continue-processing-P24Data")
-            //.to("file:outbox/invalidJson")
+                    //.throwException(new JsonValidationException("Invalid json file", SentryLevel.ERROR, "jsonValidationError"))
+                    .to("file:outbox/invalidJson")
         ;
 
         from("{{MAKSULIIKENNE_QUARTZ_TIMER}}")
             .routeId("kipa-P24")
-            //.routePolicy(new RedisLockRoutePolicy(redisProcessor, LOCK_KEY, 300))
             .autoStartup("{{MAKSULIIKENNE_IN_AUTOSTARTUP}}")
-            .log("Start route to fetch files from kipa P24")
-            .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
-            .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
-            .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
-            .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
-            .setHeader("kipa_container", simple("P24"))
-            .setHeader("filePrefix", constant("YA_p24_091_20241216173703_091_TOJT"))
-            .setHeader("filePrefix2", constant("YA_p24_167_20241113090901_2_HKK"))
-            .log("Fetching file names from Kipa")
-            .bean("sftpProcessor", "getAllSFTPFileNames")
-            .choice()
-                .when(simple("${body} == null || ${body.size()} == 0"))
-                    .log("No files found in SFTP.")
-                .otherwise()
-                    .log("Files found. Continuing processing.")
-                    .log("Fetching and combining the json data")
-                    .bean(sftpProcessor, "fetchAllFilesFromSftpByFileName")
-                    .marshal(new JacksonDataFormat())
-                    .setVariable("kipa_p24_data").simple("${body}")
-                    .to("direct:maksuliikenne-controller")
+            .process(exchange -> {
+                if (redisProcessor.acquireLock(LOCK_KEY, 300)) { 
+                    exchange.getIn().setHeader("lockAcquired", true);
+                    System.out.println("Lock acquired, processing starts");
+
+                } else {
+                    exchange.getIn().setHeader("lockAcquired", false);
+                    System.out.println("Lock not acquired, skipping processing");
+                }
+            })
+            .filter(header("lockAcquired").isEqualTo(true))
+                .log("Start route to fetch files from kipa P24")
+                .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
+                .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
+                .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
+                .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
+                .setHeader("kipa_container", simple("P24"))
+                .setHeader("filePrefix", constant("YA_p24_091_20241216124953"))
+                .setHeader("filePrefix2", constant("YA_p24_091_20241216130520_091_HKK"))
+                .log("Fetching file names from Kipa")
+                .bean("sftpProcessor", "getAllSFTPFileNames")
+                .choice()
+                    .when(simple("${body} == null || ${body.size()} == 0"))
+                        .log("No files found in SFTP.")
+                        .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
+                        .process(ex -> {
+                            String message = "Maksuliikenteen hyväksyttyjä maksuja ei ollut tälle päivälle <br><br><br>"
+                                        + "Tämä on YA-integraation lähettämä automaattinen viesti";
+                        
+                            String subject = "YA-maksut/TYPA";
+
+                            ex.getIn().setHeader("messageSubject", subject);
+                            ex.getIn().setHeader("emailMessage", message);
+                        })
+                        .bean(sendEmail, "sendEmail")
+                        .log("Email has been sent")
+
+                    .otherwise()
+                        .log("Files found. Continuing processing.")
+                        .log("Fetching and combining the json data")
+                        .bean(sftpProcessor, "fetchAllFilesFromSftpByFileName")
+                        .marshal(new JacksonDataFormat())
+                        .setVariable("kipa_p24_data").simple("${body}")
+                        .to("direct:maksuliikenne-controller")
+                .end()
             .end()
         ;
 
@@ -151,7 +155,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .log("File fecthed from kipa")
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
             .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
-            .wireTap("direct:saveJsonData-P24")
+            //.wireTap("direct:saveJsonData-P24")
             .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
             .toD("direct:validate-json-${header.kipa_container}")
             .choice()
@@ -241,7 +245,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
         ;
 
         from("direct:continue-processing-P24Data")
-            //.unmarshal(new JacksonDataFormat())
+            .unmarshal(new JacksonDataFormat())
             .aggregate(new GroupedExchangeAggregationStrategy()).constant(true)
                 .completionSize(1000) 
                 .completionTimeout(10000)

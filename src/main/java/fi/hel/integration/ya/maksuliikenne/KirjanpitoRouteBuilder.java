@@ -91,8 +91,8 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                         .log("is valid :: ${header.isXmlValid}")
                         //.to("file:outbox/maksuliikenne/sap")
                         .log("Created kirjanpito xml, file name :: ${header.CamelFileName}")
-                        .to("direct:out.maksuliikenne-sap")
-                        //.log("Kirjanpito xml :: ${body}")
+                        //.to("direct:out.maksuliikenne-sap")
+                        .log("Kirjanpito xml :: ${body}")
                     .otherwise()
                         //.to("file:outbox/invalidXml")
                         .log("XML is not valid, ${header.CamelFileName}")
@@ -108,7 +108,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                                 "xmlValidationError"
                             );
                         })
-                        .to("direct:out.maksuliikenne-sap")
+                        //.to("direct:out.maksuliikenne-sap")
                 .end() 
             .end()
             .log("All accounting data processed")
@@ -130,7 +130,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{SAP_SFTP_USER}}")
             .setHeader("password").simple("{{SAP_SFTP_PASSWORD}}")
             .setHeader("directoryPath").simple("{{SAP_DIRECTORY_PATH}}")
-            .bean(kpProcessor, "writeFileSapSftp")
+            //.bean(kpProcessor, "writeFileSapSftp")
             .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
         ;
     }
