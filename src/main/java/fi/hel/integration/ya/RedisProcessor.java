@@ -77,6 +77,8 @@ public class RedisProcessor {
 
     public boolean acquireLock(String key, int ttlSeconds) {
         try (Jedis jedis = jedisPool.getResource()) {
+            long delay = Duration.ofMillis((long) (Math.random() * 5000)).toMillis();
+            Thread.sleep(delay);
             SetParams params = new SetParams().nx().ex(ttlSeconds);
             String result = jedis.set(key, "locked", params);
     
