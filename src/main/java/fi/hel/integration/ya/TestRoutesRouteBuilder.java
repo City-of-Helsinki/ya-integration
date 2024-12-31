@@ -361,6 +361,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
     @Inject
     MaksuliikenneProcessor mlProcessor;
 
+    private final String LOCK_KEY = "timer-route-lock";
+
     @Override
     public void configure() throws Exception {
 
@@ -432,9 +434,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
-            //.to("direct:fetchFileNamesFromSftp")
+            .to("direct:fetchFileNamesFromSftp")
             //.to("direct:fetchDirectoriesFromSftp")
-            .bean(this, "testSFTPConnection")
+            //.bean(this, "testSFTPConnection")
         ;
 
         from("timer://testP22Route?repeatCount=1")
@@ -526,8 +528,20 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         from("{{TEST_QUARTZ_TIMER}}")
             .autoStartup("{{TEST_QUARTZ_TIMER_AUTOSTARTUP}}")
             //.routePolicy(redisLockRoutePolicy)
-            .log("Starting the timer route")
-            .log("Start processing...")
+            .process(exchange -> {
+                if (redisProcessor.acquireLock(LOCK_KEY, 300)) { 
+                    exchange.getIn().setHeader("lockAcquired", true);
+                    System.out.println("Lock acquired, processing starts");
+
+                } else {
+                    exchange.getIn().setHeader("lockAcquired", false);
+                    System.out.println("Lock not acquired, skipping processing");
+                }
+            })
+            .filter(header("lockAcquired").isEqualTo(true))
+                .log("Starting the timer route")
+                .log("Start processing...")
+            .end()
             
         ;
     }     
