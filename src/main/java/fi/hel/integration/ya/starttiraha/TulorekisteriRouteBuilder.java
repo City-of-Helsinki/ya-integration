@@ -134,6 +134,8 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
 
         from("{{TULOREKISTERI_QUARTZ_TIMER}}")
             .autoStartup("{{TULOREKISTERI_IN_AUTOSTARTUP}}")
+            .routeId("tulorekisteri-in")
+            .log("tulorekisteri-in route started")
             .process(exchange -> {
                 if (redisProcessor.acquireLock(LOCK_KEY, 300)) { 
                     exchange.getIn().setHeader("lockAcquired", true);
@@ -154,6 +156,7 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
                     .when(simple("${body} != ''"))
                         //.log("Fetched file content: ${body}")
                         .log("Fetched file name: ${header.CamelFileName}")
+                        .setVariable("originalFileName", simple("${header.CamelFileName}"))
                         .to("direct:tulorekisteri.controller")
                     .otherwise()
                         .log("No files found in the remote directory")
@@ -183,7 +186,7 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
                         .when(simple("${header.isXmlValid} == 'true'"))
                             .setHeader(Exchange.FILE_NAME, simple("${header.CamelFileName.replaceAll('.csv$', '.xml')}"))
                             .log("XML BODY :: ${body}")
-                            //.to(outTulorekisteriXml)
+                            .to(outTulorekisteriXml)
                         .otherwise()
                             .log("XML is not valid, ${header.CamelFileName}")
                             .log("Error message :: ${header.error_messages}")
@@ -194,8 +197,7 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
                 .log("CSV is not valid, ${header.CamelFileName}")
                 .throwException(new CsvValidationException("Invalid csv file", SentryLevel.ERROR, "csvValidationError"))
 
-;
-           
+        ;
 
         from("direct:out.tulorekisteri")
             //.to("file:outbox/starttiraha")
@@ -203,6 +205,15 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
             //.log("tulorekisteri xml :: ${body}")
             //.to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/ture?username={{VERKKOLEVY_SFTP_USER}}&password={{VERKKOLEVY_SFTP_PASSWORD}}&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no")
             //.log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
+            .process(exchange -> {
+                String filePath = exchange.getIn().getHeader("directoryPath", String.class) 
+                                  + "/" 
+                                  + exchange.getVariable("originalFileName", String.class);
+                exchange.getIn().setHeader("filePathToRemove", filePath);
+            })
+            .log("Removing file ${header.filePathToRemove}")
+            .bean(trProcessor, "removeFileFromSftp")
+            .log("File successfully removed from source SFTP server")
         ;
 
         from("direct:create-map")
