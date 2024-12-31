@@ -83,6 +83,12 @@ public class KirjanpitoProcessor {
     @ConfigProperty(name = "MAKSULIIKENNE_KIRJANPITO_SENDERID", defaultValue= "senderId")
     String senderId;
 
+    @ConfigProperty(name = "HKI_BUSINESSID", defaultValue= "hkiBusinessId")
+    String hkiBusinessId;
+
+    @ConfigProperty(name = "HKI_PARNERCODE", defaultValue= "hkiPartnercode")
+    String hkiPartnerCode;
+
     private static final String EMPTY = "";
     
     // Claim types:
@@ -210,8 +216,14 @@ public class KirjanpitoProcessor {
             InputStream fileStream = loadFileFromClasspath(filePath);
         
             Map<String, String> kumppanikoodit = readExcelFile(fileStream);
+            String partnerCode = "";
 
-            String partnerCode = kumppanikoodit.get(businessId);
+            if(businessId != null && businessId.equals(hkiBusinessId)) {
+                partnerCode = hkiPartnerCode;
+            } else {
+                partnerCode = kumppanikoodit.get(businessId);
+            }
+            
             return partnerCode;
 
         } catch (IOException e) {
