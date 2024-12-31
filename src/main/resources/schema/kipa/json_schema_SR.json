@@ -470,6 +470,12 @@
       },
       "acculturingStatus": {
         "type": "boolean"
+      },
+      "originalInvoiceNumber": {
+        "type": ["string", "null"]
+      },
+      "originalBuyerReferenceIdentifier": {
+        "type": ["string", "null"]
       }
     },
     "required": [
