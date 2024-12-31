@@ -60,4 +60,13 @@ public class Utils {
         }
     }
 
+    public String xmlEscape(String value) {
+        String result = value.replaceAll("&", "&amp;");
+        result = result.replaceAll("<", "&lt;");
+        result = result.replaceAll(">", "&gt;");
+        result = result.replaceAll("\"", "&quot;");
+        result = result.replaceAll("'", "&apos;");
+        return result;
+    }
+
 }

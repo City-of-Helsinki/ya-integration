@@ -102,7 +102,7 @@ public class MaksuliikenneProcessor {
             String duedate = utils.getCurrentTime("yyyy-MM-dd HH:mm:ss");
             Map<String,Object> delivery = (Map<String, Object>) body.get(0).get("delivery");
             String fileName = (String) delivery.get("fileName");
-            // file name prefix, e.g. YA_P24_091
+            // file name prefix, e.g. YAP24091
             String fileNamePrefix = fileName.substring(0, 10).replaceAll("_", "");
 
             Document document = new Document();
@@ -167,7 +167,7 @@ public class MaksuliikenneProcessor {
             pmtInf.setDbtrAgt(debtorAgent);
             pmtInf.setChrgBr(CHARGE_BEARER);
 
-            // duedate + file name prefix, e.g. 20240612_YA_P24_091
+            // duedate + file name prefix, e.g. 20240612YAP24091
             pmtInf.setPmtInfId(utils.convertDate(duedate, ORIGINAL_DATE_FORMAT, "yyyyMMdd") + fileNamePrefix);
             
             pmtInf.setPmtMtd(PAYMENT_METHOD);
@@ -229,6 +229,8 @@ public class MaksuliikenneProcessor {
                 receiverName = lastName + ", " + firstName;
             }
 
+            receiverName = utils.xmlEscape(receiverName);
+
             Map<String,Object> address = (Map<String, Object>) receiver.get("postalAddress");
             ArrayList<String> addressList = (ArrayList<String>) address.get("addressLine");
             StringBuilder postalAddressBuilder = new StringBuilder();
@@ -241,6 +243,8 @@ public class MaksuliikenneProcessor {
             }
 
             String postalAddress = postalAddressBuilder.toString();
+
+            postalAddress = utils.xmlEscape(postalAddress);
 
             String postalCode = (String) address.get("postalCode");
             String postOffice = (String) address.get("postOffice");

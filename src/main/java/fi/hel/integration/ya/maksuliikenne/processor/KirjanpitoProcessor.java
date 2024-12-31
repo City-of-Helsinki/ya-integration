@@ -83,10 +83,10 @@ public class KirjanpitoProcessor {
     @ConfigProperty(name = "MAKSULIIKENNE_KIRJANPITO_SENDERID", defaultValue= "senderId")
     String senderId;
 
-    @ConfigProperty(name = "HKI_BUSINESSID", defaultValue= "hkiBusinessId")
+    @ConfigProperty(name = "MAKSULIIKENNE_KIRJANPITO_HKI_BUSINESSID", defaultValue= "hkiBusinessId")
     String hkiBusinessId;
 
-    @ConfigProperty(name = "HKI_PARNERCODE", defaultValue= "hkiPartnercode")
+    @ConfigProperty(name = "MAKSULIIKENNE_KIRJANPITO_HKI_PARTNERCODE", defaultValue= "hkiPartnercode")
     String hkiPartnerCode;
 
     private static final String EMPTY = "";
