@@ -78,7 +78,14 @@ public class RedisProcessor {
     public boolean acquireLock(String key, int ttlSeconds) {
         try (Jedis jedis = jedisPool.getResource()) {
             long delay = Duration.ofMillis((long) (Math.random() * 5000)).toMillis();
-            Thread.sleep(delay);
+            
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // Restore the interrupted status
+                throw new RuntimeException("Thread was interrupted while acquiring lock", e);
+            }
+            
             SetParams params = new SetParams().nx().ex(ttlSeconds);
             String result = jedis.set(key, "locked", params);
     
