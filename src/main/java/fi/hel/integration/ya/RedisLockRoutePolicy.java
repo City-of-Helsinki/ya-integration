@@ -9,19 +9,19 @@ import org.apache.camel.support.service.ServiceSupport;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class RedisLockRoutePolicy extends ServiceSupport implements RoutePolicy {
 
-    private final RedisProcessor redisProcessor;
-    private final String lockKey;
-    private final int lockTimeout;
+   @Inject
+    private RedisProcessor redisProcessor;
 
-    public RedisLockRoutePolicy(RedisProcessor redisProcessor, @ConfigProperty(name = "REDIS_LOCK_KEY") String lockKey, @ConfigProperty(name = "REDIS_LOCK_TIMEOUT") int lockTimeout) {
-        this.redisProcessor = redisProcessor;
-        this.lockKey = lockKey;
-        this.lockTimeout = lockTimeout;
-    }
+    @ConfigProperty(name = "REDIS_LOCK_KEY")
+    private String lockKey;
+
+    @ConfigProperty(name = "REDIS_LOCK_TIMEOUT")
+    private int lockTimeout;
 
     @Override
     public void onStart(Route route) {

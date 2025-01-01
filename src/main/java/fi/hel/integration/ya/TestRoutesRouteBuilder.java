@@ -12,6 +12,7 @@ import java.util.Vector;
 import org.apache.camel.Exchange;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.spi.RoutePolicy;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import com.jcraft.jsch.ChannelSftp;
@@ -44,6 +45,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
     
     @Inject
     SftpProcessor sftpProcessor;
+
+    @Inject
+    RedisLockRoutePolicy redisLockRoutePolicy;
 
     public boolean testSFTPConnection(Exchange exchange) {
         // Extract SFTP connection details from Exchange headers
@@ -336,8 +340,6 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         }
     }
 
-    private static final String LOCK_KEY = "timer-route-lock"; // Redis key for the lock
-
     /* private boolean acquireLock() {
         try {
             System.out.println("Attempting to acquire lock");
@@ -355,16 +357,11 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         }
     } */
 
-    private void releaseLock() {
-        try {
-            redisProcessor.delete(LOCK_KEY);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to release lock from Redis", e);
-        }
-    }
 
     @Inject
     MaksuliikenneProcessor mlProcessor;
+
+    private final String LOCK_KEY = "timer-route-lock";
 
     @Override
     public void configure() throws Exception {
@@ -405,7 +402,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("hostname").simple("{{AHR_SFTP_HOST}}")
             .setHeader("username").simple("{{AHR_SFTP_USER}}")
             .setHeader("privateKey").simple("{{AHR_SFTP_PRIVATEKEY}}")
-            .setHeader("directoryPath").simple("{{AHR_DIRECTORY_PATH}}")
+            .setHeader("directoryPath").simple("{{AHR_DIRECTORY_PATH_OUT}}")
             .bean(this, "testSFTPConnectionWithPrivateKey")
             //.to("direct:fetchDirectoriesFromSftp")
             //.to("direct:fetchFileNamesFromSftp")
@@ -430,6 +427,16 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             //.to("direct:fetchDirectoriesFromSftp")            
         ;
 
+        from("timer://testBankingSftp?repeatCount=1&delay=5000")
+            .autoStartup("{{BANKING_SFTP_TESTROUTE_AUTOSTARTUP}}")
+            .log("Starting banking sftp test route")
+            .setHeader("hostname").simple("{{BANKING_SFTP_HOST}}")
+            .setHeader("username").simple("{{BANKING_SFTP_USER}}")
+            .setHeader("password").simple("{{BANKING_SFTP_PASSWORD}}")
+            .setHeader("directoryPath").simple("{{BANKING_DIRECTORY_PATH}}")
+            .bean(this, "testSFTPConnection")
+        ;
+
         from("timer://testP24Route?repeatCount=1")
             .autoStartup("{{MAKSULIIKENNE_P24_TESTROUTE_AUTOSTARTUP}}")
             .log("Starting kipa P24 test route")
@@ -437,9 +444,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
-            //.to("direct:fetchFileNamesFromSftp")
+            .to("direct:fetchFileNamesFromSftp")
             //.to("direct:fetchDirectoriesFromSftp")
-            .bean(this, "testSFTPConnection")
+            //.bean(this, "testSFTPConnection")
         ;
 
         from("timer://testP22Route?repeatCount=1")
@@ -471,7 +478,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
                 + "&scheduler.cron={{MAKSULIIKENNE_TEST_TIMER}}" 
-                + "&antInclude=YA_p24_091_20241012000003_6_HKK*"
+                + "&delete=true" 
             )   
             .autoStartup("{{MAKSULIIKENNE_TEST_IN_AUTOSTARTUP}}")
             .log("json content :: ${body}")
@@ -530,11 +537,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
         from("{{TEST_QUARTZ_TIMER}}")
             .autoStartup("{{TEST_QUARTZ_TIMER_AUTOSTARTUP}}")
-            .routePolicy(new RedisLockRoutePolicy(redisProcessor, LOCK_KEY, 300))
-            .log("Starting the timer route")
-            .log("Start Processing")
-
-            /* .process(exchange -> {
+            //.routePolicy(redisLockRoutePolicy)
+            .process(exchange -> {
                 if (redisProcessor.acquireLock(LOCK_KEY, 300)) { 
                     exchange.getIn().setHeader("lockAcquired", true);
                     System.out.println("Lock acquired, processing starts");
@@ -542,14 +546,13 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                 } else {
                     exchange.getIn().setHeader("lockAcquired", false);
                     System.out.println("Lock not acquired, skipping processing");
-
                 }
             })
-
-            .filter(header("lockAcquired").isEqualTo(true)) 
-                .log("Timer route triggered, start processing")
+            .filter(header("lockAcquired").isEqualTo(true))
+                .log("Starting the timer route")
+                .log("Start processing...")
             .end()
-            //.process(exchange -> releaseLock()) */
+            
         ;
     }     
 }

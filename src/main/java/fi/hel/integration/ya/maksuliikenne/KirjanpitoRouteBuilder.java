@@ -36,6 +36,8 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
     private final String FILE_NAME_PREFIX= "{{MAKSULIIKENNE_KIRJANPITO_FILENAMEPREFIX}}";
     private final String SENDER_ID = "{{MAKSULIIKENNE_KIRJANPITO_SENDERID}}";
     private final String EMAIL_RECIPIENTS = "{{MAKSULIIKENNE_EMAIL_RECIPIENTS}}";
+    private final String KIRJANPITO_XMLERROR_EMAIL_RECIPIENTS= "{{KIRJANPITO_XMLERROR_EMAIL_RECIPIENTS}}";
+
 
 
     @Override
@@ -96,9 +98,10 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                     .otherwise()
                         //.to("file:outbox/invalidXml")
                         .log("XML is not valid, ${header.CamelFileName}")
+                        .to("direct:out.maksuliikenne-sap")
                         .log("Error message :: ${header.error_messages}")
                         .setHeader("messageSubject", simple("Ya-integraatio, maksuliikenne: virhe xml-sanomassa (SAP, kirjanpito)"))
-                        .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
+                        .setHeader("emailRecipients", constant(KIRJANPITO_XMLERROR_EMAIL_RECIPIENTS))
                         .to("direct:sendErrorReport")
                         .process(exchange -> {
                             String errorMessages = exchange.getIn().getHeader("error_messages", String.class);
@@ -107,8 +110,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                                 SentryLevel.ERROR,
                                 "xmlValidationError"
                             );
-                        })
-                        .to("direct:out.maksuliikenne-sap")
+                        })      
                 .end() 
             .end()
             .log("All accounting data processed")

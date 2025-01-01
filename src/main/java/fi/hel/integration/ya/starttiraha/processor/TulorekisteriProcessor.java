@@ -323,7 +323,7 @@ public class TulorekisteriProcessor {
             ex.getIn().setHeader("CamelFtpReplyCode", "200");
             ex.getIn().setHeader("CamelFtpReplyString", "File fetched successfully");
 
-            log.infof("File '%s' fetched successfully from directory: %s", directoryPath);
+            log.infof("File '%s' fetched successfully from directory: %s", fileName, directoryPath);
 
         } catch (Exception e) {
             log.error("Error during SFTP fetch: {}", e.getMessage(), e);
@@ -350,8 +350,8 @@ public class TulorekisteriProcessor {
             String hostname = ex.getIn().getHeader("hostname", String.class);
             String username = ex.getIn().getHeader("username", String.class);
             String privateKeyEncoded = ex.getIn().getHeader("privateKey", String.class);
-            String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
-    
+            String filePath = ex.getIn().getHeader("filePathToRemove", String.class);
+
             byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyEncoded);
     
             JSch jsch = new JSch();
@@ -367,9 +367,9 @@ public class TulorekisteriProcessor {
             channelSftp = (ChannelSftp) session.openChannel("sftp");
             channelSftp.connect();
     
-            channelSftp.rm(directoryPath);
+            channelSftp.rm(filePath);
     
-            log.infof("File '%s' removed successfully from SFTP server", directoryPath);
+            log.infof("File '%s' removed successfully from SFTP server", filePath);
     
         } catch (Exception e) {
             log.error("Error during SFTP file deletion: {}", e.getMessage(), e);
