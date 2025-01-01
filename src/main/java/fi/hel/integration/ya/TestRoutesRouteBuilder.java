@@ -403,9 +403,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{AHR_SFTP_USER}}")
             .setHeader("privateKey").simple("{{AHR_SFTP_PRIVATEKEY}}")
             .setHeader("directoryPath").simple("{{AHR_DIRECTORY_PATH_OUT}}")
-            //.bean(this, "testSFTPConnectionWithPrivateKey")
+            .bean(this, "testSFTPConnectionWithPrivateKey")
             //.to("direct:fetchDirectoriesFromSftp")
-            .to("direct:fetchFileNamesFromSftp")
+            //.to("direct:fetchFileNamesFromSftp")
             //.bean(tProcessor, "removeFileFromSftp(*)")            
         ;
 
@@ -425,6 +425,16 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             })
             .bean(this, "testSFTPConnection")
             //.to("direct:fetchDirectoriesFromSftp")            
+        ;
+
+        from("timer://testBankingSftp?repeatCount=1&delay=5000")
+            .autoStartup("{{BANKING_SFTP_TESTROUTE_AUTOSTARTUP}}")
+            .log("Starting banking sftp test route")
+            .setHeader("hostname").simple("{{BANKING_SFTP_HOST}}")
+            .setHeader("username").simple("{{BANKING_SFTP_USER}}")
+            .setHeader("password").simple("{{BANKING_SFTP_PASSWORD}}")
+            .setHeader("directoryPath").simple("{{BANKING_DIRECTORY_PATH}}")
+            .bean(this, "testSFTPConnection")
         ;
 
         from("timer://testP24Route?repeatCount=1")
@@ -468,7 +478,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                 + "&strictHostKeyChecking=no"
                 + "&scheduler=quartz"         
                 + "&scheduler.cron={{MAKSULIIKENNE_TEST_TIMER}}" 
-                + "&antInclude=YA_p24_091_20241012000003_6_HKK*"
+                + "&delete=true" 
             )   
             .autoStartup("{{MAKSULIIKENNE_TEST_IN_AUTOSTARTUP}}")
             .log("json content :: ${body}")
