@@ -39,6 +39,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
     private final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
     private final String FILE_NAME_PREFIX = "{{MAKSULIIKENNE_BANKING_FILENAMEPREFIX}}";
     private final String EMAIL_RECIPIENTS = "{{MAKSULIIKENNE_EMAIL_RECIPIENTS}}";
+    private final String MAKSULIIKENNE_XMLERROR_EMAIL_RECIPIENTS = "{{MAKSULIIKENNE_XMLERROR_EMAIL_RECIPIENTS}}";
 
     @Override
     public void configure() throws Exception {
@@ -83,8 +84,8 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .choice()
                 .when(simple("${header.isXmlValid} == 'true'"))
                     .log("XML is valid, sending the file to banking ${header.CamelFileName}")
-                    //.to("direct:out-banking")
-                    .setHeader("CamelFtpReplyString").simple("OK")
+                    .to("direct:out-banking")
+                    //.setHeader("CamelFtpReplyString").simple("OK")
                     .choice()
                         .when(simple("${header.CamelFtpReplyString} == 'OK'"))
                             .log("The pain xml has been sent to Banking")
@@ -99,7 +100,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                     .log("XML is not valid, ${header.CamelFileName}")
                     .log("Error message :: ${header.error_messages}")
                     .setHeader("messageSubject", simple("Ya-integraatio, maksuliikenne: virhe xml-sanomassa (Banking)"))
-                    .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
+                    .setHeader("emailRecipients", constant(MAKSULIIKENNE_XMLERROR_EMAIL_RECIPIENTS))
                     .to("direct:sendErrorReport")
                     .process(exchange -> {
                         String errorMessages = exchange.getIn().getHeader("error_messages", String.class);
@@ -144,7 +145,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                                + "Maksuja yhteensä: " + amountOfPayments + "<br>"
                                + "Maksujen yhteissumma: " + totalAmount;
                 
-                String subject = "TESTI: YA-maksut/TYPA";
+                String subject = "YA-maksut/TYPA";
 
                 ex.getIn().setHeader("messageSubject", subject);
                 ex.getIn().setHeader("emailMessage", message);

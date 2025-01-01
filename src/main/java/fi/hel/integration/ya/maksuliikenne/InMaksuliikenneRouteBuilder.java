@@ -1,6 +1,5 @@
 package fi.hel.integration.ya.maksuliikenne;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,7 +12,6 @@ import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
 
 import fi.hel.integration.ya.JsonValidator;
-import fi.hel.integration.ya.RedisLockRoutePolicy;
 import fi.hel.integration.ya.RedisProcessor;
 import fi.hel.integration.ya.SendEmail;
 import fi.hel.integration.ya.SftpProcessor;
@@ -44,7 +42,10 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
 
     private final String SCHEMA_FILE_PT_PT55_TOJT = "schema/kipa/json_schema_PT_PT55_TOJT.json";
     private final String SCHEMA_FILE_MYK_HKK = "schema/kipa/json_schema_MYK_HKK.json";
-    private final String EMAIL_RECIPIENTS = "{{MAKSULIIKENNE_EMAIL_RECIPIENTS}}";
+    private final String MAKSULIIKENNE_EMAIL_RECIPIENTS = "{{MAKSULIIKENNE_EMAIL_RECIPIENTS}}";
+    private final String MAKSULIIKENNE_NOFILES_EMAIL_RECIPIENTS = "{{MAKSULIIKENNE_NOFILES_EMAIL_RECIPIENTS}}";
+    private final String JSON_ERROR_EMAIL_RECIPIENTS = "{{JSON_ERROR_EMAIL_RECIPIENTS}}";
+
 
     private final String LOCK_KEY = "timer-route-lock";
     
@@ -93,7 +94,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     .to("direct:continue-processing-P24Data")
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
-                    //.throwException(new JsonValidationException("Invalid json file", SentryLevel.ERROR, "jsonValidationError"))
+                    .throwException(new JsonValidationException("Invalid json file", SentryLevel.ERROR, "jsonValidationError"))
                     .to("file:outbox/invalidJson")
         ;
 
@@ -117,14 +118,14 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
                 .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
                 .setHeader("kipa_container", simple("P24"))
-                .setHeader("filePrefix", constant("YA_p24_091_20241216124953"))
-                .setHeader("filePrefix2", constant("YA_p24_091_20241216130520_091_HKK"))
+                //.setHeader("filePrefix", constant("YA_p24_091_20241216124953"))
+                //.setHeader("filePrefix2", constant("YA_p24_091_20241216130520_091_HKK"))
                 .log("Fetching file names from Kipa")
                 .bean("sftpProcessor", "getAllSFTPFileNames")
                 .choice()
                     .when(simple("${body} == null || ${body.size()} == 0"))
                         .log("No files found in SFTP.")
-                        .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
+                        .setHeader("emailRecipients", constant(MAKSULIIKENNE_NOFILES_EMAIL_RECIPIENTS))
                         .process(ex -> {
                             String message = "Maksuliikenteen hyväksyttyjä maksuja ei ollut tälle päivälle <br><br><br>"
                                         + "Tämä on YA-integraation lähettämä automaattinen viesti";
@@ -154,8 +155,8 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .bean(sftpProcessor, "fetchFile")
             .log("File fecthed from kipa")
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
-            .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
-            //.wireTap("direct:saveJsonData-P24")
+            //.setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
+            .wireTap("direct:saveJsonData-P24")
             .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
             .toD("direct:validate-json-${header.kipa_container}")
             .choice()
@@ -176,7 +177,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     .setHeader("targetDirectory").simple("out/errors")
                     .bean(sftpProcessor, "moveFile")
                     .setHeader("messageSubject", simple("Ya-integraatio, kipa: virhe json-sanomassa (P24)"))
-                    .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
+                    .setHeader("emailRecipients", constant(JSON_ERROR_EMAIL_RECIPIENTS))
                     .to("direct:sendErrorReport")
                     .doTry()
                         .process(exchange -> {
