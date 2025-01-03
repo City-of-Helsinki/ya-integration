@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -48,6 +49,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
     @Inject
     RedisLockRoutePolicy redisLockRoutePolicy;
+
+    @Inject
+    Utils utils;
 
     public boolean testSFTPConnection(Exchange exchange) {
         // Extract SFTP connection details from Exchange headers
@@ -537,7 +541,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
         from("{{TEST_QUARTZ_TIMER}}")
             .autoStartup("{{TEST_QUARTZ_TIMER_AUTOSTARTUP}}")
-            //.routePolicy(redisLockRoutePolicy)
+            .log("Trying to acquire timer lock")
             .process(exchange -> {
                 if (redisProcessor.acquireLock(LOCK_KEY, 300)) { 
                     exchange.getIn().setHeader("lockAcquired", true);
@@ -550,9 +554,25 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             })
             .filter(header("lockAcquired").isEqualTo(true))
                 .log("Starting the timer route")
-                .log("Start processing...")
+                .process(exchange -> {
+                    LocalDate today = LocalDate.now();
+                    boolean isHoliday = utils.isFinnishPublicHoliday(today);
+                    exchange.getIn().setHeader("isHoliday", isHoliday);
+                })
+                .choice()
+                    .when(header("isHoliday").isEqualTo(false)) 
+                        .to("direct:continue-test-timer-route")
+                    .otherwise()
+                        .log("It is a Finnish public holiday, do not process")
+        
+                .end()
             .end()
             
+        ;
+
+        from("direct:continue-test-timer-route")
+            .log("Starting the timer route")
+            .log("Start processing...")    
         ;
     }     
 }
