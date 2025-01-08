@@ -156,14 +156,14 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .log("File fecthed from kipa")
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
             //.setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
-            //.wireTap("direct:saveJsonData-P24")
+            .wireTap("direct:saveJsonData-P24")
             .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
             .toD("direct:validate-json-${header.kipa_container}")
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
                     .log("Json is valid continue processing ${header.CamelFileName}")
                     .setHeader("targetDirectory").simple("out/processed")
-                    //.bean(sftpProcessor, "moveFile")
+                    .bean(sftpProcessor, "moveFile")
                     .unmarshal(new JacksonDataFormat())
                     .process(exchange -> {
                         Map<String, Object> fileContent = exchange.getIn().getBody(Map.class);
