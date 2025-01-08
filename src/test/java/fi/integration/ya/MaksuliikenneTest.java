@@ -47,7 +47,10 @@ public class MaksuliikenneTest extends CamelQuarkusTestSupport {
                     .replaceAll("(?s)<DbtrAcct>\\s*<Id>\\s*<IBAN>.*?</IBAN>\\s*</Id>\\s*</DbtrAcct>",
                                     "<DbtrAcct><Id><IBAN>FI1234567891011121</IBAN></Id></DbtrAcct>")
                     .replaceAll("(?s)<Dbtr>\\s*<Nm>.*?</Nm>", "<Dbtr><Nm>MAKSAJA</Nm>")
-                    .replaceAll("(?s)<InitgPty>\\s*<Nm>.*?</Nm>", "<InitgPty><Nm>NAME</Nm>");;
+                    .replaceAll("(?s)<InitgPty>\\s*<Nm>.*?</Nm>", "<InitgPty><Nm>NAME</Nm>")
+                    .replaceAll("<ReqdExctnDt>.*?</ReqdExctnDt>", "<ReqdExctnDt>REPLACED</ReqdExctnDt>")
+                    .replaceAll("<PmtInfId>.*?</PmtInfId>", "<PmtInfId>REPLACED</PmtInfId>")
+                    ;
 
         assertEquals(expectedResult, result);
         mock.assertIsSatisfied();
