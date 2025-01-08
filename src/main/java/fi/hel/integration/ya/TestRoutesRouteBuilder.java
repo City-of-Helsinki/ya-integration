@@ -510,7 +510,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                 + "&strictHostKeyChecking=no"
                 + "&delay=30000"
                 + "&noop=true"
-                + "&antInclude=YA_p22_091_20241216154204_091_SR*" 
+                + "&antInclude=YA_p22_091_2024121614*" 
             )
             .autoStartup("{{TEST_SEND_JSONFILES_AUTOSTARTUP}}")
             .routeId("kipa-fetch-files")
