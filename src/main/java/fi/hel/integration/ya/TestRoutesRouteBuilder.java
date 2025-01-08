@@ -555,7 +555,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .filter(header("lockAcquired").isEqualTo(true))
                 .log("Starting the timer route")
                 .process(exchange -> {
-                    LocalDate today = LocalDate.now();
+                    LocalDate today = LocalDate.parse("2025-04-18"); //LocalDate.now();
+                    System.out.println("today :: " + today);
                     boolean isHoliday = utils.isFinnishPublicHoliday(today);
                     exchange.getIn().setHeader("isHoliday", isHoliday);
                 })
