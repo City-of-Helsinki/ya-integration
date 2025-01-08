@@ -12,6 +12,7 @@ import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
 
 import fi.hel.integration.ya.JsonValidator;
+import fi.hel.integration.ya.RedisProcessor;
 import fi.hel.integration.ya.SftpProcessor;
 import fi.hel.integration.ya.exceptions.JsonValidationException;
 import io.sentry.Sentry;
@@ -28,7 +29,12 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
     @Inject
     SftpProcessor sftpProcessor;
 
+    @Inject
+    RedisProcessor redisProcessor;
+
     private final String SCHEMA_FILE_SR = "schema/kipa/json_schema_SR.json";
+
+    private final String LOCK_KEY = "timer-route-lock";
 
     @Override
     public void configure() throws Exception {
@@ -82,33 +88,44 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
 
         ;
 
-        from("timer://kipa_P22?repeatCount=1")
+        from("{{STARTTIRAHA_QUARTZ_TIMER}}")
             .routeId("kipa-P22")
             .autoStartup("{{STARTTIRAHA_IN_AUTOSTARTUP}}")
-            .log("Start route to fetch files from kipa P22")
-            .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
-            .setHeader("username").simple("{{KIPA_SFTP_USER_P22}}")
-            .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P22}}")
-            .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P22}}")
-            .setHeader("kipa_container", simple("P22"))
-            .setHeader("filePrefix", constant("YA_p22_091_20241209"))
-            .setHeader("filePrefix2", constant("YA_p22_091_20240531151700_0_SR"))
-            .log("Fetching file names from Kipa")
-            .bean("sftpProcessor", "getAllSFTPFileNames")
-            .choice()
-                .when(simple("${body} == null || ${body.size()} == 0"))
-                    .log("No files found in SFTP.")
-                .otherwise()
-                    .log("Files found. Continuing processing.")
-                    .log("Fetching and combining the json data")
-                    .bean(sftpProcessor, "fetchAllFilesFromSftpByFileName")
-                    .marshal(new JacksonDataFormat())
-                    .setVariable("kipa_p22_data").simple("${body}")
-                    //.log("Body before continue processing :: ${body}")
-                    .to("direct:starttiraha-controller")
+            .process(exchange -> {
+                if (redisProcessor.acquireLock(LOCK_KEY, 300)) { 
+                    exchange.getIn().setHeader("lockAcquired", true);
+                    System.out.println("Lock acquired, processing starts");
+
+                } else {
+                    exchange.getIn().setHeader("lockAcquired", false);
+                    System.out.println("Lock not acquired, skipping processing");
+                }
+            })
+            .filter(header("lockAcquired").isEqualTo(true))
+                .log("Start route to fetch files from kipa P22")
+                .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
+                .setHeader("username").simple("{{KIPA_SFTP_USER_P22}}")
+                .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P22}}")
+                .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P22}}")
+                .setHeader("kipa_container", simple("P22"))
+                .setHeader("filePrefix", constant("YA_p22_091_20241216155317"))
+                .setHeader("filePrefix2", constant("YA_p22_091_20240820163911_97_SR.json"))
+                .log("Fetching file names from Kipa")
+                .bean("sftpProcessor", "getAllSFTPFileNames")
+                .choice()
+                    .when(simple("${body} == null || ${body.size()} == 0"))
+                        .log("No files found in SFTP.")
+                    .otherwise()
+                        .log("Files found. Continuing processing.")
+                        .log("Fetching and combining the json data")
+                        .bean(sftpProcessor, "fetchAllFilesFromSftpByFileName")
+                        .marshal(new JacksonDataFormat())
+                        .setVariable("kipa_p22_data").simple("${body}")
+                        //.log("Body before continue processing :: ${body}")
+                        .to("direct:starttiraha-controller")
+                .end()
             .end()
         ;
-
 
         from("direct:validate-json-P22")
             .log("Start to validate json file")
