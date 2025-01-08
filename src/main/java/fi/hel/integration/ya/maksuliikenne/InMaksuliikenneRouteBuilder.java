@@ -163,7 +163,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 .when(simple("${header.isJsonValid} == 'true'"))
                     .log("Json is valid continue processing ${header.CamelFileName}")
                     .setHeader("targetDirectory").simple("out/processed")
-                    .bean(sftpProcessor, "moveFile")
+                    //.bean(sftpProcessor, "moveFile")
                     .unmarshal(new JacksonDataFormat())
                     .process(exchange -> {
                         Map<String, Object> fileContent = exchange.getIn().getBody(Map.class);
