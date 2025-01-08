@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -48,6 +49,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
     @Inject
     RedisLockRoutePolicy redisLockRoutePolicy;
+
+    @Inject
+    Utils utils;
 
     public boolean testSFTPConnection(Exchange exchange) {
         // Extract SFTP connection details from Exchange headers
@@ -456,9 +460,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{KIPA_SFTP_USER_P22}}")
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P22}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P22}}")
-            //.to("direct:fetchFileNamesFromSftp")
+            .to("direct:fetchFileNamesFromSftp")
             //.to("direct:fetchDirectoriesFromSftp")
-            .bean(this, "testSFTPConnection")
+            //.bean(this, "testSFTPConnection")
 
         ;
 
@@ -501,12 +505,12 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .log("Retrieved Redis value: ${body}")
         ;
 
-        from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}"
-                + "&password={{KIPA_SFTP_PASSWORD_P24}}"
+        from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P22}}?username={{KIPA_SFTP_USER_P22}}"
+                + "&password={{KIPA_SFTP_PASSWORD_P22}}"
                 + "&strictHostKeyChecking=no"
                 + "&delay=30000"
                 + "&noop=true"
-                + "&antInclude=YA_p24_091_20241209110955_091_TOJT*" 
+                + "&antInclude=YA_p22_091_20241216154204_091_SR*" 
             )
             .autoStartup("{{TEST_SEND_JSONFILES_AUTOSTARTUP}}")
             .routeId("kipa-fetch-files")
@@ -537,7 +541,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
         from("{{TEST_QUARTZ_TIMER}}")
             .autoStartup("{{TEST_QUARTZ_TIMER_AUTOSTARTUP}}")
-            //.routePolicy(redisLockRoutePolicy)
+            .log("Trying to acquire timer lock")
             .process(exchange -> {
                 if (redisProcessor.acquireLock(LOCK_KEY, 300)) { 
                     exchange.getIn().setHeader("lockAcquired", true);
@@ -550,9 +554,26 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             })
             .filter(header("lockAcquired").isEqualTo(true))
                 .log("Starting the timer route")
-                .log("Start processing...")
+                .process(exchange -> {
+                    LocalDate today = LocalDate.parse("2025-04-18"); //LocalDate.now();
+                    System.out.println("today :: " + today);
+                    boolean isHoliday = utils.isFinnishPublicHoliday(today);
+                    exchange.getIn().setHeader("isHoliday", isHoliday);
+                })
+                .choice()
+                    .when(header("isHoliday").isEqualTo(false)) 
+                        .to("direct:continue-test-timer-route")
+                    .otherwise()
+                        .log("It is a Finnish public holiday, do not process")
+        
+                .end()
             .end()
             
+        ;
+
+        from("direct:continue-test-timer-route")
+            .log("Starting the timer route")
+            .log("Start processing...")    
         ;
     }     
 }

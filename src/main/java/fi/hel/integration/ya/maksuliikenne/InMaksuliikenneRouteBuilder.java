@@ -176,7 +176,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     .log("Error message :: ${variable.error_messages}")
                     .setHeader("targetDirectory").simple("out/errors")
                     .bean(sftpProcessor, "moveFile")
-                    .setHeader("messageSubject", simple("Ya-integraatio, kipa: virhe json-sanomassa (P24)"))
+                    .setHeader("messageSubject", simple("Ya-integraatio, kipa: virhe json-sanomassa, ${header.kipa_container}"))
                     .setHeader("emailRecipients", constant(JSON_ERROR_EMAIL_RECIPIENTS))
                     .to("direct:sendErrorReport")
                     .doTry()
