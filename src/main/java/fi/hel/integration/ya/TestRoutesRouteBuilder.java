@@ -526,7 +526,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                 + "&strictHostKeyChecking=no"
                 + "&delay=30000"
                 + "&noop=true"
-                + "&antInclude=YA_p22-091_202404*" 
+                + "&antInclude=YA_p22_091_20250107*" 
             )
             .autoStartup("{{TEST_MOVE_FILES_AUTOSTARTUP}}")
             .routeId("kipa-move-files")
