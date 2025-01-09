@@ -157,6 +157,16 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
             //.setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
             //.wireTap("direct:saveJsonData-P24")
+            .process(exchange -> {
+                String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
+                String redisKey = "ready-to-send-verkkolevy:" + fileName;
+            
+                String fileContent = exchange.getIn().getBody(String.class);
+            
+                System.out.println("Setting the redis key :: " + redisKey);
+                redisProcessor.setVerkkolevyData(redisKey, fileContent);
+                        
+            })
             .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
             .toD("direct:validate-json-${header.kipa_container}")
             .choice()

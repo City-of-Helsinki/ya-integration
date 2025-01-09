@@ -72,8 +72,18 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
         from("file:inbox/kipa/P22")
             //.log("body :: ${body}")
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
-            .setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
-            .to("direct:saveJsonData-P22")
+            //.setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
+            .process(exchange -> {
+                String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
+                String redisKey = "ready-to-send-verkkolevy:" + fileName;
+        
+                String fileContent = exchange.getIn().getBody(String.class);
+        
+                System.out.println("Setting the redis key :: " + redisKey);
+                redisProcessor.setVerkkolevyData(redisKey, fileContent);
+                    
+            })
+            //.to("direct:saveJsonData-P22")
             .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
             .log("Validating json file :: ${header.CamelFileName}")
             .to("direct:validate-json-P22")
@@ -108,8 +118,8 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
                 .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P22}}")
                 .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P22}}")
                 .setHeader("kipa_container", simple("P22"))
-                .setHeader("filePrefix", constant("YA_p22_091_20241216"))
-                .setHeader("filePrefix2", constant("YA_p22_091_20241010090200_0_SR"))
+                .setHeader("filePrefix", constant("YA_p22_091_202410"))
+                .setHeader("filePrefix2", constant("YA_p22_091_20240823120314_112_SR"))
                 .log("Fetching file names from Kipa")
                 .bean("sftpProcessor", "getAllSFTPFileNames")
                 .choice()

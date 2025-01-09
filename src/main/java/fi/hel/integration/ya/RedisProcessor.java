@@ -4,6 +4,7 @@ import java.time.Duration;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import io.quarkus.logging.Log;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -49,6 +50,18 @@ public class RedisProcessor {
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Failed to execute Redis operation [set]", e);
+        }
+    }
+
+    public void setVerkkolevyData(String key, String value) {
+
+        try (Jedis jedis = jedisPool.getResource()) {
+            jedis.set(key, value);
+        
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.errorf(e, "Failed to execute Redis operation [set] for key: %s. Continuing without stopping.", key);
+
         }
     }
 
