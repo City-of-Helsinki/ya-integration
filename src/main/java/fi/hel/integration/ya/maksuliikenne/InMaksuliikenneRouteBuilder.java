@@ -156,7 +156,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .log("File fecthed from kipa")
             .setVariable("originalFileName", simple("${header.CamelFileName}"))
             //.setHeader(Exchange.FILE_NAME, simple("TESTI_${header.CamelFileName}"))
-            .wireTap("direct:saveJsonData-P24")
+            //.wireTap("direct:saveJsonData-P24")
             .setHeader(Exchange.FILE_NAME, simple("${variable.originalFileName}"))
             .toD("direct:validate-json-${header.kipa_container}")
             .choice()
