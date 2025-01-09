@@ -532,11 +532,12 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .routeId("kipa-move-files")
             .log("Start route to move kipa files another directory")
             .log("file name :: ${headers.CamelFileName}")
-            .setVariable("kipa_dir").simple("processed")
+            .setVariable("kipa_dir").simple("new")
             .pollEnrich()
                 .simple("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P22}}?username={{KIPA_SFTP_USER_P22}}&password={{KIPA_SFTP_PASSWORD_P22}}&strictHostKeyChecking=no&fileName=${headers.CamelFileName}&move=../${variable.kipa_dir}")
                 .timeout(10000)
             .log("CamelFtpReplyString: ${headers.CamelFtpReplyString}")
+            .log("file moved")
         ;
 
         from("{{TEST_QUARTZ_TIMER}}")
