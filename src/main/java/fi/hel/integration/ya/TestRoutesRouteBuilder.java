@@ -395,9 +395,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{VERKKOLEVY_SFTP_USER}}")
             .setHeader("password").simple("{{VERKKOLEVY_SFTP_PASSWORD}}")
             .setHeader("directoryPath").simple("{{VERKKOLEVY_DIRECTORY_PATH}}")
-            .bean(this, "testSFTPConnection")
+            //.bean(this, "testSFTPConnection")
             //.to("direct:fetchDirectoriesFromSftp")
-            //.to("direct:fetchFileNamesFromSftp")    
+            .to("direct:fetchFileNamesFromSftp")    
         ;
 
         from("timer://testAHRSftp?repeatCount=1&delay=5000")
