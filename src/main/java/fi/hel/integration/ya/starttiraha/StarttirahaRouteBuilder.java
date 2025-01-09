@@ -129,13 +129,13 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
 
         from("direct:out.starttiraha")
             .log("Sending the csv file to AHR")
-            //.to("file:outbox/starttiraha")
-            //.setHeader("hostname").simple("{{AHR_SFTP_HOST}}")
-            //.setHeader("username").simple("{{AHR_SFTP_USER}}")
-            //.setHeader("privateKey").simple("{{AHR_SFTP_PRIVATEKEY}}")
-            //.setHeader("directoryPath").simple("{{AHR_DIRECTORY_PATH_IN}}")
-            //.bean(srProcessor, "writeFileSftp(*)")
-            //.log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
+            .to("file:outbox/starttiraha")
+            .setHeader("hostname").simple("{{AHR_SFTP_HOST}}")
+            .setHeader("username").simple("{{AHR_SFTP_USER}}")
+            .setHeader("privateKey").simple("{{AHR_SFTP_PRIVATEKEY}}")
+            .setHeader("directoryPath").simple("{{AHR_DIRECTORY_PATH_IN}}")
+            .bean(srProcessor, "writeFileSftp(*)")
+            .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
         ;
     }
 }
