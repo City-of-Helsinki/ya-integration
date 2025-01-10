@@ -94,8 +94,8 @@ public class SftpProcessor {
 
         for (String fileName : fileNames) {
 
-            if (combinedJsons.size() >= 500) {
-                System.out.println("Reached the maximum size of combinedJsons (500). Stopping further processing.");
+            if (combinedJsons.size() >= 8) {
+                System.out.println("Reached the maximum size of combinedJsons (8). Stopping further processing.");
                 break;
             }
     
@@ -136,8 +136,9 @@ public class SftpProcessor {
 
             System.out.println("Connecting to SFTP server...");
             session.connect();
+            System.out.println("SFTP session connected successfully.");
 
-            // Open SFTP channel
+            System.out.println("Opening SFTP channel...");
             channelSftp = (ChannelSftp) session.openChannel("sftp");
             channelSftp.connect();
 
@@ -193,14 +194,13 @@ public class SftpProcessor {
             session.setPassword(password);
 
             session.setConfig("StrictHostKeyChecking", "no");
-
             System.out.println("Connecting to SFTP server...");
             session.connect();
+            System.out.println("SFTP session connected successfully.");
 
-            // Open SFTP channel
+            System.out.println("Opening SFTP channel...");
             channelSftp = (ChannelSftp) session.openChannel("sftp");
             channelSftp.connect();
-
             System.out.println("Connected to SFTP server");
 
             String sourcePath = directoryPath + "/" + fileName;

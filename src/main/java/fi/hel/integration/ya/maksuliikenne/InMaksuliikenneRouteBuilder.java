@@ -118,8 +118,8 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
                 .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
                 .setHeader("kipa_container", simple("P24"))
-                //.setHeader("filePrefix", constant("YA_p24_091_20241216124953"))
-                //.setHeader("filePrefix2", constant("YA_p24_091_20241216130520_091_HKK"))
+                //.setHeader("filePrefix", constant("YA_p24_091_2024121617"))
+                //.setHeader("filePrefix2", constant("YA_p24_091_20241216163824_091_TOJT.json.json"))
                 .log("Fetching file names from Kipa")
                 .bean("sftpProcessor", "getAllSFTPFileNames")
                 .choice()
@@ -144,13 +144,15 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         .bean(sftpProcessor, "fetchAllFilesFromSftpByFileName")
                         .marshal(new JacksonDataFormat())
                         .setVariable("kipa_p24_data").simple("${body}")
+                        .log("Body after fetching files :: ${body}")
                         .to("direct:maksuliikenne-controller")
                 .end()
             .end()
         ;
 
         from("direct:poll-and-validate-file")
-            .log("Processing file: ${body}") 
+            .log("Processing file: ${body}")
+            //.delay(10000)
             .setHeader("CamelFileName", simple("${body}"))
             .bean(sftpProcessor, "fetchFile")
             .log("File fecthed from kipa")
@@ -173,7 +175,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 .when(simple("${header.isJsonValid} == 'true'"))
                     .log("Json is valid continue processing ${header.CamelFileName}")
                     .setHeader("targetDirectory").simple("out/processed")
-                    .bean(sftpProcessor, "moveFile")
+                    //.bean(sftpProcessor, "moveFile")
                     .unmarshal(new JacksonDataFormat())
                     .process(exchange -> {
                         Map<String, Object> fileContent = exchange.getIn().getBody(Map.class);
