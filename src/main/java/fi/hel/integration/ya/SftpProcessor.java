@@ -95,7 +95,7 @@ public class SftpProcessor {
         for (String fileName : fileNames) {
 
             if (combinedJsons.size() >= 8) {
-                System.out.println("Reached the maximum size of combinedJsons (500). Stopping further processing.");
+                System.out.println("Reached the maximum size of combinedJsons (8). Stopping further processing.");
                 break;
             }
     
