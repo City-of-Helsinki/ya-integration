@@ -144,7 +144,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         .bean(sftpProcessor, "fetchAllFilesFromSftpByFileName")
                         .marshal(new JacksonDataFormat())
                         .setVariable("kipa_p24_data").simple("${body}")
-                        .log("Body after fetching files :: ${body}")
+                        //.log("Body after fetching files :: ${body}")
                         .to("direct:maksuliikenne-controller")
                 .end()
             .end()
@@ -152,7 +152,6 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
 
         from("direct:poll-and-validate-file")
             .log("Processing file: ${body}")
-            //.delay(10000)
             .setHeader("CamelFileName", simple("${body}"))
             .bean(sftpProcessor, "fetchFile")
             .log("File fecthed from kipa")
