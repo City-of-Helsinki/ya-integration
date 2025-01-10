@@ -131,7 +131,7 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
                         .bean(sftpProcessor, "fetchAllFilesFromSftpByFileName")
                         .marshal(new JacksonDataFormat())
                         .setVariable("kipa_p22_data").simple("${body}")
-                        .log("Body before continue processing :: ${body}")
+                        //.log("Body before continue processing :: ${body}")
                         .to("direct:starttiraha-controller")
                 .end()
             .end()
