@@ -150,7 +150,8 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
         ;
 
         from("direct:poll-and-validate-file")
-            .log("Processing file: ${body}") 
+            .log("Processing file: ${body}")
+            .delay(10000)
             .setHeader("CamelFileName", simple("${body}"))
             .bean(sftpProcessor, "fetchFile")
             .log("File fecthed from kipa")
@@ -173,7 +174,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 .when(simple("${header.isJsonValid} == 'true'"))
                     .log("Json is valid continue processing ${header.CamelFileName}")
                     .setHeader("targetDirectory").simple("out/processed")
-                    .bean(sftpProcessor, "moveFile")
+                    //.bean(sftpProcessor, "moveFile")
                     .unmarshal(new JacksonDataFormat())
                     .process(exchange -> {
                         Map<String, Object> fileContent = exchange.getIn().getBody(Map.class);
