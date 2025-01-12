@@ -456,7 +456,7 @@
         "maxLength": 3
       },
       "employmentMunicipality": {
-        "type": "string",
+        "type": ["string", "null"],
         "maxLength": 3
       },
       "payerBusinessId": {
@@ -464,7 +464,7 @@
         "maxLength": 9
       },
       "acculturingStatus": {
-        "type": "boolean"
+        "type": ["boolean", "null"]
       },
       "originalInvoiceNumber": {
         "type": ["string", "null"]
@@ -490,8 +490,7 @@
       "auraAccount",
       "sectorIdentifier",
       "participantHomeMunicipality",
-      "recipientMunicipality",
-      "employmentMunicipality"
+      "recipientMunicipality"
     ]
   }
   
