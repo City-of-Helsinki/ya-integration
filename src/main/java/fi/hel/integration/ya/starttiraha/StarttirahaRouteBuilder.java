@@ -85,6 +85,13 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
             .unmarshal(new JacksonDataFormat())
             .bean(srProcessor, "createPersonalInfoMap")
             .marshal(csv)
+            .process(exchange -> {
+                String body = exchange.getIn().getBody(String.class);
+                // Prepend a UTF-8 Byte Order Mark (BOM) to the body.
+                // This ensures that programs like Excel correctly interpret the file as UTF-8 encoded,
+                // avoiding issues with special characters (e.g., ä, ö, ü) being displayed incorrectly.
+                exchange.getIn().setBody("\uFEFF" + body);
+            })
             .setHeader(Exchange.FILE_NAME, simple("starttiraha_henkilotieto_${date-with-timezone:now:Europe/Helsinki:yyyyMMddHHmmss}.csv"))
             //.log("personalData body :: ${body}")
             .setHeader("columns", constant(PERSONALDATACOLUMNS))
@@ -97,6 +104,7 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
                     .log("csv is valid")
                     //.to("mock:processPersonalData.result")
                     //.log("personal data csv :: ${body}")
+                    //.to("file:outbox/starttiraha")
                     .to(sendCsv) 
                 .otherwise()
                     .log("CSV is not valid, ${header.CamelFileName}")
@@ -110,6 +118,13 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
             .unmarshal(new JacksonDataFormat())
             .bean(srProcessor, "createPayrollTransactionMap")
             .marshal(csv)
+            .process(exchange -> {
+                String body = exchange.getIn().getBody(String.class);
+                // Prepend a UTF-8 Byte Order Mark (BOM) to the body.
+                // This ensures that programs like Excel correctly interpret the file as UTF-8 encoded,
+                // avoiding issues with special characters (e.g., ä, ö, ü) being displayed incorrectly.
+                exchange.getIn().setBody("\uFEFF" + body);
+            })
             .setHeader(Exchange.FILE_NAME, simple("starttiraha_palkkatapahtuma_${date-with-timezone:now:Europe/Helsinki:yyyyMMddHHmmss}.csv"))
             .setHeader("columns", constant(PAYROLLDATACOLUMNS))
             .setHeader("emptyColumns", constant(PAYROLLDATAEMPTYCOLUMNS))
@@ -122,6 +137,7 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
                     .log("csv is valid")
                     //.to("mock:processPersonalData.result")
                     //.log("payroll data csv :: ${body}")
+                    //.to("file:outbox/starttiraha")
                     .to(sendCsv)
                 .otherwise()
                     .log("CSV is not valid, ${header.CamelFileName}")   
