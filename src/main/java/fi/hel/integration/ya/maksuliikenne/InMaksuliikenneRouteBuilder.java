@@ -122,6 +122,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 //.setHeader("filePrefix2", constant("YA_p24_091_20241216155712_091_PT55.json"))
                 .log("Fetching file names from Kipa")
                 .bean("sftpProcessor", "getAllSFTPFileNames")
+                .log("Files to be processed :: ${body}")
                 .choice()
                     .when(simple("${body} == null || ${body.size()} == 0"))
                         .log("No files found in SFTP.")
