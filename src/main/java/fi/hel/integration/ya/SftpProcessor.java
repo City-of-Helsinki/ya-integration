@@ -40,7 +40,7 @@ public class SftpProcessor {
         String privateKeyEncoded = ex.getIn().getHeader("privateKey", String.class);
         String privateKey = null;
         String filePrefix = ex.getIn().getHeader("filePrefix", String.class);
-        String filePrefix2 = ex.getIn().getHeader("filePrefix2", String.class);
+        //String filePrefix2 = ex.getIn().getHeader("filePrefix2", String.class);
         
         if(privateKeyEncoded != null) {
            privateKey = new String(Base64.getDecoder().decode(privateKeyEncoded));
@@ -72,8 +72,7 @@ public class SftpProcessor {
             if (!file.getAttrs().isDir()) {
                 String fileName = file.getFilename();
 
-                if (filePrefix == null || filePrefix2 == null || 
-                    fileName.startsWith(filePrefix) || fileName.startsWith(filePrefix2)) {
+                if (filePrefix == null || fileName.startsWith(filePrefix)) {
                     fileNames.add(fileName);
                     //System.out.println(fileName);
                 }

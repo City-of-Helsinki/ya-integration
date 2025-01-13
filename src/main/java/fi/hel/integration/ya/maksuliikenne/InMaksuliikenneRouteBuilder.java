@@ -118,7 +118,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
                 .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
                 .setHeader("kipa_container", simple("P24"))
-                //.setHeader("filePrefix", constant("YA_p24_091_2024121616"))
+                .setHeader("filePrefix", constant("YA_p24_091_20250110"))
                 //.setHeader("filePrefix2", constant("YA_p24_091_20241216155712_091_PT55.json"))
                 .log("Fetching file names from Kipa")
                 .bean("sftpProcessor", "getAllSFTPFileNames")
@@ -128,7 +128,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         .log("No files found in SFTP.")
                         .setHeader("emailRecipients", constant(MAKSULIIKENNE_NOFILES_EMAIL_RECIPIENTS))
                         .process(ex -> {
-                            String message = "Maksuliikenteen hyväksyttyjä maksuja ei ollut tälle päivälle <br><br><br>"
+                            String message = "Maksuliikenteen maksuja ei ollut tälle päivälle enempää <br><br><br>"
                                         + "Tämä on YA-integraation lähettämä automaattinen viesti";
                         
                             String subject = "YA-maksut/TYPA";
