@@ -285,7 +285,12 @@ public class MaksuliikenneProcessor {
             creditorAccount.setId(accountIdentification);
 
             // Remittance information
-            remittanceInfo.setUstrd((String)payment.get("ourReference"));
+            String ourReference = (String) payment.get("ourReference");
+            // The max allowed length of Ustrd field is 140 chars
+            if (ourReference != null && ourReference.length() > 140) {
+                ourReference = ourReference.substring(0, 140);
+            }
+            remittanceInfo.setUstrd(ourReference);
 
             creditTransferTransaction.setPmtId(pmtId);
             creditTransferTransaction.setAmt(amt);

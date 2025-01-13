@@ -464,7 +464,7 @@
         "maxLength": 9
       },
       "acculturingStatus": {
-        "type": "boolean"
+        "type": ["boolean", "null"]
       },
       "originalInvoiceNumber": {
         "type": ["string", "null"]

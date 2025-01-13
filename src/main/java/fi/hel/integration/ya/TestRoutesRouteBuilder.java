@@ -505,12 +505,12 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .log("Retrieved Redis value: ${body}")
         ;
 
-        from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P22}}?username={{KIPA_SFTP_USER_P22}}"
-                + "&password={{KIPA_SFTP_PASSWORD_P22}}"
+        from("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/{{VERKKOLEVY_DIRECTORY_PATH}}?username={{VERKKOLEVY_SFTP_USER}}"
+                + "&password={{VERKKOLEVY_SFTP_PASSWORD}}"
                 + "&strictHostKeyChecking=no"
                 + "&delay=30000"
                 + "&noop=true"
-                + "&antInclude=YA_p22_091_2024121614*" 
+                + "&antInclude=YA_p22_091_20250107*" 
             )
             .autoStartup("{{TEST_SEND_JSONFILES_AUTOSTARTUP}}")
             .routeId("kipa-fetch-files")
