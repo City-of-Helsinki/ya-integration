@@ -119,6 +119,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
             .to("direct:sendMaksuliikenneReportEmail")
             .setBody().variable("kipa_p24_data")
             .setHeader("targetDirectory").simple("out/processed")
+            .unmarshal(new JacksonDataFormat())
             .log("Files to be moved to processed dir :: ${body}")
             .bean(sftpProcessor, "moveFiles")
             .setBody().variable("invalidFiles")
