@@ -11,6 +11,7 @@ import org.apache.camel.component.jackson.JacksonDataFormat;
 
 import com.jcraft.jsch.JSch;
 
+import fi.hel.integration.ya.SftpProcessor;
 import fi.hel.integration.ya.XmlValidator;
 import fi.hel.integration.ya.exceptions.XmlValidationException;
 import fi.hel.integration.ya.maksuliikenne.models.kirjanpitoSAP.SBO_SimpleAccountingContainer;
@@ -29,8 +30,9 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
     @Inject
     XmlValidator xmlValidator;
 
-    
-    
+    @Inject
+    SftpProcessor sftpProcessor;
+
     private final String SCHEMA_FILE = "schema/sap/SBO_SimpleAccountingContainer.xsd";
     private final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
     private final String FILE_NAME_PREFIX= "{{MAKSULIIKENNE_KIRJANPITO_FILENAMEPREFIX}}";
@@ -114,7 +116,21 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                 .end() 
             .end()
             .log("All accounting data processed")
-            .to("direct:sendMaksuliikenneReportEmail")   
+            .to("direct:sendMaksuliikenneReportEmail")
+            .setBody().variable("kipa_p24_data")
+            .setHeader("targetDirectory").simple("out/processed")
+            .unmarshal(new JacksonDataFormat())
+            //.log("Files to be moved to processed dir :: ${body}")
+            .bean(sftpProcessor, "moveFiles")
+            .setBody().variable("invalidFiles")
+            .choice()
+                .when(simple("${body} == null || ${body.size()} == 0"))
+                    .log("There was no invalid json files")
+                .otherwise()
+                    .setHeader("targetDirectory").simple("out/errors")
+                    .log("Files to be moved to errors dir :: ${body}")
+                    .bean(sftpProcessor, "moveFiles")
+            .end()
         ;
 
         from("direct:mapAccountingData")
