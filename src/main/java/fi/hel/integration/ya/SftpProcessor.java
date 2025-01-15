@@ -96,7 +96,7 @@ public class SftpProcessor {
         String hostname = ex.getIn().getHeader("hostname", String.class);
         String username = ex.getIn().getHeader("username", String.class);
         String password = ex.getIn().getHeader("password", String.class);
-        List<String> fileNames = ex.getIn().getHeader("fileNames", List.class);
+        List<String> fileNames = ex.getIn().getBody(List.class);
     
         try {
             // Setup SFTP connection (same as before)
