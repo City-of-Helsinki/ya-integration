@@ -29,7 +29,7 @@ public class ValidateJsonProcessor {
             
             Map<String,Object> delivery = (Map<String, Object>) file.get("delivery");
             String fileName = (String) delivery.get("fileName");
-            System.out.println("FILE NAME :: " + fileName);
+            //System.out.println("FILE NAME :: " + fileName);
             headers.put("CamelFileName", fileName);
             Map<String, Object> result = producerTemplate.requestBodyAndHeaders("direct:validate-json-file", file, headers, Map.class);
 
@@ -43,7 +43,6 @@ public class ValidateJsonProcessor {
             }
         }
 
-        //System.out.println(("combined jsons :: " + combinedJsons));
         ex.setVariable("validFiles", validFiles);
         ex.setVariable("invalidFiles", invalidFiles);
     }

@@ -20,6 +20,8 @@ public class ValidateJsonRouteBuilder extends RouteBuilder {
     @Inject
     RedisProcessor redisProcessor;
 
+    private final String JSON_ERROR_EMAIL_RECIPIENTS = "{{JSON_ERROR_EMAIL_RECIPIENTS}}";
+
     @Override
     public void configure() throws Exception {
 
@@ -69,8 +71,6 @@ public class ValidateJsonRouteBuilder extends RouteBuilder {
             .choice()
                 .when(simple("${header.isJsonValid} == 'true'"))
                     .log("Json is valid continue processing ${header.CamelFileName}")
-                    //.setHeader("targetDirectory").simple("out/processed")
-                    //.bean(sftpProcessor, "moveFile")
                     .unmarshal(new JacksonDataFormat())
                     .process(exchange -> {
                         Map<String, Object> fileContent = exchange.getIn().getBody(Map.class);
@@ -81,11 +81,9 @@ public class ValidateJsonRouteBuilder extends RouteBuilder {
                 .otherwise()
                     .log("Json is not valid, ${header.CamelFileName}")
                     .log("Error message :: ${variable.error_messages}")
-                    //.setHeader("targetDirectory").simple("out/errors")
-                    //.bean(sftpProcessor, "moveFile")
                     .setHeader("messageSubject", simple("Ya-integraatio, kipa: virhe json-sanomassa, ${header.kipa_container}"))
-                    //.setHeader("emailRecipients", constant(JSON_ERROR_EMAIL_RECIPIENTS))
-                    //.to("direct:sendErrorReport")
+                    .setHeader("emailRecipients", constant(JSON_ERROR_EMAIL_RECIPIENTS))
+                    .to("direct:sendErrorReport")
                     .doTry()
                         .process(exchange -> {
                             String errorMessage = exchange.getVariable("error_messages", String.class);
