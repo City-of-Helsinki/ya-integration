@@ -237,6 +237,61 @@ public class SftpProcessor {
             return map;
     }
 
+    public void moveFiles(Exchange ex) {
+        Session session = null;
+        ChannelSftp channelSftp = null;
+    
+        String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
+        String hostname = ex.getIn().getHeader("hostname", String.class);
+        String username = ex.getIn().getHeader("username", String.class);
+        String password = ex.getIn().getHeader("password", String.class);
+        List<Map<String, Object>> files = ex.getIn().getBody(List.class);
+        String targetDir = ex.getIn().getHeader("targetDirectory", String.class);
+    
+        try {
+            JSch jsch = new JSch();
+            session = jsch.getSession(username, hostname, 22);
+            session.setPassword(password);
+    
+            session.setConfig("StrictHostKeyChecking", "no");
+            System.out.println("Connecting to SFTP server...");
+            session.connect();
+            System.out.println("SFTP session connected successfully.");
+    
+            System.out.println("Opening SFTP channel...");
+            channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+            System.out.println("Connected to SFTP server");
+    
+            // Iterate over the list of files and move each
+            for (Map<String,Object> file : files) {
+                Map<String,Object> delivery = (Map<String, Object>) file.get("delivery");
+                String fileName = (String) delivery.get("fileName");
+                String sourcePath = directoryPath + "/" + fileName;
+                String targetPath = targetDir + "/" + fileName;
+    
+                try {
+                    channelSftp.rename(sourcePath, targetPath);
+                    System.out.println("File moved successfully: " + fileName);
+                } catch (SftpException e) {
+                    System.err.println("Failed to move file: " + fileName);
+                    e.printStackTrace();
+                }
+            }
+    
+        } catch (JSchException e) {
+            e.printStackTrace();
+        } finally {
+            if (channelSftp != null) {
+                channelSftp.disconnect();
+            }
+            if (session != null) {
+                session.disconnect();
+            }
+            System.out.println("SFTP connection closed");
+        }
+    }
+
     public void moveFile(Exchange ex) {
         Session session = null;
         ChannelSftp channelSftp = null;
