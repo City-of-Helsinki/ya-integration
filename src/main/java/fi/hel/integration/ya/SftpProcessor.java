@@ -115,6 +115,7 @@ public class SftpProcessor {
             System.out.println("Connected to SFTP server");
     
             for (String fileName : fileNames) {
+                System.out.println("Fetching file :: " + fileName);
                 String remoteFilePath = directoryPath + "/" + fileName;
                 InputStream inputStream = channelSftp.get(remoteFilePath);
                 String jsonString = convertInputStreamToJson(inputStream);
