@@ -153,7 +153,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         .marshal(new JacksonDataFormat())
                         .setVariable("kipa_p24_data").simple("${body}")
                         .log("Body after fetching files :: ${body}")
-                        //.to("direct:maksuliikenne-controller")
+                        .to("direct:maksuliikenne-controller")
                 .end()
             .end()
         ;

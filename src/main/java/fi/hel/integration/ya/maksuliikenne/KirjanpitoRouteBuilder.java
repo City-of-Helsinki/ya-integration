@@ -93,8 +93,8 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                         .log("is valid :: ${header.isXmlValid}")
                         //.to("file:outbox/maksuliikenne/sap")
                         .log("Created kirjanpito xml, file name :: ${header.CamelFileName}")
-                        .to("direct:out.maksuliikenne-sap")
-                        //.log("Kirjanpito xml :: ${body}")
+                        //.to("direct:out.maksuliikenne-sap")
+                        .log("Kirjanpito xml :: ${body}")
                     .otherwise()
                         //.to("file:outbox/invalidXml")
                         .log("XML is not valid, ${header.CamelFileName}")
@@ -114,7 +114,14 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                 .end() 
             .end()
             .log("All accounting data processed")
-            .to("direct:sendMaksuliikenneReportEmail")   
+            .to("direct:sendMaksuliikenneReportEmail")
+            .setBody().variable("kipa_p24_data")
+            .setHeader("targetDirectory").simple("out/processed")
+            .log("Files to be moved to processed dir :: ${body}")
+            .setBody().variable("invalidFiles")
+            .setHeader("targetDirectory").simple("out/errors")
+            .log("Files to be moved to errors dir :: ${body}")
+
         ;
 
         from("direct:mapAccountingData")
