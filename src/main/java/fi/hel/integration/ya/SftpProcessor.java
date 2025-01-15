@@ -12,6 +12,8 @@ import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.RuntimeCamelException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
@@ -83,6 +85,57 @@ public class SftpProcessor {
         session.disconnect();
 
         return fileNames;
+    }
+
+    public void fetchAllFilesFromSftp(Exchange ex) {
+        Session session = null;
+        ChannelSftp channelSftp = null;
+        List<Map<String, Object>> combinedJsons = new ArrayList<>();
+    
+        String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
+        String hostname = ex.getIn().getHeader("hostname", String.class);
+        String username = ex.getIn().getHeader("username", String.class);
+        String password = ex.getIn().getHeader("password", String.class);
+        List<String> fileNames = ex.getIn().getHeader("fileNames", List.class);
+    
+        try {
+            // Setup SFTP connection (same as before)
+            JSch jsch = new JSch();
+            session = jsch.getSession(username, hostname, 22);
+            session.setPassword(password);
+            session.setConfig("StrictHostKeyChecking", "no");
+    
+            System.out.println("Connecting to SFTP server...");
+            session.connect();
+            System.out.println("SFTP session connected successfully.");
+    
+            channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+    
+            System.out.println("Connected to SFTP server");
+    
+            for (String fileName : fileNames) {
+                String remoteFilePath = directoryPath + "/" + fileName;
+                InputStream inputStream = channelSftp.get(remoteFilePath);
+                String jsonString = convertInputStreamToJson(inputStream);
+                Map<String,Object> jsonFile = convertJsonToMap(jsonString);
+                combinedJsons.add(jsonFile);
+            }
+    
+            ex.getIn().setBody(combinedJsons);
+    
+        } catch (JSchException | SftpException | IOException e) {
+            throw new RuntimeCamelException("SFTP operation failed: " + e.getMessage(), e);
+        } finally {
+            // Cleanup and close SFTP connection
+            if (channelSftp != null) {
+                channelSftp.disconnect();
+            }
+            if (session != null) {
+                session.disconnect();
+            }
+            System.out.println("SFTP connection closed");
+        }
     }
 
     public void fetchAllFilesFromSftpByFileName(Exchange ex) {
@@ -174,6 +227,14 @@ public class SftpProcessor {
         ObjectMapper objectMapper = new ObjectMapper();
         // Convert InputStream directly to a JSON String
         return objectMapper.readTree(inputStream).toString();
+    }
+
+    private Map<String,Object> convertJsonToMap(String jsonString) throws JsonMappingException, JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+
+            // Convert JSON string to Map
+            Map<String, Object> map = objectMapper.readValue(jsonString, Map.class);
+            return map;
     }
 
     public void moveFile(Exchange ex) {

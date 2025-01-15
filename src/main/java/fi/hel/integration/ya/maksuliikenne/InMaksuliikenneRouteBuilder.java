@@ -15,6 +15,7 @@ import fi.hel.integration.ya.JsonValidator;
 import fi.hel.integration.ya.RedisProcessor;
 import fi.hel.integration.ya.SendEmail;
 import fi.hel.integration.ya.SftpProcessor;
+import fi.hel.integration.ya.ValidateJsonProcessor;
 import fi.hel.integration.ya.exceptions.JsonValidationException;
 import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
 import io.sentry.Sentry;
@@ -36,6 +37,9 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
 
     @Inject
     SftpProcessor sftpProcessor;
+
+    @Inject 
+    ValidateJsonProcessor validateJsonProcessor;
 
     @Inject
     SendEmail sendEmail;
@@ -118,7 +122,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
                 .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
                 .setHeader("kipa_container", simple("P24"))
-                //.setHeader("filePrefix", constant("YA_p24_091_20250110"))
+                .setHeader("filePrefix", constant("YA_p24_091_20241216143931"))
                 //.setHeader("filePrefix2", constant("YA_p24_091_20241216155712_091_PT55.json"))
                 .log("Fetching file names from Kipa")
                 .bean("sftpProcessor", "getAllSFTPFileNames")
@@ -142,11 +146,14 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                     .otherwise()
                         .log("Files found. Continuing processing.")
                         .log("Fetching and combining the json data")
-                        .bean(sftpProcessor, "fetchAllFilesFromSftpByFileName")
+                        .bean(sftpProcessor, "fetchAllFilesFromSftp")
+                        .log("Body after fetching files :: ${body}")
+                        .bean(validateJsonProcessor, "validateFiles")
+                        .setBody().variable("validFiles")
                         .marshal(new JacksonDataFormat())
                         .setVariable("kipa_p24_data").simple("${body}")
-                        //.log("Body after fetching files :: ${body}")
-                        .to("direct:maksuliikenne-controller")
+                        .log("Body after fetching files :: ${body}")
+                        //.to("direct:maksuliikenne-controller")
                 .end()
             .end()
         ;
