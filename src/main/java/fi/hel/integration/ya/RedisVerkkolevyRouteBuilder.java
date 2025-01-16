@@ -75,7 +75,7 @@ public class RedisVerkkolevyRouteBuilder extends RouteBuilder {
         from("{{REDIS_QUARTZ_TIMER}}")
             .routeId("redis")
             .autoStartup("{{REDIS_AUTOSTARTUP}}")
-            .log("Verkkolevy route started")
+            .log("Redis route started")
             .process(exchange -> {
                 if (redisProcessor.acquireLock(LOCK_KEY, 300)) { 
                     exchange.getIn().setHeader("lockAcquired", true);
@@ -88,7 +88,7 @@ public class RedisVerkkolevyRouteBuilder extends RouteBuilder {
             })
             .filter(header("lockAcquired").isEqualTo(true))
                 .log("Fetch data keys from Redis")
-                .bean(redisProcessor, "getAllKeys(ready-to-send-verkkolevy:YA_p24_091_20241031*)")
+                .bean(redisProcessor, "getAllKeys(ready-to-send-verkkolevy:YA_p24_091_20250115*)")
                 .log("fetched Redis keys :: ${body}")
                 .bean(redisProcessor, "combineData")
                 .marshal(new JacksonDataFormat())

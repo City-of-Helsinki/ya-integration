@@ -93,9 +93,10 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                 .choice()
                     .when().simple("${header.isXmlValid} == 'true'")
                         .log("is valid :: ${header.isXmlValid}")
-                        //.to("file:outbox/maksuliikenne/sap")
+                        .log("kipa json file :: ${header.jsonFileName}")
                         .log("Created kirjanpito xml, file name :: ${header.CamelFileName}")
                         .to("direct:out.maksuliikenne-sap")
+                        //.to("file:outbox/maksuliikenne/sap")
                         //.log("Kirjanpito xml :: ${body}")
                     .otherwise()
                         //.to("file:outbox/invalidXml")
@@ -116,21 +117,21 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                 .end() 
             .end()
             .log("All accounting data processed")
-            .to("direct:sendMaksuliikenneReportEmail")
-            .setBody().variable("kipa_p24_data")
-            .setHeader("targetDirectory").simple("out/processed")
-            .unmarshal(new JacksonDataFormat())
+            //.to("direct:sendMaksuliikenneReportEmail")
+            //.setBody().variable("kipa_p24_data")
+            //.setHeader("targetDirectory").simple("out/processed")
+            //.unmarshal(new JacksonDataFormat())
             //.log("Files to be moved to processed dir :: ${body}")
-            .bean(sftpProcessor, "moveFiles")
-            .setBody().variable("invalidFiles")
-            .choice()
-                .when(simple("${body} == null || ${body.size()} == 0"))
-                    .log("There was no invalid json files")
-                .otherwise()
-                    .setHeader("targetDirectory").simple("out/errors")
-                    .log("Files to be moved to errors dir :: ${body}")
-                    .bean(sftpProcessor, "moveFiles")
-            .end()
+            //.bean(sftpProcessor, "moveFiles")
+            //.setBody().variable("invalidFiles")
+            //.choice()
+            //    .when(simple("${body} == null || ${body.size()} == 0"))
+            //        .log("There was no invalid json files")
+            //    .otherwise()
+            //        .setHeader("targetDirectory").simple("out/errors")
+            //        .log("Files to be moved to errors dir :: ${body}")
+            //        .bean(sftpProcessor, "moveFiles")
+            //.end()
         ;
 
         from("direct:mapAccountingData")
@@ -142,14 +143,23 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
         ;
 
         from("direct:out.maksuliikenne-sap")
-            .log("Sending file to sap")
-            //.to("file:outbox/maksuliikenne/kirjanpito")
-            .setHeader("hostname").simple("{{SAP_SFTP_HOST}}")
-            .setHeader("username").simple("{{SAP_SFTP_USER}}")
-            .setHeader("password").simple("{{SAP_SFTP_PASSWORD}}")
-            .setHeader("directoryPath").simple("{{SAP_DIRECTORY_PATH}}")
-            .bean(kpProcessor, "writeFileSapSftp")
+            .log("Sending file to sap, kipa file :: ${header.jsonFileName}")
+            .to("sftp:{{SAP_SFTP_HOST}}:22/?username={{SAP_SFTP_USER}}"
+                + "&password={{SAP_SFTP_PASSWORD}}"
+                + "&strictHostKeyChecking=no"
+                + "&serverHostKeys=ssh-rsa"
+                + "&keyExchangeProtocols=diffie-hellman-group1-sha1,diffie-hellman-group14-sha1"
+                + "&maximumReconnectAttempts=5" 
+                + "&reconnectDelay=5000"                 
+            )
             .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
+            //.to("file:outbox/maksuliikenne/kirjanpito")
+            //.setHeader("hostname").simple("{{SAP_SFTP_HOST}}")
+            //.setHeader("username").simple("{{SAP_SFTP_USER}}")
+            //.setHeader("password").simple("{{SAP_SFTP_PASSWORD}}")
+            //.setHeader("directoryPath").simple("{{SAP_DIRECTORY_PATH}}")
+            //.bean(kpProcessor, "writeFileSapSftp")
+            //.log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
         ;
     }
 }
