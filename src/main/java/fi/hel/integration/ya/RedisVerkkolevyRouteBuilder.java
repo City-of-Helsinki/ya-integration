@@ -55,7 +55,7 @@ public class RedisVerkkolevyRouteBuilder extends RouteBuilder {
                     //.log("Fetched data :: ${body}")
                     //.to("file:outbox/verkkolevy")
                     .to("direct:out-verkkolevy")
-                    .setHeader("CamelFtpReplyString").simple("OK")
+                    //.setHeader("CamelFtpReplyString").simple("OK")
                     .choice()
                         .when(simple("${header.CamelFtpReplyString} == 'OK'"))
                             //.log("deleting the redis key :: ${header.redisKey}")
@@ -92,9 +92,7 @@ public class RedisVerkkolevyRouteBuilder extends RouteBuilder {
                 .log("fetched Redis keys :: ${body}")
                 .bean(redisProcessor, "combineData")
                 .marshal(new JacksonDataFormat())
-                //.log("Combined data :: ${body}")
-                .to("direct:kirjanpito.controller")
-                
+                //.log("Combined data :: ${body}")                
             ;
     
     }
