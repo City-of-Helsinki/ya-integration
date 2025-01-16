@@ -1,8 +1,18 @@
 package fi.hel.integration.ya;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import org.apache.camel.Exchange;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.logging.Log;
 import jakarta.annotation.PostConstruct;
@@ -12,7 +22,9 @@ import jakarta.inject.Named;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.params.ScanParams;
 import redis.clients.jedis.params.SetParams;
+import redis.clients.jedis.resps.ScanResult;
 
 @ApplicationScoped
 @Named("redisProcessor")
@@ -40,7 +52,7 @@ public class RedisProcessor {
 
         int connectionTimeout = 10000; // 10 seconds for connection
 
-        this.jedisPool = new JedisPool(poolConfig, host, port, connectionTimeout, password);
+        this.jedisPool = new JedisPool(poolConfig, host, port, connectionTimeout);
     }
 
     public void set(String key, String value) throws Exception { 
@@ -122,6 +134,82 @@ public class RedisProcessor {
             throw new RuntimeException("Failed to release lock from Redis", e);
         }
     }
+
+    //
+    // Returns the jedis keys with the given pattern.
+    //
+    //   Example: getAllKeys("myintegration:data:*")
+    //
+    public List<String> getAllKeys(String pattern) {
+
+        List<String> result = null;
+        try (Jedis jedis = jedisPool.getResource()) {
+                
+            //Start the scan process using START pointer (0)
+            result = new ArrayList<String>(getAllKeys(pattern, ScanParams.SCAN_POINTER_START, jedis));
+            
+        } catch (Exception e)  {
+
+            e.printStackTrace();
+            throw new RuntimeException("Failed to execute Redis operation [getAllKeys]", e);
+            
+        }
+        
+        return result;
+    }
+
+    //
+    // Recursive
+    //
+    private Set<String> getAllKeys(String pattern, String cursor, Jedis jedis) {
+        Set<String> keysSet = new HashSet<>();
+        // Scan params used to construct arguments to the scan command    
+        ScanParams scanParams = new ScanParams()
+                .count(10000)
+                .match(pattern);
+
+        // fetch the result (keys returned) from the scanResult and add it to the
+        // list of existing keys    
+        ScanResult<String> scanResult = jedis.scan(cursor, scanParams);
+        keysSet.addAll(scanResult.getResult());
+
+        // If the cursor returned by the scan result is not START(0) then
+        // recursively call the function with returned cursor and aggregate the results     
+        if (!ScanParams.SCAN_POINTER_START.equals(scanResult.getCursor())) {
+            keysSet.addAll(getAllKeys(pattern, scanResult.getCursor(), jedis));
+        }
+        return keysSet;
+    }
+
+    public void combineData (Exchange ex) {
+        try {
+
+            List<String> keys = ex.getIn().getBody(List.class);
+            List<Map<String,Object>> combinedData = new ArrayList<>();
+
+            for(String key : keys) {
+
+                String data = get(key);
+                Map<String,Object> jsonData = convertJsonToMap(data);
+                combinedData.add(jsonData);
+            }
+
+            ex.getIn().setBody(combinedData);
+    
+        } catch (Exception e) {
+            e.printStackTrace();
+            ex.setException(e);
+        }
+    }
+
+     private Map<String,Object> convertJsonToMap(String jsonString) throws JsonMappingException, JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        // Convert JSON string to Map
+        Map<String, Object> map = objectMapper.readValue(jsonString, Map.class);
+        return map;
+    }
+
 
     @PreDestroy
     public void close() {
