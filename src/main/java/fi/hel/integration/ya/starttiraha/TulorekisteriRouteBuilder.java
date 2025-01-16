@@ -185,7 +185,7 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
                     .choice()
                         .when(simple("${header.isXmlValid} == 'true'"))
                             .setHeader(Exchange.FILE_NAME, simple("${header.CamelFileName.replaceAll('.csv$', '.xml')}"))
-                            .log("XML BODY :: ${body}")
+                            //.log("XML BODY :: ${body}")
                             .to(outTulorekisteriXml)
                         .otherwise()
                             .log("XML is not valid, ${header.CamelFileName}")

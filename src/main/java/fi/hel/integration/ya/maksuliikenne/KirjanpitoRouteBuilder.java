@@ -118,7 +118,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
             .setBody().variable("kipa_p24_data")
             .setHeader("targetDirectory").simple("out/processed")
             .unmarshal(new JacksonDataFormat())
-            .log("Files to be moved to processed dir :: ${body}")
+            //.log("Files to be moved to processed dir :: ${body}")
             .bean(sftpProcessor, "moveFiles")
             .setBody().variable("invalidFiles")
             .choice()
@@ -126,7 +126,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                     .log("There was no invalid json files")
                 .otherwise()
                     .setHeader("targetDirectory").simple("out/errors")
-                    .log("Files to be moved to errors dir :: ${body}")
+                    //.log("Files to be moved to errors dir :: ${body}")
                     .bean(sftpProcessor, "moveFiles")
             .end()
         ;
