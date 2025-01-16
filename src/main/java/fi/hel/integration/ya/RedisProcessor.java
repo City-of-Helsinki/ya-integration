@@ -52,7 +52,7 @@ public class RedisProcessor {
 
         int connectionTimeout = 10000; // 10 seconds for connection
 
-        this.jedisPool = new JedisPool(poolConfig, host, port, connectionTimeout);
+        this.jedisPool = new JedisPool(poolConfig, host, port, connectionTimeout, password);
     }
 
     public void set(String key, String value) throws Exception { 
