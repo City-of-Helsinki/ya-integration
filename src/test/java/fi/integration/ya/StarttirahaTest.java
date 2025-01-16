@@ -39,6 +39,7 @@ public class StarttirahaTest extends CamelQuarkusTestSupport {
         String expectedResult = tu.readResource("src/test/java/fi/integration/ya/resources/starttiraha/starttiraha_result_henkilotiedot.csv");
 
         String result = pt.requestBody("direct:processPersonalData", startData, String.class);
+        result = result.replace("\uFEFF", "");
 
         assertEquals(expectedResult, result);
         mock.assertIsSatisfied();
@@ -56,6 +57,7 @@ public class StarttirahaTest extends CamelQuarkusTestSupport {
         String expectedResult = tu.readResource("src/test/java/fi/integration/ya/resources/starttiraha/starttiraha_result_palkkatapahtumat.csv");
 
         String result = pt.requestBody("direct:processPayrollTransaction", startData, String.class);
+        result = result.replace("\uFEFF", "");
         System.out.println("Result :: " + result);
 
         assertEquals(expectedResult, result);
