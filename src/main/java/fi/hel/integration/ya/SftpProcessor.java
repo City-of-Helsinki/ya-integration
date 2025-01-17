@@ -351,4 +351,50 @@ public class SftpProcessor {
             System.out.println("SFTP connection closed");
         }
     }
+
+    public void moveFile(Exchange ex) {
+        Session session = null;
+        ChannelSftp channelSftp = null;
+
+        String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
+        String hostname = ex.getIn().getHeader("hostname", String.class);
+        String username = ex.getIn().getHeader("username", String.class);
+        String password = ex.getIn().getHeader("password", String.class);
+        String fileName = ex.getIn().getHeader("CamelFileName", String.class);
+        String targetDir = ex.getIn().getHeader("targetDirectory", String.class);
+
+        try {
+            JSch jsch = new JSch();
+            session = jsch.getSession(username, hostname, 22);
+            session.setPassword(password);
+
+            session.setConfig("StrictHostKeyChecking", "no");
+            System.out.println("Connecting to SFTP server...");
+            session.connect();
+            System.out.println("SFTP session connected successfully.");
+
+            System.out.println("Opening SFTP channel...");
+            channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+            System.out.println("Connected to SFTP server");
+
+            String sourcePath = directoryPath + "/" + fileName;
+            String targetPath = targetDir + "/" + fileName;
+
+            channelSftp.rename(sourcePath, targetPath);
+
+            System.out.println("File moved successfully: " + fileName);
+
+        } catch (JSchException | SftpException e) {
+            e.printStackTrace();
+        } finally {
+            if (channelSftp != null) {
+                channelSftp.disconnect();
+            }
+            if (session != null) {
+                session.disconnect();
+            }
+            System.out.println("SFTP connection closed");
+        }
+    }
 }
