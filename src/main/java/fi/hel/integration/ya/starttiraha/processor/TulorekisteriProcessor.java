@@ -69,7 +69,7 @@ public class TulorekisteriProcessor {
 
     private final int DELIVERY_DATATYPE = 102;
     private final int FAULTY_CONTROL = 1;
-    private final boolean PRODUCTION_ENVIRONMENT = false;
+    private final boolean PRODUCTION_ENVIRONMENT=true;
     private final int DELIVERY_DATA_OWNER_TYPE = 1;
     private final int DELIVERY_DATA_CREATOR_TYPE = 1;
     private final int DELIVERY_DATA_SENDER_TYPE = 1;
