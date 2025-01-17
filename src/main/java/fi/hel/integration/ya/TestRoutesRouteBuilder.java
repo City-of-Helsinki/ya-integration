@@ -521,24 +521,32 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .bean(this, "sendJsonFileByEmail")
         ;
 
-        from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P22}}?username={{KIPA_SFTP_USER_P22}}"
-                + "&password={{KIPA_SFTP_PASSWORD_P22}}"
-                + "&strictHostKeyChecking=no"
-                + "&delay=30000"
-                + "&noop=true"
-                + "&antInclude=YA_p22_091_20250107*" 
-            )
-            .autoStartup("{{TEST_MOVE_FILES_AUTOSTARTUP}}")
+        from("{{KIPA_MOVEFILES_QUARTZ}}")
+            .autoStartup("{{KIPA_MOVE_FILES_AUTOSTARTUP}}")
             .routeId("kipa-move-files")
-            .log("Start route to move kipa files another directory")
-            .log("file name :: ${headers.CamelFileName}")
-            .setVariable("kipa_dir").simple("new")
-            .pollEnrich()
-                .simple("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P22}}?username={{KIPA_SFTP_USER_P22}}&password={{KIPA_SFTP_PASSWORD_P22}}&strictHostKeyChecking=no&fileName=${headers.CamelFileName}&move=../${variable.kipa_dir}")
-                .timeout(10000)
-            .log("CamelFtpReplyString: ${headers.CamelFtpReplyString}")
-            .log("file moved")
-        ;
+            .process(exchange -> {
+                if (redisProcessor.acquireLock(LOCK_KEY, 300)) { 
+                    exchange.getIn().setHeader("lockAcquired", true);
+                    System.out.println("Lock acquired, processing starts");
+
+                } else {
+                    exchange.getIn().setHeader("lockAcquired", false);
+                    System.out.println("Lock not acquired, skipping processing");
+                }
+            })
+            .filter(header("lockAcquired").isEqualTo(true))
+                .log("Start route to move kipa files another directory")
+                .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
+                .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
+                .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
+                .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
+                .setHeader("targetDirectory").simple("out/processed")
+                .log("Fetching file names from Kipa")
+                .bean("sftpProcessor", "getAllSFTPFileNames")
+                .log("Files to be moved :: ${body}")
+                .bean(sftpProcessor, "moveFilesByFileNames")
+                .log("Files moved.")
+            ;
 
         from("{{TEST_QUARTZ_TIMER}}")
             .autoStartup("{{TEST_QUARTZ_TIMER_AUTOSTARTUP}}")

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Vector;
 
 import org.apache.camel.Exchange;
@@ -254,7 +255,12 @@ public class SftpProcessor {
             session = jsch.getSession(username, hostname, 22);
             session.setPassword(password);
     
-            session.setConfig("StrictHostKeyChecking", "no");
+            Properties config = new Properties();
+            config.put("StrictHostKeyChecking", "no");
+            config.put("kex", "ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group-exchange-sha256");
+            config.put("server_host_key", "ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ed25519");
+            session.setConfig(config);
+
             System.out.println("Connecting to SFTP server...");
             session.connect();
             System.out.println("SFTP session connected successfully.");
@@ -268,6 +274,59 @@ public class SftpProcessor {
             for (Map<String,Object> file : files) {
                 Map<String,Object> delivery = (Map<String, Object>) file.get("delivery");
                 String fileName = (String) delivery.get("fileName");
+                String sourcePath = directoryPath + "/" + fileName;
+                String targetPath = targetDir + "/" + fileName;
+    
+                try {
+                    channelSftp.rename(sourcePath, targetPath);
+                    System.out.println("File moved successfully: " + fileName);
+                } catch (SftpException e) {
+                    System.err.println("Failed to move file: " + fileName);
+                    e.printStackTrace();
+                }
+            }
+    
+        } catch (JSchException e) {
+            e.printStackTrace();
+        } finally {
+            if (channelSftp != null) {
+                channelSftp.disconnect();
+            }
+            if (session != null) {
+                session.disconnect();
+            }
+            System.out.println("SFTP connection closed");
+        }
+    }
+
+    public void moveFilesByFileNames(Exchange ex) {
+        Session session = null;
+        ChannelSftp channelSftp = null;
+    
+        String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
+        String hostname = ex.getIn().getHeader("hostname", String.class);
+        String username = ex.getIn().getHeader("username", String.class);
+        String password = ex.getIn().getHeader("password", String.class);
+        String targetDir = ex.getIn().getHeader("targetDirectory", String.class);
+    
+        List<String> fileNames = ex.getIn().getBody(List.class);
+    
+        try {
+            JSch jsch = new JSch();
+            session = jsch.getSession(username, hostname, 22);
+            session.setPassword(password);
+    
+            session.setConfig("StrictHostKeyChecking", "no");
+            System.out.println("Connecting to SFTP server...");
+            session.connect();
+            System.out.println("SFTP session connected successfully.");
+    
+            System.out.println("Opening SFTP channel...");
+            channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+            System.out.println("Connected to SFTP server");
+    
+            for (String fileName : fileNames) {
                 String sourcePath = directoryPath + "/" + fileName;
                 String targetPath = targetDir + "/" + fileName;
     
