@@ -91,7 +91,7 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
             .setHeader("targetDirectory").simple("out/processed")
             //.log("Files to be moved to processed dir :: ${body}")
             .log("Moving files to kipa ${header.targetDirectory} folder")
-            //.bean(sftpProcessor, "moveFiles")
+            .bean(sftpProcessor, "moveFiles")
             .setBody().variable("invalidFiles")
             .choice()
                 .when(simple("${body} == null || ${body.size()} == 0"))
