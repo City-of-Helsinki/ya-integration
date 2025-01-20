@@ -14,6 +14,7 @@ import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
 import fi.hel.integration.ya.JsonValidator;
 import fi.hel.integration.ya.RedisProcessor;
 import fi.hel.integration.ya.SftpProcessor;
+import fi.hel.integration.ya.ValidateJsonProcessor;
 import fi.hel.integration.ya.exceptions.JsonValidationException;
 import io.sentry.Sentry;
 import io.sentry.SentryLevel;
@@ -31,6 +32,9 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
 
     @Inject
     RedisProcessor redisProcessor;
+
+    @Inject
+    ValidateJsonProcessor validateJsonProcessor; 
 
     private final String SCHEMA_FILE_SR = "schema/kipa/json_schema_SR.json";
 
@@ -122,13 +126,17 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
                 //.setHeader("filePrefix2", constant("YA_p22_091_20240611103500_0_SR.json"))
                 .log("Fetching file names from Kipa")
                 .bean("sftpProcessor", "getAllSFTPFileNames")
+                .log("Files to be processed :: ${body}")
                 .choice()
                     .when(simple("${body} == null || ${body.size()} == 0"))
                         .log("No files found in SFTP.")
                     .otherwise()
                         .log("Files found. Continuing processing.")
                         .log("Fetching and combining the json data")
-                        .bean(sftpProcessor, "fetchAllFilesFromSftpByFileName")
+                        .bean(sftpProcessor, "fetchAllFilesFromSftp")
+                        //.log("Body after fetching files :: ${body}")
+                        .bean(validateJsonProcessor, "validateFiles")
+                        .setBody().variable("validFiles")
                         .marshal(new JacksonDataFormat())
                         .setVariable("kipa_p22_data").simple("${body}")
                         //.log("Body before continue processing :: ${body}")

@@ -11,6 +11,7 @@ import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.apache.camel.model.dataformat.CsvDataFormat;
 
 import fi.hel.integration.ya.CsvValidator;
+import fi.hel.integration.ya.SftpProcessor;
 import fi.hel.integration.ya.exceptions.JsonValidationException;
 import fi.hel.integration.ya.exceptions.CsvValidationException;
 import fi.hel.integration.ya.starttiraha.processor.StarttirahaProcessor;
@@ -27,6 +28,9 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
 
     @Inject
     CsvValidator csvValidator;
+
+    @Inject
+    SftpProcessor sftpProcessor;
 
     @EndpointInject("{{app.endpoints.starttiraha.sendCsv}}")
     Endpoint sendCsv;
@@ -77,6 +81,27 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
                 .to("direct:processPersonalData")
                 .to("direct:processPayrollTransaction")
             .end()
+            .log("All starttiraha data processed")
+            .setBody().variable("kipa_p22_data")
+            .unmarshal(new JacksonDataFormat())
+            .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
+            .setHeader("username").simple("{{KIPA_SFTP_USER_P22}}")
+            .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P22}}")
+            .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P22}}")
+            .setHeader("targetDirectory").simple("out/processed")
+            //.log("Files to be moved to processed dir :: ${body}")
+            .log("Moving files to kipa ${header.targetDirectory} folder")
+            //.bean(sftpProcessor, "moveFiles")
+            .setBody().variable("invalidFiles")
+            .choice()
+                .when(simple("${body} == null || ${body.size()} == 0"))
+                    .log("There was no invalid json files")
+                .otherwise()
+                    .setHeader("targetDirectory").simple("out/errors")
+                    .log("Moving files to kipa ${header.targetDirectory} folder")
+                    //.log("Files to be moved to errors dir :: ${body}")
+                    .bean(sftpProcessor, "moveFiles")
+            .end()
         ;
 
         // Henkilötietojen käsittely
@@ -102,7 +127,6 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
             .choice()
                 .when(simple("${header.isCsvValid} == 'true'"))
                     .log("csv is valid")
-                    //.to("mock:processPersonalData.result")
                     //.log("personal data csv :: ${body}")
                     //.to("file:outbox/starttiraha")
                     .to(sendCsv) 
@@ -135,7 +159,6 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
             .choice()
                 .when(simple("${header.isCsvValid} == 'true'"))
                     .log("csv is valid")
-                    //.to("mock:processPersonalData.result")
                     //.log("payroll data csv :: ${body}")
                     //.to("file:outbox/starttiraha")
                     .to(sendCsv)
