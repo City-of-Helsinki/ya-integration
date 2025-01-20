@@ -31,7 +31,7 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
 
     @Inject
     SftpProcessor sftpProcessor;
-    
+
     @EndpointInject("{{app.endpoints.starttiraha.sendCsv}}")
     Endpoint sendCsv;
 
@@ -82,15 +82,16 @@ public class StarttirahaRouteBuilder extends RouteBuilder{
                 .to("direct:processPayrollTransaction")
             .end()
             .log("All starttiraha data processed")
-            .setBody().variable("kipa_p22_data")
-            .unmarshal(new JacksonDataFormat())
-            .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
-            .setHeader("username").simple("{{KIPA_SFTP_USER_P22}}")
-            .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P22}}")
-            .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P22}}")
-            .setHeader("targetDirectory").simple("out/processed")
+            //.setBody().variable("kipa_p22_data")
+            //.unmarshal(new JacksonDataFormat())
+            //.setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
+            //.setHeader("username").simple("{{KIPA_SFTP_USER_P22}}")
+            //.setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P22}}")
+            //.setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P22}}")
+            //.setHeader("targetDirectory").simple("out/processed")
             //.log("Files to be moved to processed dir :: ${body}")
-            .bean(sftpProcessor, "moveFiles")
+            //.log("Moving files to kipa processed folder")
+            //.bean(sftpProcessor, "moveFiles")
             .setBody().variable("invalidFiles")
             .choice()
                 .when(simple("${body} == null || ${body.size()} == 0"))
