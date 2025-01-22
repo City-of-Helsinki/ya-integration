@@ -122,7 +122,7 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
                 .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P22}}")
                 .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P22}}")
                 .setHeader("kipa_container", simple("P22"))
-                //.setHeader("filePrefix", constant("YA_p22_091_202408"))
+                .setHeader("filePrefix", constant("YA_p22_091_202408"))
                 //.setHeader("filePrefix2", constant("YA_p22_091_20240611103500_0_SR.json"))
                 .log("Fetching file names from Kipa")
                 .bean("sftpProcessor", "getAllSFTPFileNames")
