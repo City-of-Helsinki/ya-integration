@@ -122,6 +122,7 @@ public class SftpProcessor {
                 String jsonString = convertInputStreamToJson(inputStream);
                 Map<String,Object> jsonFile = convertJsonToMap(jsonString);
                 combinedJsons.add(jsonFile);
+                System.out.println("File fetched successfully");
             }
     
             ex.getIn().setBody(combinedJsons);
