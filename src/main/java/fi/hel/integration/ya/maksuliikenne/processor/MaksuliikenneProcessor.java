@@ -27,13 +27,17 @@ import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.FinInstnId;
 import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.PaymentInfo;
 import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.PostalAddress;
 import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.Amount;
+import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.CodeOrProprietary;
 import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.CreditTransferTransaction;
 import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.Creditor;
 import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.CreditorAccount;
+import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.CreditorReferenceInfo;
 import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.InstructedAmount;
 import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.PaymentId;
 import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.PostalAddressCreditor;
 import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.RemittanceInfo;
+import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.StructuredInfo;
+import fi.hel.integration.ya.maksuliikenne.models.pain.paymentInfo.creditTransferTransActionInfo.Type;
 //import fi.hel.integration.ya.maksuliikenne.models.pain.groupHeader.InitgPty;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -78,6 +82,7 @@ public class MaksuliikenneProcessor {
     private static final String DOCUMENT_XSD = "http://www.w3.org/2001/XMLSchema";
     private static final String SCHEMA_LOCATION = "urn:iso:std:iso:20022:tech:xsd:pain.001.001.03 pain.001.001.03.xsd";
     private static final String DOCUMENT_XMLNS = "urn:iso:std:iso:20022:tech:xsd:pain.001.001.03";
+    private static final String CODEORPROP_CD = "SCOR";
     
     @SuppressWarnings("unchecked")
     public void mapPaymentTransactions(Exchange ex) {
@@ -285,12 +290,34 @@ public class MaksuliikenneProcessor {
             creditorAccount.setId(accountIdentification);
 
             // Remittance information
-            String ourReference = (String) payment.get("ourReference");
-            // The max allowed length of Ustrd field is 140 chars
-            if (ourReference != null && ourReference.length() > 140) {
-                ourReference = ourReference.substring(0, 140);
+
+            String customerBankReference = (String) payment.get("customerBankReference");
+            if (customerBankReference != null && !customerBankReference.isEmpty()) {
+                customerBankReference = customerBankReference.replace(" ", "");
             }
-            remittanceInfo.setUstrd(ourReference);
+            
+            if(customerBankReference == null || customerBankReference.isEmpty()) {
+                String ourReference = (String) payment.get("ourReference");
+                System.out.println("OUR REFERENCE :: " + ourReference);
+                // The max allowed length of Ustrd field is 140 chars
+                if (ourReference != null && ourReference.length() > 140) {
+                    ourReference = ourReference.substring(0, 140);
+                }
+                remittanceInfo.setUstrd(ourReference);
+            
+            } else {
+
+                StructuredInfo strdInfo = new StructuredInfo();
+                CreditorReferenceInfo cdtrRefInfo = new CreditorReferenceInfo();
+                Type type = new Type();
+                CodeOrProprietary cdOrPrtry = new CodeOrProprietary();
+                cdOrPrtry.setCd(CODEORPROP_CD);
+                type.setCdOrPrtry(cdOrPrtry);
+                cdtrRefInfo.setTp(type);
+                cdtrRefInfo.setRef(customerBankReference);
+                strdInfo.setCdtrRefInf(cdtrRefInfo);
+                remittanceInfo.setStrd(strdInfo);
+            }
 
             creditTransferTransaction.setPmtId(pmtId);
             creditTransferTransaction.setAmt(amt);
