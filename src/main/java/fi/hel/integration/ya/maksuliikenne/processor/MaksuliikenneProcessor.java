@@ -71,6 +71,10 @@ public class MaksuliikenneProcessor {
     @ConfigProperty(name = "MAKSULIIKENNE_BIC", defaultValue = "bic")
     String bic;
 
+    @ConfigProperty(name = "MAKSULIIKENNE_HKI_BUSINESSID", defaultValue = "businessId")
+    String hkiBusinessId;
+
+
     private static final String ORIGINAL_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private static final String MSG_ID_PREFIX = "YA-";
     private static final String CHARGE_BEARER= "SLEV";
@@ -357,5 +361,27 @@ public class MaksuliikenneProcessor {
         totalAmounts.put("totalSumOfPmts", totalSumOfPmts);
 
         return totalAmounts;
-    }   
+    }
+    
+    public void sortFilesByBusinessId(Exchange ex) {
+
+        List<Map<String, Object>> files = ex.getIn().getBody(List.class);
+        List<Map<String, Object>> maksuliikenneFiles = new ArrayList<>();
+
+        for (Map<String, Object> file : files) {
+            
+            Map<String,Object> receiver = (Map<String, Object>) file.get("receiver");
+            String businessId = (String) receiver.get("businessId");
+            System.out.println("BUSINESS ID :: " + businessId);
+
+            if (businessId != null && businessId.equals(hkiBusinessId)) {
+                System.out.println("The businessId is hki business id so filter out of maksuliikenne data");
+            } else {
+                System.out.println("Adding file to the list maksuliikenneFiles");
+                maksuliikenneFiles.add(file);
+            }
+        }
+
+        ex.setVariable("maksuliikenne_data", maksuliikenneFiles);
+    }
 }
