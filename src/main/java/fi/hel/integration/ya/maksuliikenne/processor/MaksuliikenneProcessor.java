@@ -374,7 +374,7 @@ public class MaksuliikenneProcessor {
             String businessId = (String) receiver.get("businessId");
             System.out.println("BUSINESS ID :: " + businessId);
 
-            if (businessId != null && businessId.equals(hkiBusinessId)) {
+            if (businessId != null && !businessId.isEmpty() && businessId.equals(hkiBusinessId)) {
                 System.out.println("The businessId is hki business id so filter out of maksuliikenne data");
             } else {
                 System.out.println("Adding file to the list maksuliikenneFiles");
