@@ -63,7 +63,13 @@ public class SftpProcessor {
         if (password != null) {
             session.setPassword(password);
         }
-        session.setConfig("StrictHostKeyChecking", "no");
+        
+        Properties config = new Properties();
+            config.put("StrictHostKeyChecking", "no");
+            config.put("kex", "ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group-exchange-sha256");
+            config.put("server_host_key", "ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ed25519");
+            session.setConfig(config);
+
         session.connect();
 
         ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
@@ -104,8 +110,13 @@ public class SftpProcessor {
             JSch jsch = new JSch();
             session = jsch.getSession(username, hostname, 22);
             session.setPassword(password);
-            session.setConfig("StrictHostKeyChecking", "no");
-    
+            
+            Properties config = new Properties();
+                config.put("StrictHostKeyChecking", "no");
+                config.put("kex", "ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group-exchange-sha256");
+                config.put("server_host_key", "ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ed25519");
+            session.setConfig(config);
+            
             System.out.println("Connecting to SFTP server...");
             session.connect();
             System.out.println("SFTP session connected successfully.");
