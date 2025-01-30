@@ -73,7 +73,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
         ;
 
         from("direct:maksuliikenne-controller")
-            //.to("file:outbox/test")
+            .to("file:outbox/maksuliikenne_data")
             .to("direct:mapPaymentTransactions")
             .bean(xmlValidator, "validateXml(*," +  SCHEMA_FILE + ")")
             .log("xml is valid :: ${header.isXmlValid}")
@@ -90,8 +90,9 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                         .when(simple("${header.CamelFtpReplyString} == 'OK'"))
                             .log("The pain xml has been sent to Banking")
                             // Restore the Kipa data to the route and direct it to the accounting mapping
-                            .setBody().variable("kipa_p24_data")
+                            .setBody().variable("kirjanpito_data")
                             //.log("kirjanpito data :: ${body}")
+                            //.to("file:outbox/kirjanpito-data")
                             .to("direct:kirjanpito.controller")
                         .otherwise()
                             .log("Error occurred  while sending the xml file to Banking")
@@ -138,14 +139,24 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
             .process(ex -> {
                 Map<String,Object> totalAmounts = ex.getIn().getHeader("reportData", Map.class);
+                Map<String,Object> totalAmountsKirjanpito = ex.getIn().getHeader("reportDataKirjanpito", Map.class);
                 String dueDate = ex.getIn().getHeader("dueDate", String.class);
                 int amountOfPayments = (int) totalAmounts.get("numberOfPmts");
                 BigDecimal totalAmount = (BigDecimal) totalAmounts.get("totalSumOfPmts");
+                int amountOfPaymentsKirjanpito = (int) totalAmountsKirjanpito.get("numberOfPmtsKirjanpito");
+                BigDecimal totalAmountKirjanpito = (BigDecimal) totalAmountsKirjanpito.get("totalSumOfPmtsKirjanpito");
+
                 String message = "Maksupäivä: " + dueDate + "<br>" 
+                               + "<b>Nomentia Banking</b> <br>"
                                + "Maksuja yhteensä: " + amountOfPayments + "<br>"
-                               + "Maksujen yhteissumma: " + totalAmount;
+                               + "Maksujen yhteissumma: " + totalAmount + "<br>"
+                               + "<b>Kirjanpito (SAP)</b> <br>"
+                               + "Maksuja yhteensä: " + amountOfPaymentsKirjanpito + "<br>"
+                               + "Maksujen yhteissumma: " + totalAmountKirjanpito;
                 
                 String subject = "YA-maksut/TYPA";
+
+                System.out.println("Report Message :: " + message);
 
                 ex.getIn().setHeader("messageSubject", subject);
                 ex.getIn().setHeader("emailMessage", message);
