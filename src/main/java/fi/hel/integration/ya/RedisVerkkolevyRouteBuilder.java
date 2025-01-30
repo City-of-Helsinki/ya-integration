@@ -39,7 +39,7 @@ public class RedisVerkkolevyRouteBuilder extends RouteBuilder {
             })
             .filter(header("lockAcquired").isEqualTo(true))
                 .log("Fetch data keys from Redis")
-                .bean(redisProcessor, "getAllKeys(*)")
+                .bean(redisProcessor, "getAllKeys(ready-to-send-verkkolevy:*)")
                 //.log("Redis keys :: ${body}")
                 .split(body())
                     .log("Fetching the data from redis with key ${body}")
