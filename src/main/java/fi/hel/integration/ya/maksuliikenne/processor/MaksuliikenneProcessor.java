@@ -298,7 +298,6 @@ public class MaksuliikenneProcessor {
             
             if(customerBankReference == null || customerBankReference.isEmpty()) {
                 String ourReference = (String) payment.get("ourReference");
-                System.out.println("OUR REFERENCE :: " + ourReference);
                 // The max allowed length of Ustrd field is 140 chars
                 if (ourReference != null && ourReference.length() > 140) {
                     ourReference = ourReference.substring(0, 140);
