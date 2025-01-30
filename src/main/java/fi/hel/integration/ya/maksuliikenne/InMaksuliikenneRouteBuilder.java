@@ -1,7 +1,9 @@
 package fi.hel.integration.ya.maksuliikenne;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -155,9 +157,26 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         .unmarshal(new JacksonDataFormat())
                         .bean(mlProcessor, "sortFilesByBusinessId")
                         .setBody().variable("maksuliikenne_data")
-                        .marshal(new JacksonDataFormat())
+                        //.marshal(new JacksonDataFormat())
                         .log("maksuliikenne_data :: ${body}")
-                        .to("direct:maksuliikenne-controller")
+                        .choice()
+                            .when(simple("${body} == null || ${body.size()} == 0"))
+                                .log("All payments were sotepe payments; proceeding with kirjanpito data only")
+                                .process(ex -> {
+                                    Map<String,Object> totalAmounts = new LinkedHashMap<>();
+                                    int numberOfPmts = 0;
+                                    BigDecimal totalSumOfPmts = new BigDecimal(0);
+                                    totalAmounts.put("numberOfPmts", numberOfPmts);
+                                    totalAmounts.put("totalSumOfPmts", totalSumOfPmts);
+                                    ex.getIn().setHeader("reportData", totalAmounts);
+                                })
+                                .setBody().variable("kirjanpito_data")
+                                .log("Start processing kirjanpito data")
+                                .to("direct:kirjanpito.controller")
+                            .otherwise()
+                                .marshal(new JacksonDataFormat())
+                                .to("direct:maksuliikenne-controller")
+                        .end()        
                 .end()
             .end()
         ;
@@ -291,10 +310,27 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .unmarshal(new JacksonDataFormat())
             .bean(mlProcessor, "sortFilesByBusinessId")
             .setBody().variable("maksuliikenne_data")
-            .marshal(new JacksonDataFormat())
-            //.log("Combined jsons :: ${body}")
+            //.marshal(new JacksonDataFormat())
+            .log("Combined jsons :: ${body}")
             //.setVariable("kipa_p24_data").simple("${body}")
-            .to("direct:maksuliikenne-controller")
+            .choice()
+                .when(simple("${body} == null || ${body.size()} == 0"))
+                    .log("All payments were sotepe payments; proceeding with kirjanpito data only")
+                     .process(ex -> {
+                        Map<String,Object> totalAmounts = new LinkedHashMap<>();
+                        int numberOfPmts = 0;
+                        BigDecimal totalSumOfPmts = new BigDecimal(0);
+                        totalAmounts.put("numberOfPmts", numberOfPmts);
+                        totalAmounts.put("totalSumOfPmts", totalSumOfPmts);
+                        ex.getIn().setHeader("reportData", totalAmounts);
+                    })
+                    .setBody().variable("kirjanpito_data")
+                    .log("Start processing kirjanpito data")
+                    .to("direct:kirjanpito.controller")
+                .otherwise()
+                    .marshal(new JacksonDataFormat())
+                    .to("direct:maksuliikenne-controller")
+            .end()        
         ;
 
         from("direct:saveJsonData-P24")
