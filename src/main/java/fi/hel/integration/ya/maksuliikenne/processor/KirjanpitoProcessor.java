@@ -4,8 +4,10 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -342,6 +344,27 @@ public class KirjanpitoProcessor {
         return fileInputStream;
     }
 
+    public void calculateKirjanpitoTotalAmounts(Exchange ex) {
+
+        List<Map<String,Object>> body = ex.getIn().getBody(List.class);
+        Map<String,Object> totalAmounts = new LinkedHashMap<>();
+        int numberOfPmts = 0;
+        BigDecimal totalSumOfPmts = new BigDecimal(0);
+
+        for(Map<String,Object> payment: body) {
+
+            double grossSum = (double) payment.get("grossSum");
+            BigDecimal paymentSum = BigDecimal.valueOf(grossSum);
+            totalSumOfPmts = totalSumOfPmts.add(paymentSum);
+            numberOfPmts+=1;
+        }
+
+        totalAmounts.put("numberOfPmtsKirjanpito", numberOfPmts);
+        totalAmounts.put("totalSumOfPmtsKirjanpito", totalSumOfPmts);
+
+        ex.getIn().setHeader("reportDataKirjanpito", totalAmounts);
+    }
+    
     public void writeFileSapSftp(Exchange ex) {
         Session session = null;
         ChannelSftp channelSftp = null;

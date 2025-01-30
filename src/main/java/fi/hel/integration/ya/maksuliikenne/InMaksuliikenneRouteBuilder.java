@@ -1,7 +1,9 @@
 package fi.hel.integration.ya.maksuliikenne;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -122,7 +124,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
                 .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
                 .setHeader("kipa_container", simple("P24"))
-                //.setHeader("filePrefix", constant("YA_p24_091_20241216"))
+                //.setHeader("filePrefix", constant("YA_p24_091_20241030"))
                 //.setHeader("filePrefix2", constant("YA_p24_091_20241216155712_091_PT55.json"))
                 .log("Fetching file names from Kipa")
                 .bean("sftpProcessor", "getAllSFTPFileNames")
@@ -151,9 +153,31 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         .bean(validateJsonProcessor, "validateFiles")
                         .setBody().variable("validFiles")
                         .marshal(new JacksonDataFormat())
-                        .setVariable("kipa_p24_data").simple("${body}")
-                        //.log("Body after validating files :: ${body}")
-                        .to("direct:maksuliikenne-controller")
+                        .setVariable("kirjanpito_data").simple("${body}")
+                        .unmarshal(new JacksonDataFormat())
+                        .log("Sorting files by business id (filtering the sotepe payments)")
+                        .bean(mlProcessor, "sortFilesByBusinessId")
+                        .setBody().variable("maksuliikenne_data")
+                        //.marshal(new JacksonDataFormat())
+                        //.log("maksuliikenne_data :: ${body}")
+                        .choice()
+                            .when(simple("${body} == null || ${body.size()} == 0"))
+                                .log("All payments were sotepe payments; proceeding with kirjanpito data only")
+                                .process(ex -> {
+                                    Map<String,Object> totalAmounts = new LinkedHashMap<>();
+                                    int numberOfPmts = 0;
+                                    BigDecimal totalSumOfPmts = new BigDecimal(0);
+                                    totalAmounts.put("numberOfPmts", numberOfPmts);
+                                    totalAmounts.put("totalSumOfPmts", totalSumOfPmts);
+                                    ex.getIn().setHeader("reportData", totalAmounts);
+                                })
+                                .setBody().variable("kirjanpito_data")
+                                .log("Start processing kirjanpito data")
+                                .to("direct:kirjanpito.controller")
+                            .otherwise()
+                                .marshal(new JacksonDataFormat())
+                                .to("direct:maksuliikenne-controller")
+                        .end()        
                 .end()
             .end()
         ;
@@ -282,10 +306,32 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 })
             
             .marshal(new JacksonDataFormat())
-            //.to("file:outbox/test")
+            .to("file:outbox/test")
+            .setVariable("kirjanpito_data").simple("${body}")
+            .unmarshal(new JacksonDataFormat())
+            .bean(mlProcessor, "sortFilesByBusinessId")
+            .setBody().variable("maksuliikenne_data")
+            //.marshal(new JacksonDataFormat())
             .log("Combined jsons :: ${body}")
-            .setVariable("kipa_p24_data").simple("${body}")
-            .to("direct:maksuliikenne-controller")
+            //.setVariable("kipa_p24_data").simple("${body}")
+            .choice()
+                .when(simple("${body} == null || ${body.size()} == 0"))
+                    .log("All payments were sotepe payments; proceeding with kirjanpito data only")
+                     .process(ex -> {
+                        Map<String,Object> totalAmounts = new LinkedHashMap<>();
+                        int numberOfPmts = 0;
+                        BigDecimal totalSumOfPmts = new BigDecimal(0);
+                        totalAmounts.put("numberOfPmts", numberOfPmts);
+                        totalAmounts.put("totalSumOfPmts", totalSumOfPmts);
+                        ex.getIn().setHeader("reportData", totalAmounts);
+                    })
+                    .setBody().variable("kirjanpito_data")
+                    .log("Start processing kirjanpito data")
+                    .to("direct:kirjanpito.controller")
+                .otherwise()
+                    .marshal(new JacksonDataFormat())
+                    .to("direct:maksuliikenne-controller")
+            .end()        
         ;
 
         from("direct:saveJsonData-P24")
