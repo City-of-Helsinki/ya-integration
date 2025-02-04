@@ -350,6 +350,9 @@ public class KirjanpitoProcessor {
         Map<String,Object> totalAmounts = new LinkedHashMap<>();
         int numberOfPmts = 0;
         BigDecimal totalSumOfPmts = new BigDecimal(0);
+        int numberOfSotepePmts = 0;
+        BigDecimal totalSumOfSotepePmts = new BigDecimal(0);
+
 
         for(Map<String,Object> payment: body) {
 
@@ -357,10 +360,20 @@ public class KirjanpitoProcessor {
             BigDecimal paymentSum = BigDecimal.valueOf(grossSum);
             totalSumOfPmts = totalSumOfPmts.add(paymentSum);
             numberOfPmts+=1;
+
+            Map<String, Object> receiver = (Map<String, Object>) payment.get("receiver");
+            String businessId = (String) receiver.get("businessId");
+
+            if(businessId != null && !businessId.isEmpty() && businessId.equals(hkiBusinessId)) {
+                totalSumOfSotepePmts = totalSumOfSotepePmts.add(paymentSum);
+                numberOfSotepePmts+=1;
+            }
         }
 
         totalAmounts.put("numberOfPmtsKirjanpito", numberOfPmts);
         totalAmounts.put("totalSumOfPmtsKirjanpito", totalSumOfPmts);
+        totalAmounts.put("numberOfPmtsSotepe", numberOfSotepePmts);
+        totalAmounts.put("totalSumOfPmtsSotepe", totalSumOfSotepePmts);
 
         ex.getIn().setHeader("reportDataKirjanpito", totalAmounts);
     }
