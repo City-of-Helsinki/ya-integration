@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><xsd:schema version="1.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 <!-- 24.4.2020	Added LineItem - CondKey minOccurs="0" -->
+<!-- 25.2.2025	Added LineItem - CompanyCode -->
 <!-- Added a minimum length requirement (minLength value="1") for mandatory fields regarding accounting requirements in this project-->
 	<xsd:element name="SBO_SimpleAccountingContainer" type="SBO_SimpleAccountingContainer">
 		<xsd:annotation>
@@ -64,6 +65,13 @@
 				<xsd:simpleType>
 					<xsd:restriction base="xsd:string">
 						<xsd:maxLength value="50"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="CompanyCode">
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:maxLength value="4"/>
 					</xsd:restriction>
 				</xsd:simpleType>
 			</xsd:element>

@@ -37,10 +37,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
     private final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
     private final String FILE_NAME_PREFIX= "{{MAKSULIIKENNE_KIRJANPITO_FILENAMEPREFIX}}";
     private final String SENDER_ID = "{{MAKSULIIKENNE_KIRJANPITO_SENDERID}}";
-    private final String EMAIL_RECIPIENTS = "{{MAKSULIIKENNE_EMAIL_RECIPIENTS}}";
     private final String KIRJANPITO_XMLERROR_EMAIL_RECIPIENTS= "{{KIRJANPITO_XMLERROR_EMAIL_RECIPIENTS}}";
-
-
 
     @Override
     public void configure() throws Exception {
@@ -86,7 +83,17 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
             .bean(kpProcessor, "calculateKirjanpitoTotalAmounts")
             .split(body())
                 //.log("Splitted body :: ${body}")
-                .to("direct:mapAccountingData")
+                .setVariable("businessId")
+                    .language("groovy", "def businessId = request.body.receiver.businessId; businessId")
+                .log("Business id :: ${variable.businessId}")
+                .choice()
+                    .when().simple("${variable.businessId} == '{{MAKSULIIKENNE_KIRJANPITO_HKI_BUSINESSID}}'")
+                        .log("Routing to mapAccountingDataSotepe for businessId: ${variable.businessId}")
+                        .to("direct:mapAccountingDataSotepe")
+                    .otherwise()
+                        .log("Routing to mapAccountingData for businessId: ${variable.businessId}")
+                        .to("direct:mapAccountingData")
+                .end()
                 .bean(xmlValidator, "validateXml(*," +  SCHEMA_FILE + ")")
                 .setVariable("claimTypeCode")
                     .language("groovy", "def filename = request.headers.jsonFileName; filename.split('_')[-1].replace('.json', '')")
@@ -97,15 +104,16 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                         .log("kipa json file :: ${header.jsonFileName}")
                         .log("Created kirjanpito xml, file name :: ${header.CamelFileName}")
                         //.log("kirjanpito xml :: ${body}")
-                        //.to("file:outbox/maksuliikenne/sap")
-                        .to("direct:out.maksuliikenne-sap")
+                        .to("file:outbox/maksuliikenne/sap")
+                        //.to("direct:out.maksuliikenne-sap")
                     .otherwise()
                         .log("XML is not valid, ${header.CamelFileName}")
-                        .to("direct:out.maksuliikenne-sap")
+                        //.to("direct:out.maksuliikenne-sap")
+                        .to("file:outbox/maksuliikenne/sap")
                         .log("Error message :: ${header.error_messages}")
                         .setHeader("messageSubject", simple("Ya-integraatio, maksuliikenne: virhe xml-sanomassa (SAP, kirjanpito)"))
                         .setHeader("emailRecipients", constant(KIRJANPITO_XMLERROR_EMAIL_RECIPIENTS))
-                        .to("direct:sendErrorReport")
+                        //.to("direct:sendErrorReport")
                         .process(exchange -> {
                             String errorMessages = exchange.getIn().getHeader("error_messages", String.class);
                             throw new XmlValidationException(
@@ -117,7 +125,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                 .end() 
             .end()
             .log("All accounting data processed")
-            .to("direct:sendMaksuliikenneReportEmail")
+            //.to("direct:sendMaksuliikenneReportEmail")
             .setBody().variable("validFiles")
             //.log("valid files :: ${body}")
             //.unmarshal(new JacksonDataFormat())
@@ -127,7 +135,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
             .setHeader("targetDirectory").simple("out/processed")
             //.log("Files to be moved to processed dir :: ${body}")
-            .bean(sftpProcessor, "moveFiles")
+            //.bean(sftpProcessor, "moveFiles")
             .setBody().variable("invalidFiles")
             .choice()
                 .when(simple("${body} == null || ${body.size()} == 0"))
@@ -135,7 +143,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                 .otherwise()
                     .setHeader("targetDirectory").simple("out/errors")
                     .log("Files to be moved to errors dir :: ${body}")
-                    .bean(sftpProcessor, "moveFiles")
+                    //.bean(sftpProcessor, "moveFiles")
             .end()
         ;
 
@@ -145,6 +153,14 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
             .convertBodyTo(String.class)
             .setBody().groovy("'" + XML_DECLARATION + "'" + " + body")
             .to("mock:mapAccountingData.result")
+        ;
+
+        from("direct:mapAccountingDataSotepe")
+            .bean(kpProcessor, "mapAccountigDataSotepe(*)")
+            .marshal().jacksonXml(SBO_SimpleAccountingContainer.class)
+            .convertBodyTo(String.class)
+            .setBody().groovy("'" + XML_DECLARATION + "'" + " + body")
+            .to("mock:mapAccountingDataSotepe.result")
         ;
 
         from("direct:out.maksuliikenne-sap")

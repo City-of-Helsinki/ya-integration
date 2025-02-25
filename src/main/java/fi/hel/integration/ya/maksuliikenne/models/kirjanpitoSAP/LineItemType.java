@@ -1,5 +1,6 @@
 package fi.hel.integration.ya.maksuliikenne.models.kirjanpitoSAP;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
 public class LineItemType {
@@ -27,6 +28,10 @@ public class LineItemType {
 
     @JacksonXmlProperty(localName = "LineText")
     private String lineText;
+
+    @JacksonXmlProperty(localName = "CompanyCode")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String companyCode;
 
     @JacksonXmlProperty(localName = "TradingPartner")
     private String tradingPartner;
@@ -155,6 +160,14 @@ public class LineItemType {
 
     public void setLineText(String lineText) {
         this.lineText = lineText;
+    }
+
+    public String getCompanyCode() {
+        return companyCode;
+    }
+
+    public void setCompanyCode(String companyCode) {
+        this.companyCode = companyCode;
     }
 
     public String getTradingPartner() {
