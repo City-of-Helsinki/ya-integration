@@ -203,7 +203,14 @@ public class TulorekisteriRouteBuilder extends RouteBuilder {
             //.to("file:outbox/starttiraha")
             .log("Sending tulorekisteri file to verkkolevy sftp")
             //.log("tulorekisteri xml :: ${body}")
-            .to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/ture?username={{VERKKOLEVY_SFTP_USER}}&password={{VERKKOLEVY_SFTP_PASSWORD}}&throwExceptionOnConnectFailed=true&strictHostKeyChecking=no")
+            .to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/ture?username={{VERKKOLEVY_SFTP_USER}}"
+                + "&password={{VERKKOLEVY_SFTP_PASSWORD}}"
+                + "&throwExceptionOnConnectFailed=true"
+                + "&strictHostKeyChecking=no"
+                + "&serverHostKeys=ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ed25519"
+                + "&keyExchangeProtocols=ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group-exchange-sha256"
+                + "&maximumReconnectAttempts=5" 
+                + "&reconnectDelay=5000")
             .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
             .process(exchange -> {
                 String filePath = exchange.getIn().getHeader("directoryPath", String.class) 
