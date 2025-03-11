@@ -128,7 +128,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .autoStartup("{{BANKING_SFTP_AUTOSTARTUP}}")
             .log("Sendig the file to banking")
             .to("sftp:{{BANKING_SFTP_HOST}}:22/{{BANKING_DIRECTORY_PATH}}?username={{BANKING_SFTP_USER}}"
-                + "&password={{BANKING_SFTP_PASSWORD}}"
+                + "&password=RAW({{BANKING_SFTP_PASSWORD}})"
                 + "&strictHostKeyChecking=no"
             )
             .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
