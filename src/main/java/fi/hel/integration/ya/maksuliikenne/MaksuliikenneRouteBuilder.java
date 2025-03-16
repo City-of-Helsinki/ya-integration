@@ -130,6 +130,8 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .to("sftp:{{BANKING_SFTP_HOST}}:22/{{BANKING_DIRECTORY_PATH}}?username={{BANKING_SFTP_USER}}"
                 + "&password=RAW({{BANKING_SFTP_PASSWORD}})"
                 + "&strictHostKeyChecking=no"
+                + "&serverHostKeys=ssh-ed25519,rsa-sha2-256,rsa-sha2-512,ecdsa-sha2-nistp521"
+                + "&keyExchangeProtocols=curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group-exchange-sha256"
             )
             .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
         ;
