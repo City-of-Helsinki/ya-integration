@@ -98,7 +98,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
                         .log("Created kirjanpito xml, file name :: ${header.CamelFileName}")
                         .log("kirjanpito xml :: ${body}")
                         //.to("file:outbox/maksuliikenne/sap")
-                        //.to("direct:out.maksuliikenne-sap")
+                        .to("direct:out.maksuliikenne-sap")
                     .otherwise()
                         .log("XML is not valid, ${header.CamelFileName}")
                         .to("direct:out.maksuliikenne-sap")
@@ -127,7 +127,7 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
             .setHeader("targetDirectory").simple("out/processed")
             //.log("Files to be moved to processed dir :: ${body}")
-            .bean(sftpProcessor, "moveFiles")
+            //.bean(sftpProcessor, "moveFiles")
             .setBody().variable("invalidFiles")
             .choice()
                 .when(simple("${body} == null || ${body.size()} == 0"))
@@ -152,8 +152,8 @@ public class KirjanpitoRouteBuilder extends RouteBuilder {
             .to("sftp:{{SAP_SFTP_HOST}}:22/?username={{SAP_SFTP_USER}}"
                 + "&password={{SAP_SFTP_PASSWORD}}"
                 + "&strictHostKeyChecking=no"
-                + "&serverHostKeys=ssh-rsa"
-                + "&keyExchangeProtocols=diffie-hellman-group1-sha1,diffie-hellman-group14-sha1"
+                + "&serverHostKeys=ssh-ed25519,rsa-sha2-256,rsa-sha2-512,ecdsa-sha2-nistp521"
+                + "&keyExchangeProtocols=curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group-exchange-sha256"
                 + "&maximumReconnectAttempts=5" 
                 + "&reconnectDelay=5000"                 
             )
