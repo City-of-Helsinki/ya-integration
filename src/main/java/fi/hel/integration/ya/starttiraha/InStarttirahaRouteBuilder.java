@@ -2,9 +2,11 @@ package fi.hel.integration.ya.starttiraha;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
@@ -126,7 +128,9 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
                 //.setHeader("filePrefix2", constant("YA_p22_091_20240611103500_0_SR.json"))
                 .log("Fetching file names from Kipa")
                 .bean("sftpProcessor", "getAllSFTPFileNames")
-                .log("Files to be processed :: ${body}")
+                .log("Files to be processed(before filtering) :: ${body}")
+                .to("direct:filter-ya-p22-files")
+                .log("Files to be processed (after filtering) :: ${body}")
                 .choice()
                     .when(simple("${body} == null || ${body.size()} == 0"))
                         .log("No files found in SFTP.")
@@ -147,6 +151,29 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
                 .end()
             .end()
         ;
+
+        from("direct:filter-ya-p22-files")
+            .routeId("filter-ya-p22-files")
+            .log("Starting file filtering for YA_p22 files")
+            .process(exchange -> {
+                @SuppressWarnings("unchecked")
+                List<String> allFiles = (List<String>) exchange.getIn().getBody();
+                
+                if (allFiles == null) {
+                    exchange.getIn().setBody(Collections.emptyList());
+                    System.out.println("Input file list was null, returning empty list");
+                    return;
+                }
+                
+                List<String> filteredFiles = allFiles.stream()
+                    .filter(fileName -> fileName != null && fileName.startsWith("YA_p22"))
+                    .collect(Collectors.toList());
+                
+                exchange.getIn().setBody(filteredFiles);
+            })
+            .log("File filtering completed.")
+        ;
+
 
         from("direct:validate-json-P22")
             .log("Start to validate json file")

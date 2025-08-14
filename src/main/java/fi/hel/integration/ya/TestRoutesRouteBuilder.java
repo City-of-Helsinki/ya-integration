@@ -423,8 +423,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .process(ex -> {
                 // Configure algorithms for compatibility with the server
                 java.util.Properties config = new java.util.Properties();
-                config.put("kex", "diffie-hellman-group1-sha1,diffie-hellman-group14-sha1");
-                config.put("server_host_key", "ssh-rsa");
+                config.put("kex", "curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group-exchange-sha256");
+                config.put("server_host_key", "ssh-ed25519,rsa-sha2-256,rsa-sha2-512,ecdsa-sha2-nistp521");
                 ex.getIn().setHeader("sftp_config", config);
             })
             .bean(this, "testSFTPConnection")
@@ -438,6 +438,13 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{BANKING_SFTP_USER}}")
             .setHeader("password").simple("{{BANKING_SFTP_PASSWORD}}")
             .setHeader("directoryPath").simple("{{BANKING_DIRECTORY_PATH}}")
+            .process(ex -> {
+                // Configure algorithms for compatibility with the server
+                java.util.Properties config = new java.util.Properties();
+                config.put("kex", "curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group-exchange-sha256");
+                config.put("server_host_key", "ssh-ed25519,rsa-sha2-256,rsa-sha2-512,ecdsa-sha2-nistp521");
+                ex.getIn().setHeader("sftp_config", config);
+            })
             .bean(this, "testSFTPConnection")
         ;
 

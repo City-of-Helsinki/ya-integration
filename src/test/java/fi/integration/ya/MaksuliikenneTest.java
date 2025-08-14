@@ -13,6 +13,13 @@ import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 @TestProfile(MaksuliikenneTest.class)
 @QuarkusTest
@@ -56,4 +63,89 @@ public class MaksuliikenneTest extends CamelQuarkusTestSupport {
         mock.assertIsSatisfied();
     
     }
+
+    @Test
+    public void testFilterYaP24Files_WithMixedFiles() throws Exception {
+
+        List<String> inputFiles = Arrays.asList(
+            "YATE_tasmaytysraportti_p24-02012566_20250630.json",
+            "YATE_tasmaytysraportti_p24-02012566_20250630.pdf", 
+            "YA_p24_091_20250630200507_80_PT.json",
+            "YA_p24_091_20250630200507_83_PT.json",
+            "some_other_file.txt",
+            "YA_p24_091_20250630200510_91_HKK.json"
+        );
+
+        @SuppressWarnings("unchecked")
+        List<String> result = pt.requestBody("direct:filter-ya-p24-files", inputFiles, List.class);
+
+        assertNotNull(result);
+        assertEquals(3, result.size());
+        assertTrue(result.contains("YA_p24_091_20250630200507_80_PT.json"));
+        assertTrue(result.contains("YA_p24_091_20250630200507_83_PT.json"));
+        assertTrue(result.contains("YA_p24_091_20250630200510_91_HKK.json"));
+        assertFalse(result.contains("YATE_tasmaytysraportti_p24-02012566_20250630.json"));
+        assertFalse(result.contains("some_other_file.txt"));
+    }
+
+    @Test
+    public void testFilterYaP24Files_WithOnlyNonYaFiles() throws Exception {
+
+        List<String> inputFiles = Arrays.asList(
+            "YATE_tasmaytysraportti_p24-02012566_20250630.json",
+            "YATE_tasmaytysraportti_p24-02012566_20250630.pdf",
+            "some_other_file.txt"
+        );
+
+        @SuppressWarnings("unchecked")
+        List<String> result = pt.requestBody("direct:filter-ya-p24-files", inputFiles, List.class);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void testFilterYaP24Files_WithOnlyYaFiles() throws Exception {
+
+        List<String> inputFiles = Arrays.asList(
+            "YA_p24_091_20250630200507_80_PT.json",
+            "YA_p24_091_20250630200507_83_PT.json",
+            "YA_p24_091_20250630200510_91_HKK.json"
+        );
+
+        @SuppressWarnings("unchecked")
+        List<String> result = pt.requestBody("direct:filter-ya-p24-files", inputFiles, List.class);
+
+        assertNotNull(result);
+        assertEquals(3, result.size());
+        assertEquals(inputFiles, result);
+    }
+
+    @Test
+    public void testFilterYaP24Files_WithEmptyList() throws Exception {
+  
+        List<String> inputFiles = Collections.emptyList();
+
+
+        @SuppressWarnings("unchecked")
+        List<String> result = pt.requestBody("direct:filter-ya-p24-files", inputFiles, List.class);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void testFilterYaP24Files_WithNullInput() throws Exception {
+
+        @SuppressWarnings("unchecked")
+        List<String> result = pt.requestBody("direct:filter-ya-p24-files", null, List.class);
+
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+        assertTrue(result.isEmpty());
+    }
+
 }

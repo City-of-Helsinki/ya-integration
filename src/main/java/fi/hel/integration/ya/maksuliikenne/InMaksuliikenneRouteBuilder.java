@@ -3,10 +3,12 @@ package fi.hel.integration.ya.maksuliikenne;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
@@ -124,11 +126,13 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
                 .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
                 .setHeader("kipa_container", simple("P24"))
-                //.setHeader("filePrefix", constant("YA_p24_091_20241030"))
+                //.setHeader("filePrefix", constant("YA_p24_091_202412161720"))
                 //.setHeader("filePrefix2", constant("YA_p24_091_20241216155712_091_PT55.json"))
                 .log("Fetching file names from Kipa")
                 .bean("sftpProcessor", "getAllSFTPFileNames")
-                .log("Files to be processed :: ${body}")
+                .log("Files to be processed(before filtering) :: ${body}")
+                .to("direct:filter-ya-p24-files")
+                .log("Files to be processed (after filtering) :: ${body}")
                 .choice()
                     .when(simple("${body} == null || ${body.size()} == 0"))
                         .log("No files found in SFTP.")
@@ -180,6 +184,28 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                         .end()        
                 .end()
             .end()
+        ;
+
+        from("direct:filter-ya-p24-files")
+            .routeId("filter-ya-p24-files")
+            .log("Starting file filtering for YA_p24 files")
+            .process(exchange -> {
+                @SuppressWarnings("unchecked")
+                List<String> allFiles = (List<String>) exchange.getIn().getBody();
+                
+                if (allFiles == null) {
+                    exchange.getIn().setBody(Collections.emptyList());
+                    System.out.println("Input file list was null, returning empty list");
+                    return;
+                }
+                
+                List<String> filteredFiles = allFiles.stream()
+                    .filter(fileName -> fileName != null && fileName.startsWith("YA_p24"))
+                    .collect(Collectors.toList());
+                
+                exchange.getIn().setBody(filteredFiles);
+            })
+            .log("File filtering completed.")
         ;
 
         from("direct:poll-and-validate-file")
