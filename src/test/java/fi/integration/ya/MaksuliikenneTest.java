@@ -34,7 +34,7 @@ public class MaksuliikenneTest extends CamelQuarkusTestSupport {
     @Inject
     private fi.integration.ya.TestUtils tu;
 
-   @ConfigProperty(name = "MAKSULIIKENNE_BANKING_FILENAMEPREFIX")
+    @ConfigProperty(name = "MAKSULIIKENNE_BANKING_FILENAMEPREFIX")
     private String FILE_NAME_PREFIX;
 
     @Test
@@ -148,4 +148,68 @@ public class MaksuliikenneTest extends CamelQuarkusTestSupport {
         assertTrue(result.isEmpty());
     }
 
+    @Test
+    public void testMapKirjanpitoSotepePayments() throws Exception {
+        String startData = tu.readResource("src/test/java/fi/integration/ya/resources/maksuliikenne/kirjanpito_sotepe_data.json");
+        String expectedResult = tu.readResource("src/test/java/fi/integration/ya/resources/maksuliikenne/kirjanpito_sotepe_expectedResult.xml");
+
+        System.out.println("StartData :: " + startData);
+        MockEndpoint mock = getMockEndpoint("mock:mapAccountingDataSotepe.result");
+
+        mock.expectedMessageCount(1);
+
+        // Convert JSON string to Map first
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> dataMap = mapper.readValue(startData, java.util.Map.class);
+        
+        String result = pt.requestBody("direct:mapAccountingDataSotepe", dataMap, String.class);
+        
+        assertNotNull(result);
+        result = result
+                .replaceAll("<DocumentDate>.*?</DocumentDate>", "<DocumentDate>20250306</DocumentDate>")
+                .replaceAll("<PostingDate>.*?</PostingDate>", "<PostingDate>20250306</PostingDate>");
+        
+        assertEquals(expectedResult, result);
+        mock.assertIsSatisfied();
+
+    }
+
+    @Test
+    public void testMapKirjanpito() throws Exception {
+        // Test files configuration
+        String[] testFiles = {"hkk", "pt", "tojt"};
+        
+        MockEndpoint mock = getMockEndpoint("mock:mapAccountingData.result");
+        mock.expectedMessageCount(3);
+        
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        
+        for (String fileType : testFiles) {
+            // Read input and expected data
+            String startData = tu.readResource("src/test/java/fi/integration/ya/resources/maksuliikenne/kirjanpito_data_" + fileType + ".json");
+            String expectedResult = tu.readResource("src/test/java/fi/integration/ya/resources/maksuliikenne/kirjanpito_expected_result_" + fileType + ".xml");
+            
+            System.out.println("Testing file type: " + fileType);
+            
+            // Convert JSON string to Map
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> dataMap = mapper.readValue(startData, java.util.Map.class);
+            
+            // Send to route
+            String result = pt.requestBody("direct:mapAccountingData", dataMap, String.class);
+            
+            // Validate result
+            assertNotNull(result, "Result should not be null for " + fileType);
+            
+            // Replace dynamic dates for comparison
+            result = result
+                    .replaceAll("<DocumentDate>.*?</DocumentDate>", "<DocumentDate>20250815</DocumentDate>")
+                    .replaceAll("<PostingDate>.*?</PostingDate>", "<PostingDate>20250815</PostingDate>");
+            
+            assertEquals(expectedResult, result, "Result mismatch for file type: " + fileType);
+        }
+        
+        mock.assertIsSatisfied();
+    }
 }

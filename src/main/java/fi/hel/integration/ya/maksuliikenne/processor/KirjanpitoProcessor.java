@@ -88,8 +88,14 @@ public class KirjanpitoProcessor {
     @ConfigProperty(name = "MAKSULIIKENNE_KIRJANPITO_HKI_BUSINESSID", defaultValue= "hkiBusinessId")
     String hkiBusinessId;
 
-    @ConfigProperty(name = "MAKSULIIKENNE_KIRJANPITO_HKI_PARTNERCODE", defaultValue= "hkiPartnercode")
+    @ConfigProperty(name = "MAKSULIIKENNE_KIRJANPITO_HKI_PARTNERCODE", defaultValue= "1234")
     String hkiPartnerCode;
+
+    @ConfigProperty(name = "MAKSULIIKENNE_KIRJANPITO_SOTEPEKREDIT_SISAINENTILAUS", defaultValue= "12345")
+    String orderItemSotepeCredit;
+
+    @ConfigProperty(name = "MAKSULIIKENNE_KIRJANPITO_SOTEPEKREDIT_PAAKIRJATILI", defaultValue= "12345")
+    String glAccountSotepeCredit;
 
     private static final String EMPTY = "";
     
@@ -194,6 +200,109 @@ public class KirjanpitoProcessor {
             // SAP- tulosyksikkö (7 numeroa), pakollinen
             lineItemTypeCredit.setProfitCenter(profitCenter);
 
+
+            lineItemTypes.add(lineItemTypeDebit);
+            lineItemTypes.add(lineItemTypeCredit);
+            simpleAccounting.setLineItem(lineItemTypes);
+            sbo_SimpleAccountings.add(simpleAccounting);
+            simpleAccountingcontainer.setSboSimpleAccounting(sbo_SimpleAccountings);
+
+            ex.getIn().setBody(simpleAccountingcontainer);
+
+            String fileName = (String) delivery.get("fileName");
+            ex.getIn().setHeader("jsonFileName", fileName);
+
+        } catch (Exception e){
+            log.error(e);
+            e.printStackTrace();
+            ex.setException(e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public void mapAccountigDataSotepe(Exchange ex) {
+        try {
+            SBO_SimpleAccountingContainer simpleAccountingcontainer = new SBO_SimpleAccountingContainer();
+            SBO_SimpleAccounting simpleAccounting = new SBO_SimpleAccounting();
+            LineItemType lineItemTypeDebit = new LineItemType();
+            LineItemType lineItemTypeCredit = new LineItemType();
+            List<LineItemType> lineItemTypes = new ArrayList<>();
+            List<SBO_SimpleAccounting> sbo_SimpleAccountings = new ArrayList<>();
+            
+            Map<String,Object> body = ex.getIn().getBody(Map.class);
+            //System.out.println("Accounting data map :: " + body);
+            String claimType = (String) body.get("claimType");
+            simpleAccounting.setSenderId(senderId);
+            simpleAccounting.setCompanyCode(companyCode);
+            simpleAccounting.setDocumentType(documentType);
+
+            String date = utils.getCurrentTime("YYYYMMdd");
+            simpleAccounting.setDocumentDate(date);
+            simpleAccounting.setPostingDate(date);
+            
+            // oltava numeerinen arvo ja 9 merkkiä, tarvittaessa täytetään etunollilla
+            Map<String, Object> delivery = (Map<String, Object>) body.get("delivery");
+            int id = (int) delivery.get("id");
+            // Convert the integer ID to a string with leading zeros to ensure it is 9 characters long
+            String formattedId = String.format("%09d", id);
+            simpleAccounting.setReference(formattedId);
+
+            String header = claimType;
+
+            // The maximum number of characters in the header is 25
+            if(header.length() > 25) {
+                header = header.substring(0, 25);
+            }
+
+            simpleAccounting.setHeaderText(header);
+
+            String currency = (String) body.get("currency");
+            simpleAccounting.setCurrencyCode(currency);
+
+            Map<String, Object> posting = (Map<String, Object>) body.get("posting");
+            List<Map<String, Object>> postingInstallment = (List<Map<String, Object>>) posting.get("postingInstallment");
+            String vatCode = (String) postingInstallment.get(0).get("vatCode");
+            
+            if(vatCode.length() >= 2) {
+                vatCode = vatCode.substring(vatCode.length() - 2);
+            }
+
+            // Debit row:
+            lineItemTypeDebit.setTaxCode(vatCode);
+
+            double sum = (double) body.get("grossSum");
+            String sumAsString = String.valueOf(sum);
+            
+            sumAsString = sumAsString.replaceAll("\\.", ",");
+            lineItemTypeDebit.setAmountInDocumentCurrency(sumAsString);
+
+            String ourRefence = (String) body.get("ourReference");
+            String cutOurReference = ourRefence.length() > 50 ? ourRefence.substring(0, 50) : ourRefence;
+            lineItemTypeDebit.setLineText(cutOurReference);
+
+            lineItemTypeDebit.setCompanyCode(companyCode);
+            lineItemTypeDebit.setTradingPartner(hkiPartnerCode);
+
+            // kirjaustunniste (sisäinen tilaus), pituus 10 numeroa, pakollinen
+            // mäpätään claimTypen perusteella
+            String orderItemNumber = getOrderItemNumber(claimType);
+            lineItemTypeDebit.setOrderItemNumber(orderItemNumber);
+            
+            // SAP pääkirjatili (6 numeroa) -> pääkirjatili (tulos), pakollinen
+            // mäpätään claimTypen perusteella
+            String glAccount = getGlAccount(claimType);
+            lineItemTypeDebit.setGlAccount(glAccount);
+
+            // Credit row:
+            lineItemTypeCredit.setAmountInDocumentCurrency("-" + sumAsString);
+            lineItemTypeCredit.setLineText(cutOurReference);
+            lineItemTypeCredit.setCompanyCode(hkiPartnerCode);
+            lineItemTypeCredit.setTradingPartner(companyCode);
+            lineItemTypeCredit.setOrderItemNumber(orderItemSotepeCredit);
+            lineItemTypeCredit.setGlAccount(glAccountSotepeCredit);
+            
+            // SAP- tulosyksikkö (7 numeroa), pakollinen
+            //lineItemTypeCredit.setProfitCenter(profitCenter);
 
             lineItemTypes.add(lineItemTypeDebit);
             lineItemTypes.add(lineItemTypeCredit);
