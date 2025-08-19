@@ -13,6 +13,7 @@ import java.util.Vector;
 import org.apache.camel.Exchange;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.apache.camel.spi.RoutePolicy;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -488,6 +489,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .bean(sftpProcessor, "getAllSFTPFileNames(*)")
             .log("File names :: ${body}")
             .bean(sftpProcessor, "fetchAllFilesFromSftp")
+            .log("Body after fetching files :: ${body}")
+            .unmarshal(new JacksonDataFormat())
             .split(body())
                 .log("File content :: ${body}")
         ;
