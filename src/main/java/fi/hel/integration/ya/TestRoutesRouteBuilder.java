@@ -489,9 +489,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .bean(sftpProcessor, "getAllSFTPFileNames(*)")
             .log("File names :: ${body}")
             .bean(sftpProcessor, "fetchAllFilesFromSftpAsArray")
-            .log("Body after fetching files :: ${body}")
-            .split(body())
-                .log("File content :: ${body}")
+            .marshal(new JacksonDataFormat())
+            .log("File content :: ${body}")
         ;
 
         from("direct:fetchDirectoriesFromSftp")
