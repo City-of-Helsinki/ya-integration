@@ -455,7 +455,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
-            .to("direct:fetchFileNamesFromSftp")
+            //.to("direct:fetchFileNamesFromSftp")
+            .to("direct:fetchFilesFromSftp")
             //.to("direct:fetchDirectoriesFromSftp")
             //.bean(this, "testSFTPConnection")
         ;
@@ -467,8 +468,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{KIPA_SFTP_USER_P22}}")
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P22}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P22}}")
-            //.to("direct:fetchFileNamesFromSftp")
-            .to("direct:fetchFilesFromSftp")
+            .to("direct:fetchFileNamesFromSftp")
             //.to("direct:fetchDirectoriesFromSftp")
             //.bean(this, "testSFTPConnection")
 
