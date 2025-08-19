@@ -488,9 +488,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .log("Fetching file names from Kipa")
             .bean(sftpProcessor, "getAllSFTPFileNames(*)")
             .log("File names :: ${body}")
-            .bean(sftpProcessor, "fetchAllFilesFromSftp")
+            .bean(sftpProcessor, "fetchAllFilesFromSftpAsArray")
             .log("Body after fetching files :: ${body}")
-            .unmarshal(new JacksonDataFormat())
             .split(body())
                 .log("File content :: ${body}")
         ;
