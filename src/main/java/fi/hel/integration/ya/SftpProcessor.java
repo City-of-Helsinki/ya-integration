@@ -152,6 +152,74 @@ public class SftpProcessor {
         }
     }
 
+    public void fetchAllFilesFromSftpAsArray(Exchange ex) {
+        Session session = null;
+        ChannelSftp channelSftp = null;
+        List<Object> allItems = new ArrayList<>();
+    
+        String directoryPath = ex.getIn().getHeader("directoryPath", String.class);
+        String hostname = ex.getIn().getHeader("hostname", String.class);
+        String username = ex.getIn().getHeader("username", String.class);
+        String password = ex.getIn().getHeader("password", String.class);
+        List<String> fileNames = ex.getIn().getBody(List.class);
+    
+        try {
+            // Setup SFTP connection
+            JSch jsch = new JSch();
+            session = jsch.getSession(username, hostname, 22);
+            session.setPassword(password);
+            
+            Properties config = new Properties();
+            config.put("StrictHostKeyChecking", "no");
+            config.put("kex", "ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group-exchange-sha256");
+            config.put("server_host_key", "ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ed25519");
+            session.setConfig(config);
+            
+            System.out.println("Connecting to SFTP server...");
+            session.connect();
+            System.out.println("SFTP session connected successfully.");
+    
+            channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+    
+            System.out.println("Connected to SFTP server");
+    
+            ObjectMapper objectMapper = new ObjectMapper();
+            
+            for (String fileName : fileNames) {
+                System.out.println("Fetching file :: " + fileName);
+                String remoteFilePath = directoryPath + "/" + fileName;
+                InputStream inputStream = channelSftp.get(remoteFilePath);
+                
+                // Parse JSON directly from InputStream
+                Object jsonContent = objectMapper.readValue(inputStream, Object.class);
+                
+                // If it's an array, add all items; if it's an object, add as single item
+                if (jsonContent instanceof List) {
+                    allItems.addAll((List<Object>) jsonContent);
+                } else if (jsonContent instanceof Map) {
+                    allItems.add(jsonContent);
+                }
+                
+                System.out.println("File fetched successfully");
+            }
+    
+            ex.getIn().setBody(allItems);
+    
+        } catch (JSchException | SftpException | IOException e) {
+            throw new RuntimeCamelException("SFTP operation failed: " + e.getMessage(), e);
+        } finally {
+            // Cleanup and close SFTP connection
+            if (channelSftp != null) {
+                channelSftp.disconnect();
+            }
+            if (session != null) {
+                session.disconnect();
+            }
+            System.out.println("SFTP connection closed");
+        }
+    }
+
     public void fetchAllFilesFromSftpByFileName(Exchange ex) {
         List<String> fileNames = ex.getIn().getBody(List.class);
         Map<String, Object> headers = ex.getIn().getHeaders();
