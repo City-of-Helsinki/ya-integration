@@ -467,7 +467,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .setHeader("username").simple("{{KIPA_SFTP_USER_P22}}")
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P22}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P22}}")
-            .to("direct:fetchFileNamesFromSftp")
+            //.to("direct:fetchFileNamesFromSftp")
+            .to("direct:fetchFilesFromSftp")
             //.to("direct:fetchDirectoriesFromSftp")
             //.bean(this, "testSFTPConnection")
 
@@ -475,8 +476,20 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
 
         from("direct:fetchFileNamesFromSftp")
+            .log("Fetching file names from Kipa")
             .bean(sftpProcessor, "getAllSFTPFileNames(*)")
             .log("File names :: ${body}")
+        ;
+
+        from("direct:fetchFilesFromSftp")
+            .setHeader("filePrefix", constant("YATE_tasmaytysraportti_p24-02012566_20250630.json"))
+            .log("Fetch files from sftp with prefix :: ${header.filePrefix}")
+            .log("Fetching file names from Kipa")
+            .bean(sftpProcessor, "getAllSFTPFileNames(*)")
+            .log("File names :: ${body}")
+            .bean(sftpProcessor, "fetchAllFilesFromSftp")
+            .split(body())
+                .log("File content :: ${body}")
         ;
 
         from("direct:fetchDirectoriesFromSftp")
