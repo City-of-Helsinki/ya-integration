@@ -200,7 +200,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 }
                 
                 List<String> filteredFiles = allFiles.stream()
-                    .filter(fileName -> fileName != null && fileName.startsWith("YA_p24"))
+                    .filter(fileName -> fileName != null && fileName.startsWith("YA_p24") && fileName.endsWith(".json"))
                     .collect(Collectors.toList());
                 
                 exchange.getIn().setBody(filteredFiles);
