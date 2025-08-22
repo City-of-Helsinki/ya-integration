@@ -72,6 +72,7 @@ public class MaksuliikenneTest extends CamelQuarkusTestSupport {
             "YATE_tasmaytysraportti_p24-02012566_20250630.pdf", 
             "YA_p24_091_20250630200507_80_PT.json",
             "YA_p24_091_20250630200507_83_PT.json",
+            "YA_p24_091_20250630200507_80_PT.pdf",
             "some_other_file.txt",
             "YA_p24_091_20250630200510_91_HKK.json"
         );
@@ -85,6 +86,7 @@ public class MaksuliikenneTest extends CamelQuarkusTestSupport {
         assertTrue(result.contains("YA_p24_091_20250630200507_83_PT.json"));
         assertTrue(result.contains("YA_p24_091_20250630200510_91_HKK.json"));
         assertFalse(result.contains("YATE_tasmaytysraportti_p24-02012566_20250630.json"));
+        assertFalse(result.contains("YA_p24_091_20250630200507_80_PT.pdf"));
         assertFalse(result.contains("some_other_file.txt"));
     }
 
