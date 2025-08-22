@@ -77,7 +77,7 @@ public class KirjanpitoTestRouteBuilder extends RouteBuilder {
                 .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
                 .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
                 .setHeader("kipa_container", simple("P24"))
-                .setHeader("filePrefix", constant("YA_p24_091_202412161728"))
+                .setHeader("filePrefix", constant("YA_p24_091_20241216165634_091_PT55.json"))
                 //.setHeader("filePrefix2", constant("YA_p24_091_20241216155712_091_PT55.json"))
                 .log("Fetching file names from Kipa")
                 .bean(sftpProcessor, "getAllSFTPFileNames")
@@ -104,6 +104,18 @@ public class KirjanpitoTestRouteBuilder extends RouteBuilder {
         from("direct:kirjanpito-test-controller")
             .log("Preparing to handle accounting data")
             .unmarshal(new JacksonDataFormat())
+            .process(exchange -> {
+                // Muuta kaikkien JSON-objektien businessId
+                java.util.List<Map<String, Object>> jsonList = exchange.getIn().getBody(java.util.List.class);
+                for (Map<String, Object> jsonObject : jsonList) {
+                    if (jsonObject.containsKey("receiver")) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> receiver = (Map<String, Object>) jsonObject.get("receiver");
+                        receiver.put("businessId", "0201256-6");
+                    }
+                }
+                exchange.getIn().setBody(jsonList);
+            })
             .split(body())
                 //.log("Splitted body :: ${body}")
                 .setVariable("businessId")
