@@ -483,7 +483,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         ;
 
         from("direct:fetchFilesFromSftp")
-            .setHeader("filePrefix", constant("YATE_tasmaytysraportti_p24-02012566_20250630.json"))
+            .setHeader("filePrefix", constant("YATE_tasmaytysraportti_p24-02012566_20250701.json"))
             .log("Fetch files from sftp with prefix :: ${header.filePrefix}")
             .log("Fetching file names from Kipa")
             .bean(sftpProcessor, "getAllSFTPFileNames(*)")
