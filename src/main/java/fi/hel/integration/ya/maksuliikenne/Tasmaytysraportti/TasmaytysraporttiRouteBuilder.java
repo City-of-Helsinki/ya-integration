@@ -47,10 +47,24 @@ public class TasmaytysraporttiRouteBuilder extends RouteBuilder {
                         exchange.getIn().setBody("\uFEFF" + body);
                     })
                     //.to("file:outbox/täsmäytysraportit?fileName=${header.CamelFileName}")
-                    .log("Combined CSV saved: ${header.CamelFileName}")
-                    .log("CSV :: ${body}")
+                    .log("Combined CSV: ${header.CamelFileName}")
+                    .to("direct:tasmaytysraportti-out-verkkolevy")  
                 .otherwise()
                     .log("No data to process - no JSON files found or no records with allowed claim types")
             .endChoice();
+
+        from("direct:tasmaytysraportti-out-verkkolevy")
+            .log("send csv via sftp to logs")
+            //.to("file:outbox/logs")
+            .to("sftp:{{VERKKOLEVY_SFTP_HOST}}:22/logs?username={{VERKKOLEVY_SFTP_USER}}"
+                + "&password={{VERKKOLEVY_SFTP_PASSWORD}}"
+                + "&throwExceptionOnConnectFailed=true"
+                + "&strictHostKeyChecking=no"
+                + "&serverHostKeys=ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ed25519"
+                + "&keyExchangeProtocols=ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group-exchange-sha256"
+                + "&maximumReconnectAttempts=5" 
+                + "&reconnectDelay=5000")
+            .log("Verkkolevy SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")   
+        ;
     }
 }
