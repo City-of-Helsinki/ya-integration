@@ -1,0 +1,20 @@
+[
+  {
+    "invoiceNumber": 60025906,
+    "state": "PAID",
+    "paidAt": "REPLACED_DATE",
+    "receiptDate": "REPLACED_DATE"
+  },
+  {
+    "invoiceNumber": 60025905,
+    "state": "PAID",
+    "paidAt": "REPLACED_DATE",
+    "receiptDate": "REPLACED_DATE"
+  },
+  {
+    "invoiceNumber": 60025925,
+    "state": "PAID",
+    "paidAt": "REPLACED_DATE",
+    "receiptDate": "REPLACED_DATE"
+  }
+]

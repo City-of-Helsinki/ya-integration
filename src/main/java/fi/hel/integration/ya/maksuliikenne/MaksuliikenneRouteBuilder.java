@@ -1,6 +1,7 @@
 package fi.hel.integration.ya.maksuliikenne;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
@@ -9,6 +10,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jackson.JacksonDataFormat;
 
+import fi.hel.integration.ya.RedisProcessor;
 import fi.hel.integration.ya.SendEmail;
 import fi.hel.integration.ya.Utils;
 import fi.hel.integration.ya.XmlValidator;
@@ -34,6 +36,9 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
 
     @Inject
     XmlValidator xmlValidator;
+
+    @Inject
+    RedisProcessor redisProcessor;
 
     private final String SCHEMA_FILE = "schema/banking/pain.001.001.03.xsd";
     private final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
@@ -91,6 +96,17 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                             .log("The pain xml has been sent to Banking")
                             // Restore the Kipa data to the route and direct it to the accounting mapping
                             .setBody().variable("kirjanpito_data")
+                            // Store payment file in Redis for later payment date feedback generation
+                            .process(exchange -> {
+                                String currentDate = LocalDate.now().toString(); // YYYY-MM-DD
+                                String redisKey = "maksupaivapalaute-data:" + currentDate;
+            
+                                String fileContent = exchange.getIn().getBody(String.class);
+            
+                                System.out.println("Setting the redis key :: " + redisKey);
+                                redisProcessor.setVerkkolevyData(redisKey, fileContent);
+                        
+                            })
                             //.log("kirjanpito_data :: ${body}")
                             //.to("file:outbox/kirjanpito-data")
                             .to("direct:kirjanpito.controller")

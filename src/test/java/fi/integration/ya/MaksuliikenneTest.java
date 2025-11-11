@@ -214,4 +214,32 @@ public class MaksuliikenneTest extends CamelQuarkusTestSupport {
         
         mock.assertIsSatisfied();
     }
+
+    @Test
+    public void testMaksupaivapalauteProcessing() throws Exception {
+        // Read test data
+        String startData = tu.readResource("src/test/java/fi/integration/ya/resources/maksuliikenne/maksupaivapalaute_data.json");
+        String expectedResult = tu.readResource("src/test/java/fi/integration/ya/resources/maksuliikenne/maksupaivapalaute_expectedResult.json");
+        
+        MockEndpoint mock = getMockEndpoint("mock:maksupaivapalaute.result");
+        mock.expectedMessageCount(1);
+        
+        // Send to route
+        String result = pt.requestBody("direct:maksupaivapalaute", startData, String.class);
+        
+        // Validate result
+        assertNotNull(result, "Result should not be null");
+        
+        // Replace dynamic dates with placeholder for comparison
+        String currentDate = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        result = result.replaceAll("\"" + currentDate + "\"", "\"REPLACED_DATE\"");
+        
+        // Parse both JSONs for comparison
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        com.fasterxml.jackson.databind.JsonNode expectedNode = mapper.readTree(expectedResult);
+        com.fasterxml.jackson.databind.JsonNode resultNode = mapper.readTree(result);
+        
+        assertEquals(expectedNode, resultNode, "Payment feedback processing result mismatch");
+        mock.assertIsSatisfied();
+    }
 }

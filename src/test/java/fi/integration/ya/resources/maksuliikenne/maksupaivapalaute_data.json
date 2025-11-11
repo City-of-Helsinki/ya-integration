@@ -1,0 +1,62 @@
+[
+  {
+    "delivery": {
+      "fileName": "YA_p24_091_20241031000003_7_HKK.json",
+      "id": 60025906,
+      "sentAt": "2024-10-31 00:00:03",
+      "from": "YA",
+      "to": "RONDO"
+    },
+    "bizTalkPipe": "automatic",
+    "invoiceNumber": 60025906,
+    "invoiceDate": "2024-10-30 00:00:00",
+    "dueDate": "2024-11-03 00:00:00",
+    "receiptDate": "2024-10-30 00:00:00",
+    "grossSum": 216.0,
+    "currency": "EUR",
+    "ourReference": "Kulukorvaus HKK/24159/2024 maksuerä 1/1",
+    "customerBankReference": null,
+    "periodStartDate": "2024-08-01 00:00:00",
+    "periodEndDate": "2024-08-31 00:00:00"
+  },
+  {
+    "delivery": {
+      "fileName": "YA_p24_091_20241031000003_6_HKK.json",
+      "id": 60025905,
+      "sentAt": "2024-10-31 00:00:03",
+      "from": "YA",
+      "to": "RONDO"
+    },
+    "bizTalkPipe": "automatic",
+    "invoiceNumber": 60025905,
+    "invoiceDate": "2024-10-30 00:00:00",
+    "dueDate": "2024-11-03 00:00:00",
+    "receiptDate": "2024-10-30 00:00:00",
+    "grossSum": 198.0,
+    "currency": "EUR",
+    "ourReference": "Kulukorvaus HKK/24158/2024 maksuerä 1/1",
+    "customerBankReference": null,
+    "periodStartDate": "2024-09-01 00:00:00",
+    "periodEndDate": "2024-09-30 00:00:00"
+  },
+  {
+    "delivery": {
+      "fileName": "YA_p24_091_20241031115100_0_PT.json",
+      "id": 60025925,
+      "sentAt": "2024-10-31 11:51:00",
+      "from": "YA",
+      "to": "RONDO"
+    },
+    "bizTalkPipe": "automatic",
+    "invoiceNumber": 60025925,
+    "invoiceDate": "2024-10-31 00:00:00",
+    "dueDate": "2024-11-02 00:00:00",
+    "receiptDate": "2024-10-31 00:00:00",
+    "grossSum": 1250.0,
+    "currency": "EUR",
+    "ourReference": "Palkkatuki PT/24172/2024",
+    "customerBankReference": "12 34561",
+    "periodStartDate": "2024-07-01 00:00:00",
+    "periodEndDate": "2024-10-31 00:00:00"
+  }
+]
