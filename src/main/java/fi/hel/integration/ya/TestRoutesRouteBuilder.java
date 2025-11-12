@@ -568,6 +568,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
                 .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
                 .setHeader("targetDirectory").simple("out/processed")
                 .log("Fetching file names from Kipa")
+                .setHeader("filePrefix", constant("YA_091_P24_202511"))
                 .bean("sftpProcessor", "getAllSFTPFileNames")
                 .log("Files to be moved :: ${body}")
                 .bean(sftpProcessor, "moveFilesByFileNames")
