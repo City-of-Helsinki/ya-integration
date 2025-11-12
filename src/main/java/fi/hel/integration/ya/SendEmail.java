@@ -51,6 +51,7 @@ public class SendEmail {
             prop.put("mail.smtp.starttls.enable", "true");
             prop.put("mail.smtp.host", host);
             prop.put("mail.smtp.port", port);
+            prop.put("mail.smtp.ssl.trust", host);
 
             Session session = Session.getInstance(prop);
     

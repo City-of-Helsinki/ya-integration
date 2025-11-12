@@ -54,6 +54,11 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
     @Inject
     Utils utils;
 
+    @Inject
+    SendEmail sendEmail;
+
+    private final String EMAIL_RECIPIENTS = "{{MAKSULIIKENNE_EMAIL_RECIPIENTS}}";
+
     public boolean testSFTPConnection(Exchange exchange) {
         // Extract SFTP connection details from Exchange headers
         String hostname = exchange.getIn().getHeader("hostname", String.class);
@@ -604,6 +609,16 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         from("direct:continue-test-timer-route")
             .log("Starting the timer route")
             .log("Start processing...")    
+        ;
+
+        from("timer://testEmailSending?repeatCount=1&delay=5000")
+            .autoStartup("{{TEST_SEND_EMAIL}}")
+            .log("Starting test route to send email")
+            .setHeader("emailRecipients", constant(EMAIL_RECIPIENTS))
+            .setHeader("messageSubject", simple("TEST"))
+            .setHeader("emailMessage", simple("Test sending email"))
+            .bean(sendEmail, "sendEmail")
+            .log("Test email has been sent")
         ;
     }     
 }
