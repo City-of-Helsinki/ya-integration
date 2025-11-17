@@ -84,8 +84,8 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
             .choice()
                 .when(simple("${header.isXmlValid} == 'true'"))
                     .log("XML is valid, sending the file to banking ${header.CamelFileName}")
-                    //.to("direct:out-banking")
-                    .setHeader("CamelFtpReplyString").simple("OK")
+                    .to("direct:out-banking")
+                    //.setHeader("CamelFtpReplyString").simple("OK")
                     .choice()
                         .when(simple("${header.CamelFtpReplyString} == 'OK'"))
                             .log("The pain xml has been sent to Banking")
@@ -132,6 +132,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                 + "&strictHostKeyChecking=no"
                 + "&serverHostKeys=ssh-ed25519,rsa-sha2-256,rsa-sha2-512,ecdsa-sha2-nistp521"
                 + "&keyExchangeProtocols=curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group-exchange-sha256"
+                + "&stepwise=false"
             )
             .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
         ;
