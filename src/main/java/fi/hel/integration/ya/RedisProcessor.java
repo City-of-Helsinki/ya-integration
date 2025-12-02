@@ -57,8 +57,22 @@ public class RedisProcessor {
         sentinels.add(host + ":" + port);
 
         int connectionTimeout = 10000;
+        int soTimeout = 10000;
 
-        this.jedisPool = new JedisSentinelPool(masterName, sentinels, poolConfig, connectionTimeout, password);
+        this.jedisPool = new JedisSentinelPool(
+            masterName,
+            sentinels,
+            poolConfig,
+            connectionTimeout,
+            soTimeout,
+            password,  // Redis password
+            0,         // database
+            null,      // clientName
+            connectionTimeout,
+            soTimeout,
+            password,  // Sentinel password
+            null       // Sentinel clientName
+        );
     }
 
     public void set(String key, String value) throws Exception { 
