@@ -126,7 +126,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             })
             .filter(header("lockAcquired").isEqualTo(true))
                 .process(exchange -> {
-                    LocalDate today = LocalDate.parse("2025-12-24"); //LocalDate.now();
+                    LocalDate today = LocalDate.now();
                     System.out.println("today :: " + today);
                     boolean isHoliday = holidayService.isHoliday(today);
                     exchange.getIn().setHeader("isHoliday", isHoliday);
@@ -149,7 +149,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
             .setHeader("kipa_container", simple("P24"))
-            .setHeader("filePrefix", constant("YA_p24_091_202412161720"))
+            //.setHeader("filePrefix", constant("YA_p24_091_202412161720"))
             //.setHeader("filePrefix2", constant("YA_p24_091_20241216155712_091_PT55.json"))
             .log("Fetching file names from Kipa")
             .bean("sftpProcessor", "getAllSFTPFileNames")
