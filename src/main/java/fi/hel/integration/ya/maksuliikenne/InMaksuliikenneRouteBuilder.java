@@ -126,7 +126,7 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
             })
             .filter(header("lockAcquired").isEqualTo(true))
                 .process(exchange -> {
-                    LocalDate today =  LocalDate.now(); // LocalDate.parse("2025-12-24");
+                    LocalDate today = LocalDate.parse("2025-12-24"); //LocalDate.now();
                     System.out.println("today :: " + today);
                     boolean isHoliday = holidayService.isHoliday(today);
                     exchange.getIn().setHeader("isHoliday", isHoliday);
