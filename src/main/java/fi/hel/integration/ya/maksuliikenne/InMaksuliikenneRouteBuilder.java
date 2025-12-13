@@ -1,6 +1,7 @@
 package fi.hel.integration.ya.maksuliikenne;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,6 +22,7 @@ import fi.hel.integration.ya.SendEmail;
 import fi.hel.integration.ya.SftpProcessor;
 import fi.hel.integration.ya.ValidateJsonProcessor;
 import fi.hel.integration.ya.exceptions.JsonValidationException;
+import fi.hel.integration.ya.maksuliikenne.processor.HolidayService;
 import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
 import io.sentry.Sentry;
 import io.sentry.SentryLevel;
@@ -47,6 +49,9 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
 
     @Inject
     SendEmail sendEmail;
+
+    @Inject
+    HolidayService holidayService;
 
     private final String SCHEMA_FILE_PT_PT55_TOJT = "schema/kipa/json_schema_PT_PT55_TOJT.json";
     private final String SCHEMA_FILE_MYK_HKK = "schema/kipa/json_schema_MYK_HKK.json";
@@ -120,68 +125,86 @@ public class InMaksuliikenneRouteBuilder extends RouteBuilder {
                 }
             })
             .filter(header("lockAcquired").isEqualTo(true))
-                .log("Start route to fetch files from kipa P24")
-                .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
-                .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
-                .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
-                .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
-                .setHeader("kipa_container", simple("P24"))
-                //.setHeader("filePrefix", constant("YA_p24_091_202412161720"))
-                //.setHeader("filePrefix2", constant("YA_p24_091_20241216155712_091_PT55.json"))
-                .log("Fetching file names from Kipa")
-                .bean("sftpProcessor", "getAllSFTPFileNames")
-                .log("Files to be processed(before filtering) :: ${body}")
-                .to("direct:filter-ya-p24-files")
-                .log("Files to be processed (after filtering) :: ${body}")
+                .process(exchange -> {
+                    LocalDate today =  LocalDate.now(); // LocalDate.parse("2025-12-24");
+                    System.out.println("today :: " + today);
+                    boolean isHoliday = holidayService.isHoliday(today);
+                    exchange.getIn().setHeader("isHoliday", isHoliday);
+                    log.info("Date: {}, isHoliday: {}", today, isHoliday);
+                })
                 .choice()
-                    .when(simple("${body} == null || ${body.size()} == 0"))
-                        .log("No files found in SFTP.")
-                        .setHeader("emailRecipients", constant(MAKSULIIKENNE_NOFILES_EMAIL_RECIPIENTS))
-                        .process(ex -> {
-                            String message = "Maksuliikenteen maksuja ei ollut tälle päivälle <br><br><br>"
-                                        + "Tämä on YA-integraation lähettämä automaattinen viesti";
-                        
-                            String subject = "YA-maksut/TYPA";
-
-                            ex.getIn().setHeader("messageSubject", subject);
-                            ex.getIn().setHeader("emailMessage", message);
-                        })
-                        .bean(sendEmail, "sendEmail")
-                        .log("Email has been sent")
-
+                    .when(header("isHoliday").isEqualTo(false))
+                        .log("It is not the public holiday, direct:continue-processing")
+                        .to("direct:continue-processing")
                     .otherwise()
-                        .log("Files found. Continuing processing.")
-                        .log("Fetching and combining the json data")
-                        .bean(sftpProcessor, "fetchAllFilesFromSftp")
-                        //.log("Body after fetching files :: ${body}")
-                        .bean(validateJsonProcessor, "validateFiles")
-                        .setBody().variable("validFiles")
-                        .marshal(new JacksonDataFormat())
-                        .setVariable("kirjanpito_data").simple("${body}")
-                        .unmarshal(new JacksonDataFormat())
-                        .log("Sorting files by business id (filtering the sotepe payments)")
-                        .bean(mlProcessor, "sortFilesByBusinessId")
-                        .setBody().variable("maksuliikenne_data")
-                        //.marshal(new JacksonDataFormat())
-                        //.log("maksuliikenne_data :: ${body}")
-                        .choice()
-                            .when(simple("${body} == null || ${body.size()} == 0"))
-                                .log("All payments were sotepe payments; proceeding with kirjanpito data only")
-                                .process(ex -> {
-                                    Map<String,Object> totalAmounts = new LinkedHashMap<>();
-                                    int numberOfPmts = 0;
-                                    BigDecimal totalSumOfPmts = new BigDecimal(0);
-                                    totalAmounts.put("numberOfPmts", numberOfPmts);
-                                    totalAmounts.put("totalSumOfPmts", totalSumOfPmts);
-                                    ex.getIn().setHeader("reportData", totalAmounts);
-                                })
-                                .setBody().variable("kirjanpito_data")
-                                .log("Start processing kirjanpito data")
-                                .to("direct:kirjanpito.controller")
-                            .otherwise()
-                                .marshal(new JacksonDataFormat())
-                                .to("direct:maksuliikenne-controller")
-                        .end()        
+                        .log("It is a Finnish public holiday, do not process")
+                    .end()
+                .end()
+        ;
+
+        from("direct:continue-processing")
+            .log("Start route to fetch files from kipa P24")
+            .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
+            .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
+            .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
+            .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
+            .setHeader("kipa_container", simple("P24"))
+            //.setHeader("filePrefix", constant("YA_p24_091_202412161720"))
+            //.setHeader("filePrefix2", constant("YA_p24_091_20241216155712_091_PT55.json"))
+            .log("Fetching file names from Kipa")
+            .bean("sftpProcessor", "getAllSFTPFileNames")
+            .log("Files to be processed(before filtering) :: ${body}")
+            .to("direct:filter-ya-p24-files")
+            .log("Files to be processed (after filtering) :: ${body}")
+            .choice()
+                .when(simple("${body} == null || ${body.size()} == 0"))
+                    .log("No files found in SFTP.")
+                    .setHeader("emailRecipients", constant(MAKSULIIKENNE_NOFILES_EMAIL_RECIPIENTS))
+                    .process(ex -> {
+                        String message = "Maksuliikenteen maksuja ei ollut tälle päivälle <br><br><br>"
+                                    + "Tämä on YA-integraation lähettämä automaattinen viesti";
+                        
+                        String subject = "YA-maksut/TYPA";
+
+                        ex.getIn().setHeader("messageSubject", subject);
+                        ex.getIn().setHeader("emailMessage", message);
+                    })
+                    .bean(sendEmail, "sendEmail")
+                    .log("Email has been sent")
+
+                .otherwise()
+                    .log("Files found. Continuing processing.")
+                    .log("Fetching and combining the json data")
+                    .bean(sftpProcessor, "fetchAllFilesFromSftp")
+                    //.log("Body after fetching files :: ${body}")
+                    .bean(validateJsonProcessor, "validateFiles")
+                    .setBody().variable("validFiles")
+                    .marshal(new JacksonDataFormat())
+                    .setVariable("kirjanpito_data").simple("${body}")
+                    .unmarshal(new JacksonDataFormat())
+                    .log("Sorting files by business id (filtering the sotepe payments)")
+                    .bean(mlProcessor, "sortFilesByBusinessId")
+                    .setBody().variable("maksuliikenne_data")
+                    //.marshal(new JacksonDataFormat())
+                    //.log("maksuliikenne_data :: ${body}")
+                    .choice()
+                        .when(simple("${body} == null || ${body.size()} == 0"))
+                            .log("All payments were sotepe payments; proceeding with kirjanpito data only")
+                            .process(ex -> {
+                                Map<String,Object> totalAmounts = new LinkedHashMap<>();
+                                int numberOfPmts = 0;
+                                BigDecimal totalSumOfPmts = new BigDecimal(0);
+                                totalAmounts.put("numberOfPmts", numberOfPmts);
+                                totalAmounts.put("totalSumOfPmts", totalSumOfPmts);
+                                ex.getIn().setHeader("reportData", totalAmounts);
+                            })
+                            .setBody().variable("kirjanpito_data")
+                            .log("Start processing kirjanpito data")
+                            .to("direct:kirjanpito.controller")
+                        .otherwise()
+                            .marshal(new JacksonDataFormat())
+                            .to("direct:maksuliikenne-controller")
+                    .end()        
                 .end()
             .end()
         ;
