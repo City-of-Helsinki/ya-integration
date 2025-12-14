@@ -20,8 +20,8 @@ import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Named;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.jedis.params.ScanParams;
 import redis.clients.jedis.params.SetParams;
 import redis.clients.jedis.resps.ScanResult;
@@ -30,7 +30,7 @@ import redis.clients.jedis.resps.ScanResult;
 @Named("redisProcessor")
 public class RedisProcessor {
 
-    private JedisPool jedisPool;
+    private JedisSentinelPool jedisPool;
 
     @ConfigProperty(name = "REDIS_PASSWORD")
     String password;
@@ -38,21 +38,41 @@ public class RedisProcessor {
     @ConfigProperty(name = "REDIS_HOST")
     String host;
 
-    @ConfigProperty(name= "REDIS_PORT")
+    @ConfigProperty(name = "REDIS_PORT")
     int port;
+
+    @ConfigProperty(name = "REDIS_MASTER_NAME", defaultValue = "mymaster")
+    String masterName;
 
     @PostConstruct
     public void initRedis() {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
-        poolConfig.setTestOnBorrow(true); // Validates a connection before borrowing
-        poolConfig.setTestWhileIdle(false); // Checks idle connections
-        poolConfig.setMinEvictableIdleDuration(Duration.ofMinutes(1)); // 1 minute idle timeout
-        poolConfig.setTimeBetweenEvictionRuns(Duration.ofSeconds(30)); // Run evictor every 30 seconds
-        poolConfig.setNumTestsPerEvictionRun(3); // Test 3 idle connections per eviction run
+        poolConfig.setTestOnBorrow(true);
+        poolConfig.setTestWhileIdle(false);
+        poolConfig.setMinEvictableIdleDuration(Duration.ofMinutes(1));
+        poolConfig.setTimeBetweenEvictionRuns(Duration.ofSeconds(30));
+        poolConfig.setNumTestsPerEvictionRun(3);
 
-        int connectionTimeout = 10000; // 10 seconds for connection
+        Set<String> sentinels = new HashSet<>();
+        sentinels.add(host + ":" + port);
 
-        this.jedisPool = new JedisPool(poolConfig, host, port, connectionTimeout, password);
+        int connectionTimeout = 10000;
+        int soTimeout = 10000;
+
+        this.jedisPool = new JedisSentinelPool(
+            masterName,
+            sentinels,
+            poolConfig,
+            connectionTimeout,
+            soTimeout,
+            password,  // Redis password
+            0,         // database
+            null,      // clientName
+            connectionTimeout,
+            soTimeout,
+            password,  // Sentinel password
+            null       // Sentinel clientName
+        );
     }
 
     public void set(String key, String value) throws Exception { 
@@ -107,7 +127,7 @@ public class RedisProcessor {
             try {
                 Thread.sleep(delay);
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt(); // Restore the interrupted status
+                Thread.currentThread().interrupt();
                 throw new RuntimeException("Thread was interrupted while acquiring lock", e);
             }
             
@@ -135,17 +155,11 @@ public class RedisProcessor {
         }
     }
 
-    //
-    // Returns the jedis keys with the given pattern.
-    //
-    //   Example: getAllKeys("myintegration:data:*")
-    //
     public List<String> getAllKeys(String pattern) {
 
         List<String> result = null;
         try (Jedis jedis = jedisPool.getResource()) {
                 
-            //Start the scan process using START pointer (0)
             result = new ArrayList<String>(getAllKeys(pattern, ScanParams.SCAN_POINTER_START, jedis));
             
         } catch (Exception e)  {
@@ -158,23 +172,15 @@ public class RedisProcessor {
         return result;
     }
 
-    //
-    // Recursive
-    //
     private Set<String> getAllKeys(String pattern, String cursor, Jedis jedis) {
         Set<String> keysSet = new HashSet<>();
-        // Scan params used to construct arguments to the scan command    
         ScanParams scanParams = new ScanParams()
                 .count(10000)
                 .match(pattern);
 
-        // fetch the result (keys returned) from the scanResult and add it to the
-        // list of existing keys    
         ScanResult<String> scanResult = jedis.scan(cursor, scanParams);
         keysSet.addAll(scanResult.getResult());
 
-        // If the cursor returned by the scan result is not START(0) then
-        // recursively call the function with returned cursor and aggregate the results     
         if (!ScanParams.SCAN_POINTER_START.equals(scanResult.getCursor())) {
             keysSet.addAll(getAllKeys(pattern, scanResult.getCursor(), jedis));
         }
@@ -202,14 +208,11 @@ public class RedisProcessor {
         }
     }
 
-     private Map<String,Object> convertJsonToMap(String jsonString) throws JsonMappingException, JsonProcessingException {
+    private Map<String,Object> convertJsonToMap(String jsonString) throws JsonMappingException, JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
-
-        // Convert JSON string to Map
         Map<String, Object> map = objectMapper.readValue(jsonString, Map.class);
         return map;
     }
-
 
     @PreDestroy
     public void close() {
@@ -218,4 +221,3 @@ public class RedisProcessor {
         }
     }
 }
-              

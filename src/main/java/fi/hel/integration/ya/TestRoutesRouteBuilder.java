@@ -23,6 +23,7 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
+import fi.hel.integration.ya.maksuliikenne.processor.HolidayService;
 import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
 import fi.hel.integration.ya.starttiraha.processor.TulorekisteriProcessor;
 import io.sentry.Sentry;
@@ -56,6 +57,9 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
     @Inject
     SendEmail sendEmail;
+
+    @Inject
+    HolidayService holidayService;
 
     private final String EMAIL_RECIPIENTS = "{{MAKSULIIKENNE_EMAIL_RECIPIENTS}}";
 
@@ -577,31 +581,19 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
 
         from("{{TEST_QUARTZ_TIMER}}")
             .autoStartup("{{TEST_QUARTZ_TIMER_AUTOSTARTUP}}")
-            .log("Trying to acquire timer lock")
+            .log("Starting the timer route")
             .process(exchange -> {
-                if (redisProcessor.acquireLock(LOCK_KEY, 300)) { 
-                    exchange.getIn().setHeader("lockAcquired", true);
-                    System.out.println("Lock acquired, processing starts");
-
-                } else {
-                    exchange.getIn().setHeader("lockAcquired", false);
-                    System.out.println("Lock not acquired, skipping processing");
-                }
+                LocalDate today =  LocalDate.now(); // LocalDate.parse("2025-12-24");
+                System.out.println("today :: " + today);
+                boolean isHoliday = holidayService.isHoliday(today);
+                exchange.getIn().setHeader("isHoliday", isHoliday);
+                log.info("Date: {}, isHoliday: {}", today, isHoliday);
             })
-            .filter(header("lockAcquired").isEqualTo(true))
-                .log("Starting the timer route")
-                .process(exchange -> {
-                    LocalDate today = LocalDate.parse("2025-04-18"); //LocalDate.now();
-                    System.out.println("today :: " + today);
-                    boolean isHoliday = utils.isFinnishPublicHoliday(today);
-                    exchange.getIn().setHeader("isHoliday", isHoliday);
-                })
-                .choice()
-                    .when(header("isHoliday").isEqualTo(false)) 
-                        .to("direct:continue-test-timer-route")
-                    .otherwise()
-                        .log("It is a Finnish public holiday, do not process")
-        
+            .choice()
+                .when(header("isHoliday").isEqualTo(false)) 
+                    .to("direct:continue-test-timer-route")
+                .otherwise()
+                    .log("It is a Finnish public holiday, do not process")
                 .end()
             .end()
             
