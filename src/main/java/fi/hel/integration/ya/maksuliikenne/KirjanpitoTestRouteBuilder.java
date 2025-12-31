@@ -77,7 +77,7 @@ public class KirjanpitoTestRouteBuilder extends RouteBuilder {
                 .setHeader("password").simple("{{VERKKOLEVY_SFTP_PASSWORD}}")
                 .setHeader("directoryPath").simple("{{VERKKOLEVY_DIRECTORY_PATH}}")
                 .setHeader("kipa_container", simple("P24"))
-                .setHeader("filePrefix", constant("YA_p24_091_20251229"))
+                .setHeader("filePrefix", constant("YA_p24_091_20251228"))
                 //.setHeader("filePrefix2", constant("YA_p24_091_20241216155712_091_PT55.json"))
                 .log("Fetching file names from Kipa")
                 .bean(sftpProcessor, "getAllSFTPFileNames")
