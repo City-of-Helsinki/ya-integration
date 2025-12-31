@@ -72,12 +72,12 @@ public class KirjanpitoTestRouteBuilder extends RouteBuilder {
             })
             .filter(header("lockAcquired").isEqualTo(true))
                 .log("Start route to fetch files from kipa P24")
-                .setHeader("hostname").simple("{{KIPA_SFTP_HOST}}")
-                .setHeader("username").simple("{{KIPA_SFTP_USER_P24}}")
-                .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
-                .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
+                .setHeader("hostname").simple("{{VERKKOLEVY_SFTP_HOST}}")
+                .setHeader("username").simple("{{VERKKOLEVY_SFTP_USER}}")
+                .setHeader("password").simple("{{VERKKOLEVY_SFTP_PASSWORD}}")
+                .setHeader("directoryPath").simple("{{VERKKOLEVY_DIRECTORY_PATH}}")
                 .setHeader("kipa_container", simple("P24"))
-                .setHeader("filePrefix", constant("YA_p24_091_20241216165634_091_PT55.json"))
+                .setHeader("filePrefix", constant("YA_p24_091_20251229"))
                 //.setHeader("filePrefix2", constant("YA_p24_091_20241216155712_091_PT55.json"))
                 .log("Fetching file names from Kipa")
                 .bean(sftpProcessor, "getAllSFTPFileNames")
@@ -104,18 +104,18 @@ public class KirjanpitoTestRouteBuilder extends RouteBuilder {
         from("direct:kirjanpito-test-controller")
             .log("Preparing to handle accounting data")
             .unmarshal(new JacksonDataFormat())
-            .process(exchange -> {
-                // Muuta kaikkien JSON-objektien businessId
-                java.util.List<Map<String, Object>> jsonList = exchange.getIn().getBody(java.util.List.class);
-                for (Map<String, Object> jsonObject : jsonList) {
-                    if (jsonObject.containsKey("receiver")) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> receiver = (Map<String, Object>) jsonObject.get("receiver");
-                        receiver.put("businessId", "0201256-6");
-                    }
-                }
-                exchange.getIn().setBody(jsonList);
-            })
+            // .process(exchange -> {
+            //     // Muuta kaikkien JSON-objektien businessId
+            //     java.util.List<Map<String, Object>> jsonList = exchange.getIn().getBody(java.util.List.class);
+            //     for (Map<String, Object> jsonObject : jsonList) {
+            //         if (jsonObject.containsKey("receiver")) {
+            //             @SuppressWarnings("unchecked")
+            //             Map<String, Object> receiver = (Map<String, Object>) jsonObject.get("receiver");
+            //             receiver.put("businessId", "0201256-6");
+            //         }
+            //     }
+            //     exchange.getIn().setBody(jsonList);
+            // })
             .split(body())
                 //.log("Splitted body :: ${body}")
                 .setVariable("businessId")
@@ -140,7 +140,7 @@ public class KirjanpitoTestRouteBuilder extends RouteBuilder {
                         .log("Created kirjanpito xml, file name :: ${header.CamelFileName}")
                         .log("kirjanpito xml :: ${body}")
                         //.to("file:outbox/maksuliikenne/sap")
-                        .to("direct:out.kirjanpito-test-sap")
+                        //.to("direct:out.kirjanpito-test-sap")
                     .otherwise()
                         .log("XML is not valid, ${header.CamelFileName}")
                 .end() 
@@ -148,17 +148,17 @@ public class KirjanpitoTestRouteBuilder extends RouteBuilder {
             .log("All accounting data processed")
         ; 
             
-            from("direct:out.kirjanpito-test-sap")
-            .log("Sending file to sap, kipa file :: ${header.jsonFileName}")
-            .to("sftp:{{SAP_SFTP_HOST}}:22/?username={{SAP_SFTP_USER}}"
-                + "&password={{SAP_SFTP_PASSWORD}}"
-                + "&strictHostKeyChecking=no"
-                + "&serverHostKeys=ssh-ed25519,rsa-sha2-256,rsa-sha2-512,ecdsa-sha2-nistp521"
-                + "&keyExchangeProtocols=curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group-exchange-sha256"
-                + "&maximumReconnectAttempts=5" 
-                + "&reconnectDelay=5000"                 
-            )
-            .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
-        ;
+        // from("direct:out.kirjanpito-test-sap")
+        //     .log("Sending file to sap, kipa file :: ${header.jsonFileName}")
+        //     .to("sftp:{{SAP_SFTP_HOST}}:22/?username={{SAP_SFTP_USER}}"
+        //         + "&password={{SAP_SFTP_PASSWORD}}"
+        //         + "&strictHostKeyChecking=no"
+        //         + "&serverHostKeys=ssh-ed25519,rsa-sha2-256,rsa-sha2-512,ecdsa-sha2-nistp521"
+        //         + "&keyExchangeProtocols=curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group-exchange-sha256"
+        //         + "&maximumReconnectAttempts=5" 
+        //         + "&reconnectDelay=5000"                 
+        //     )
+        //     .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
+        // ;
     }   
 }
