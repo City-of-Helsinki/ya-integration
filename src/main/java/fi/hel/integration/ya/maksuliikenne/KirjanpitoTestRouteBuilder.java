@@ -140,7 +140,7 @@ public class KirjanpitoTestRouteBuilder extends RouteBuilder {
                         .log("Created kirjanpito xml, file name :: ${header.CamelFileName}")
                         .log("kirjanpito xml :: ${body}")
                         //.to("file:outbox/maksuliikenne/sap")
-                        .to("direct:out.kirjanpito-test-sap")
+                        //.to("direct:out.kirjanpito-test-sap")
                     .otherwise()
                         .log("XML is not valid, ${header.CamelFileName}")
                 .end() 
