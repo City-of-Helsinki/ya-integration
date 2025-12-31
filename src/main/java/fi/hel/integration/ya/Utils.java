@@ -35,6 +35,8 @@ public class Utils {
     public String getCurrentTime(String pattern) {
 
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Europe/Helsinki"));
+        System.out.println("DEBUG: ZonedDateTime.now() = " + now);
+        System.out.println("DEBUG: System timezone = " + ZoneId.systemDefault());
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
         String formattedDateTime = now.format(formatter);
 
