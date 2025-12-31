@@ -140,7 +140,7 @@ public class KirjanpitoTestRouteBuilder extends RouteBuilder {
                         .log("Created kirjanpito xml, file name :: ${header.CamelFileName}")
                         .log("kirjanpito xml :: ${body}")
                         //.to("file:outbox/maksuliikenne/sap")
-                        //.to("direct:out.kirjanpito-test-sap")
+                        .to("direct:out.kirjanpito-test-sap")
                     .otherwise()
                         .log("XML is not valid, ${header.CamelFileName}")
                 .end() 
@@ -160,5 +160,18 @@ public class KirjanpitoTestRouteBuilder extends RouteBuilder {
         //     )
         //     .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
         // ;
+
+        from("direct:out.kirjanpito-test-sap")
+            .log("Sending file to sap, kipa file :: ${header.jsonFileName}")
+            .to("sftp:{{SAP_SFTP_HOST}}:22/?username={{SAP_SFTP_USER}}"
+                + "&password={{SAP_SFTP_PASSWORD}}"
+                + "&strictHostKeyChecking=no"
+                + "&serverHostKeys=ssh-rsa"
+                + "&keyExchangeProtocols=diffie-hellman-group1-sha1,diffie-hellman-group14-sha1"
+                + "&maximumReconnectAttempts=5" 
+                + "&reconnectDelay=5000"                 
+            )
+            .log("SFTP response :: ${header.CamelFtpReplyCode}  ::  ${header.CamelFtpReplyString}")
+        ;
     }   
 }
