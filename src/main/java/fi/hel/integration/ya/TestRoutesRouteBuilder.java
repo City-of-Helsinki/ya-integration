@@ -583,7 +583,7 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .autoStartup("{{TEST_QUARTZ_TIMER_AUTOSTARTUP}}")
             .log("Starting the timer route")
             .process(exchange -> {
-                LocalDate today =  LocalDate.now(); // LocalDate.parse("2025-12-24");
+                LocalDate today =  LocalDate.parse("2026-01-01"); //LocalDate.now(); // LocalDate.parse("2025-12-24");
                 System.out.println("today :: " + today);
                 boolean isHoliday = holidayService.isHoliday(today);
                 exchange.getIn().setHeader("isHoliday", isHoliday);

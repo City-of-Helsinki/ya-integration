@@ -126,7 +126,7 @@ public class KirjanpitoProcessor {
             simpleAccounting.setCompanyCode(companyCode);
             simpleAccounting.setDocumentType(documentType);
 
-            String date = utils.getCurrentTime("yyyyMMdd");
+            String date = "20251229"; //utils.getCurrentTime("yyyyMMdd");
             log.info("Generated date for accounting: " + date);
             simpleAccounting.setDocumentDate(date);
             simpleAccounting.setPostingDate(date);
