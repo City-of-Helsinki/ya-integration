@@ -35,7 +35,7 @@ public class TasmaytysraporttiRouteBuilder extends RouteBuilder {
             .setHeader("password").simple("{{KIPA_SFTP_PASSWORD_P24}}")
             .setHeader("directoryPath").simple("{{KIPA_DIRECTORY_PATH_P24}}")
             .setHeader("kipa_container", simple("P24"))
-            .setHeader("filePrefix", constant("YATE_tasmaytysraportti_p24"))
+            .setHeader("filePrefix", constant("YATE_tasmaytysraportti_p24-02012566_2025"))
             .process(tasmaytysraporttiCombineProcessor)
             .choice()
                 .when(simple("${body} != null && ${body} != ''"))
