@@ -1,0 +1,158 @@
+{
+  "delivery": {
+    "fileName": "YA_p24_091_20240820141359_0_PT55.json",
+    "id": 60022704,
+    "sentAt": "2024-09-16 00:00:00",
+    "from": "YA",
+    "to": "RONDO"
+  },
+  "bizTalkPipe": "automatic",
+  "invoiceNumber": 60022704,
+  "refundedInvoiceNumber": 60022742,
+  "invoiceDate": "2024-09-16 00:00:00",
+  "dueDate": "2024-09-16 00:00:00",
+  "receiptDate": "2024-09-16 00:00:00",
+  "grossSum": 1764.00,
+  "currency": "EUR",
+  "ourReference": "Työllistämistuki PT55/2822/2023",
+  "customerBankReference": null,
+  "periodStartDate": "2024-09-16 00:00:00",
+  "periodEndDate": "2024-09-16 00:00:00",
+  "paymentPeriodStartDate": "2024-09-16 00:00:00",
+  "paymentPeriodEndDate": "2024-09-16 00:00:00",
+  "employeeName": "Matti tai Maija Meikäläinen",
+  "customProjectCode": null,
+  "receiver": {
+    "profitCenterCode": 100,
+    "bankAccount": {
+      "value": "FI3040244380000352",
+      "bicCode": "DABAFIHH"
+    },
+    "name": {
+      "firstName": "Yrityksen tai yhteisön nimi",
+      "lastName": ""
+    },
+    "socialSecurityNumber": "010101+0101",
+    "businessId": "1234567-1",
+  "employerIdentifier": null,
+    "postalAddress": {
+      "addressLine": [
+        "Man"
+      ],
+      "postalCode": "33100",
+      "postOffice": "Tampere",
+      "country": "FI"
+    },
+    "number": 90060
+  },
+  "posting": {
+    "postingInstallment": [
+      {
+        "sum": 1764.00,
+        "businessBookkeepingAccount": 82620000,
+        "financeAssessmentAccount": 3230552,
+        "followUpCode1": null,
+        "followUpCode2": null,
+        "partnerCode": null,
+        "functionCode": null,
+        "ovt": "00372296962111",
+        "operationUnit": 3800261004,
+        "projectCode": "100YA0216",
+        "municipalityCode": "091",
+        "vatCode": "0000"
+      }
+    ],
+    "accountsLedgerReceiptType": "YA"
+  },
+  "view": {
+    "type": "Palkkatukihakemuksen tuki",
+    "roadName": "100YA0216",
+    "roadId": null,
+    "usePriviledgeUnitId": null,
+    "municipality": {
+      "value": "Helsinki",
+      "code": "091"
+    },
+    "paymentDecisionRecordNumber": "PT55/2822/2023",
+    "paymentDecisionDate": "2024-09-16 00:00:00",
+    "grantDecisionRecordNumber": "PT55/2822/2023",
+    "businessUnit": {
+      "value": "UUDENMAAN TE-TOIMISTO",
+      "code": 1001
+    },
+    "creator": {
+      "name": {
+        "firstName": "A030478",
+        "lastName": "Mira"
+      }
+    },
+    "paymentSubjectInspector": {
+      "name": {
+        "firstName": "A030478",
+        "lastName": "Mira"
+      },
+      "email": {
+        "value": "esimerkki@example.com"
+      }
+    },
+    "verifyDate": "2024-09-16 15:44:07",
+    "paymentPresenter": {
+      "name": {
+        "firstName": "A030478",
+        "lastName": "Mira"
+      },
+      "email": {
+        "value": "esimerkki@example.com"
+      },
+      "signedTime": "2024-09-16 15:45:07"
+    },
+    "paymentAcceptor": {
+      "name": {
+        "firstName": "A007984",
+        "lastName": "Mira"
+      },
+      "email": {
+        "value": "esimerkki@example.com"
+      },
+      "signedTime": "2024-09-16 15:44:07"
+    },
+    "additionalInformation": "Hakemus 55 vuotta täyttäneiden työllistämistuesta: 100YA0216. Myöntöpäätös: 17.07.2023. 82620000. Kustannuksia haettu 01.02.2023 - 28.02.2023.",
+    "rows": {
+      "row": [
+        {
+          "description": "Palkkatukihakemuksen tuki erä 2-2024",
+          "grossSum": 1764.00,
+          "vatPercentage": 0,
+          "vatSum": 0,
+          "netSum": 1764.00
+        }
+      ]
+    },
+    "vatSum": 0,
+    "netSum": 1764.00,
+    "aidType": "55",
+    "language": 1
+  },
+  "version": "2.1",
+  "claimType": "PALKKATUKI_55V",
+  "auraAccount": "4746",
+  "sectorIdentifier": "S.11",
+  "participantHomeMunicipality": "091",
+  "recipientMunicipality": "091",
+  "employmentMunicipality": "091",
+  "payerBusinessId": "2296962-1",
+  "acculturingStatus": true,
+  "contractAcculturingStatus": null,
+  "originalInvoiceNumber": null,
+  "originalBuyerReferenceIdentifier": null,
+  "euGlobalizationFundDetails": {
+     "euGlobalizationFundRows": [
+      {
+        "globazationFundCode": "G21310",
+        "municipalityCode": "091",
+        "sum": 1764.00,
+        "vatCode": "0000"
+      }
+    ]
+  }
+}

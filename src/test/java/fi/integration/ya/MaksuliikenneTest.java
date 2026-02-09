@@ -1,12 +1,16 @@
 package fi.integration.ya;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.quarkus.test.CamelQuarkusTestSupport;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import fi.hel.integration.ya.JsonValidator;
 import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -20,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @TestProfile(MaksuliikenneTest.class)
 @QuarkusTest
@@ -34,8 +39,35 @@ public class MaksuliikenneTest extends CamelQuarkusTestSupport {
     @Inject
     private fi.integration.ya.TestUtils tu;
 
+    @Inject
+    private JsonValidator jsonValidator;
+
     @ConfigProperty(name = "MAKSULIIKENNE_BANKING_FILENAMEPREFIX")
     private String FILE_NAME_PREFIX;
+
+    @Test
+    public void testValidateMaksuliikenneDataAgainstSchema() throws Exception {
+        String jsonData = tu.readResource("src/test/java/fi/integration/ya/resources/maksuliikenne/maksuliikenne_single_data.json");
+        String schemaFile = "schema/kipa/json_schema_MYK_HKK.json";
+        
+        Exchange exchange = tu.createExchange(jsonData);
+        jsonValidator.validateJson(exchange, schemaFile);
+        
+        Boolean isValid = exchange.getIn().getHeader("isJsonValid", Boolean.class);
+        assertTrue(isValid != null && isValid, "JSON validation failed against schema: " + schemaFile);
+    }
+
+    @Test
+    public void testValidateMaksuliikenneDataUusiAgainstPTPT55TOJTSchema() throws Exception {
+        String jsonData = tu.readResource("src/test/java/fi/integration/ya/resources/maksuliikenne/maksuliikenne_data_uusi.json");
+        String schemaFile = "schema/kipa/json_schema_PT_PT55_TOJT.json";
+        
+        Exchange exchange = tu.createExchange(jsonData);
+        jsonValidator.validateJson(exchange, schemaFile);
+        
+        Boolean isValid = exchange.getIn().getHeader("isJsonValid", Boolean.class);
+        assertTrue(isValid != null && isValid, "JSON validation failed against schema: " + schemaFile);
+    }
 
     @Test
     public void testMapPaymentTransactions() throws Exception {

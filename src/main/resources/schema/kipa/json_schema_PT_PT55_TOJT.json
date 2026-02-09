@@ -1,496 +1,532 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "properties": {
-      "delivery": {
-        "type": "object",
-        "properties": {
-          "fileName": {
-            "type": "string"
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "delivery": {
+      "type": "object",
+      "properties": {
+        "fileName": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sentAt": {
+          "type": "string",
+          "format": "date"
+        },
+        "from": {
+          "type": "string",
+          "maxLength": 2
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": ["fileName", "id", "sentAt", "from", "to"]
+    },
+    "bizTalkPipe": {
+      "type": "string"
+    },
+    "invoiceNumber": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "refundedInvoiceNumber": {
+      "type": ["integer", "null"]
+    },
+    "invoiceDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "dueDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "receiptDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "grossSum": {
+      "type": "number",
+      "minimum": 0
+    },
+    "currency": {
+      "type": "string",
+      "maxLength": 3
+    },
+    "ourReference": {
+      "type": "string"
+    },
+    "customerBankReference": {
+      "type": ["string", "null"]
+    },
+    "periodStartDate": {
+      "type": ["string", "null"],
+      "format": "date"
+    },
+    "periodEndDate": {
+      "type": ["string", "null"],
+      "format": "date"
+    },
+    "paymentPeriodStartDate": {
+      "type": ["string", "null"],
+      "format": "date"
+    },
+    "paymentPeriodEndDate": {
+      "type": ["string", "null"],
+      "format": "date"
+    },
+    "employeeName": {
+      "type": ["string", "null"]
+    },
+    "customProjectCode": {
+      "type": ["string", "null"]
+    },
+    "receiver": {
+      "type": "object",
+      "properties": {
+        "profitCenterCode": {
+          "type": ["integer", "null"]
+        },
+        "bankAccount": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "string",
+              "maxLength": 34
+            },
+            "bicCode": {
+              "type": "string",
+              "maxLength": 11
+            }
           },
-          "id": {
-            "type": "integer",
-            "minimum": 0
+          "required": ["value", "bicCode"]
+        },
+        "name": {
+          "type": "object",
+          "properties": {
+            "firstName": {
+              "type": "string"
+            },
+            "lastName": {
+              "type": "string"
+            }
           },
-          "sentAt": {
-            "type": "string",
-            "format": "date"
+          "required": ["firstName", "lastName"]
+        },
+        "socialSecurityNumber": {
+          "type": ["string", "null"],
+          "maxLength": 11
+        },
+        "businessId": {
+          "type": ["string", "null"],
+          "maxLength": 9
+        },
+        "employerIdentifier": {
+          "type": ["string", "null"]
+        },
+        "postalAddress": {
+          "type": "object",
+          "properties": {
+            "addressLine": {
+              "type": ["array", "null"],
+              "items": {
+                "type": ["string", "null"]
+              }
+            },
+            "postalCode": {
+              "type": ["string", "null"],
+              "maxLength": 5
+            },
+            "postOffice": {
+              "type": ["string", "null"]
+            },
+            "country": {
+              "type": "string",
+              "maxLength": 2
+            }
           },
-          "from": {
-            "type": "string",
-            "maxLength": 2
-          },
-          "to": {
-            "type": "string"
+          "required": ["country"]
+        },
+        "number": {
+          "type": ["integer", "null"]
+        }
+      },
+      "required": ["bankAccount", "name"]
+    },
+    "posting": {
+      "type": "object",
+      "properties": {
+        "postingInstallment": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "sum": {
+                "type": "number",
+                "minimum": 0
+              },
+              "businessBookkeepingAccount": {
+                "type": ["integer", "null"]
+              },
+              "financeAssessmentAccount": {
+                "type": ["integer", "null"]
+              },
+              "followUpCode1": {
+                "type": ["integer", "null"]
+              },
+              "followUpCode2": {
+                "type": ["integer", "null"]
+              },
+              "partnerCode": {
+                "type": ["string", "null"]
+              },
+              "functionCode": {
+                "type": ["string", "null"]
+              },
+              "ovt": {
+                "type": ["string", "null"]
+              },
+              "operationUnit": {
+                "type": ["integer", "null"]
+              },
+              "projectCode": {
+                "type": ["string", "null"]
+              },
+              "municipalityCode": {
+                "type": "string",
+                "maxLength": 3
+              },
+              "vatCode": {
+                "type": "string",
+                "maxLength": 4
+              }
+            },
+            "required": ["sum", "municipalityCode", "vatCode"]
           }
         },
-        "required": ["fileName", "id", "sentAt", "from", "to" ]
+        "accountsLedgerReceiptType": {
+          "type": "string",
+          "maxLength": 2
+        }
       },
-      "bizTalkPipe": {
-        "type": "string"
-      },
-      "invoiceNumber": {
-        "type": "integer",
-        "minimum": 0
-      },
-      "invoiceDate": {
-        "type": "string",
-        "format": "date"
-      },
-      "dueDate": {
-        "type": "string",
-        "format": "date"
-      },
-      "receiptDate": {
-        "type": "string",
-        "format": "date"
-      },
-      "grossSum": {
-        "type": "number",
-        "minimum": 0
-      },
-      "currency": {
-        "type": "string",
-        "maxLength": 3
-      },
-      "ourReference": {
-        "type": "string"
-      },
-      "customerBankReference": {
-        "type": ["string", "null"]
-      },
-      "periodStartDate": {
-        "type": ["string", "null"],
-        "format": "date"
-      },
-      "periodEndDate": {
-        "type": ["string", "null"],
-        "format": "date"
-      },
-      "paymentPeriodStartDate": {
-        "type": ["string", "null"],
-        "format": "date"
-      },
-      "paymentPeriodEndDate": {
-        "type": ["string", "null"],
-        "format": "date"
-      },
-      "employeeName": {
-        "type": ["string", "null"]
-      },
-      "customProjectCode": {
-        "type": ["string", "null"]
-      },
-      "receiver": {
-        "type": "object",
-        "properties": {
-          "profitCenterCode": {
-            "type": ["integer", "null"]
-          },
-          "bankAccount": {
-            "type": "object",
-            "properties": {
-              "value": {
-                "type": "string",
-                "maxLength": 34
-              },
-              "bicCode": {
-                "type": "string",
-                "maxLength": 11
-              }
+      "required": ["accountsLedgerReceiptType"]
+    },
+    "view": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": ["string", "null"]
+        },
+        "roadName": {
+          "type": ["string", "null"]
+        },
+        "roadId": {
+          "type": ["string", "null"]
+        },
+        "usePriviledgeUnitId": {
+          "type": ["string", "null"]
+        },
+        "municipality": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": ["string", "null"]
             },
-            "required": ["value", "bicCode"]
-          },
-          "name": {
-            "type": "object",
-            "properties": {
-              "firstName": {
-                "type": "string"
-              },
-              "lastName": {
-                "type": "string"
-              }
+            "code": {
+              "type": ["string", "null"],
+              "maxLength": 3
+            }
+          }
+        },
+        "paymentDecisionRecordNumber": {
+          "type": "string"
+        },
+        "paymentDecisionDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "grantDecisionRecordNumber": {
+          "type": "string"
+        },
+        "businessUnit": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "string"
             },
-            "required": ["firstName", "lastName"]
+            "code": {
+              "type": "integer",
+              "minimum": 0
+            }
           },
-          "socialSecurityNumber": {
-            "type": ["string", "null"],
-            "maxLength": 11
-          },
-          "businessId": {
-            "type": "string",
-            "maxLength": 9
-          },
-          "postalAddress": {
-            "type": "object",
-            "properties": {
-              "addressLine": {
-                "type": "array",
-                "items": {
+          "required": ["value", "code"]
+        },
+        "creator": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "object",
+              "properties": {
+                "firstName": {
+                  "type": "string"
+                },
+                "lastName": {
                   "type": "string"
                 }
               },
-              "postalCode": {
-                "type": "string",
-                "maxLength": 5
-              },
-              "postOffice": {
-                "type": "string"
-              },
-              "country": {
-                "type": "string",
-                "maxLength": 2
-              }
-            },
-            "required": ["addressLine", "postalCode", "postOffice", "country"]
+              "required": ["firstName", "lastName"]
+            }
           },
-          "number": {
-            "type": ["integer", "null"]
-          }
+          "required": ["name"]
         },
-        "required": ["profitCenterCode", "bankAccount", "name", "businessId", "postalAddress"]
-      },
-      "posting": {
-        "type": "object",
-        "properties": {
-          "postingInstallment": {
-            "type": "array",
-            "items": {
+        "paymentSubjectInspector": {
+          "type": "object",
+          "properties": {
+            "name": {
               "type": "object",
               "properties": {
-                "sum": {
-                  "type": "number",
-                  "minimum": 0
+                "firstName": {
+                  "type": "string"
                 },
-                "businessBookkeepingAccount": {
-                  "type": ["integer", "null"]
-                },
-                "financeAssessmentAccount": {
-                  "type": ["integer", "null"]
-                },
-                "followUpCode1": {
-                  "type": ["integer", "null"]
-                },
-                "followUpCode2": {
-                  "type": ["integer", "null"]
-                },
-                "partnerCode": {
-                  "type": ["string", "null"]
-                },
-                "functionCode": {
-                  "type": ["string", "null"]
-                },
-                "ovt": {
-                  "type": ["string", "null"]
-                },
-                "operationUnit": {
-                  "type": ["integer", "null"]
-                },
-                "projectCode": {
-                  "type": ["string", "null"]
-                },
-                "municipalityCode": {
-                  "type": "string",
-                  "maxLength": 3
-                },
-                "vatCode": {
-                  "type": "string",
-                  "maxLength": 4
+                "lastName": {
+                  "type": "string"
                 }
               },
-              "required": ["sum", "municipalityCode", "vatCode"]
+              "required": ["firstName", "lastName"]
+            },
+            "email": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["value"]
             }
           },
-          "accountsLedgerReceiptType": {
-            "type": "string",
-            "maxLength": 2
-          }
+          "required": ["name", "email"]
         },
-        "required": ["accountsLedgerReceiptType"]
-      },
-      "view": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": ["string", "null"]
-          },
-          "roadName": {
-            "type": ["string", "null"]
-          },
-          "roadId": {
-            "type": ["string", "null"]
-          },
-          "usePriviledgeUnitId": {
-            "type": ["string", "null"]
-          },
-          "municipality": {
-            "type": "object",
-            "properties": {
-              "value": {
-                "type": ["string", "null"]
+        "verifyDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "paymentPresenter": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "object",
+              "properties": {
+                "firstName": {
+                  "type": "string"
+                },
+                "lastName": {
+                  "type": "string"
+                }
               },
-              "code": {
-                "type": ["string", "null"],
-                "maxLength": 3
+              "required": ["firstName", "lastName"]
+            },
+            "email": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["value"]
+            },
+            "signedTime": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "required": ["name", "email", "signedTime"]
+        },
+        "paymentAcceptor": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "object",
+              "properties": {
+                "firstName": {
+                  "type": "string"
+                },
+                "lastName": {
+                  "type": "string"
+                }
+              },
+              "required": ["firstName", "lastName"]
+            },
+            "email": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["value"]
+            },
+            "signedTime": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "required": ["name", "email", "signedTime"]
+        },
+        "additionalInformation": {
+          "type": "string"
+        },
+        "rows": {
+          "type": "object",
+          "properties": {
+            "row": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  },
+                  "grossSum": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "vatPercentage": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "vatSum": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "netSum": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "required": ["description", "grossSum", "vatPercentage", "vatSum", "netSum"]
               }
             }
           },
-          "paymentDecisionRecordNumber": {
-            "type": "string"
-          },
-          "paymentDecisionDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "grantDecisionRecordNumber": {
-            "type": "string"
-          },
-          "businessUnit": {
+          "required": ["row"]
+        },
+        "vatSum": {
+          "type": "number",
+          "minimum": 0
+        },
+        "netSum": {
+          "type": "number",
+          "minimum": 0
+        },
+        "aidType": {
+          "type": "string"
+        },
+        "language": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "paymentDecisionRecordNumber",
+        "paymentDecisionDate",
+        "grantDecisionRecordNumber",
+        "verifyDate",
+        "businessUnit",
+        "additionalInformation",
+        "vatSum",
+        "netSum",
+        "aidType",
+        "language"
+      ]
+    },
+    "version": {
+      "type": ["string", "null"]
+    },
+    "claimType": {
+      "type": "string"
+    },
+    "auraAccount": {
+      "type": "string"
+    },
+    "sectorIdentifier": {
+      "type": "string"
+    },
+    "participantHomeMunicipality": {
+      "type": ["string", "null"],
+      "maxLength": 3
+    },
+    "recipientMunicipality": {
+      "type": "string",
+      "maxLength": 3
+    },
+    "employmentMunicipality": {
+      "type": ["string", "null"],
+      "maxLength": 3
+    },
+    "payerBusinessId": {
+      "type": ["string", "null"],
+      "maxLength": 9
+    },
+    "acculturingStatus": {
+      "type": ["boolean", "null"]
+    },
+    "contractAcculturingStatus": {
+      "type": ["boolean", "null"]
+    },
+    "originalInvoiceNumber": {
+      "type": ["string", "null"]
+    },
+    "originalBuyerReferenceIdentifier": {
+      "type": ["string", "null"]
+    },
+    "euGlobalizationFundDetails": {
+      "type": ["object", "null"],
+      "properties": {
+        "euGlobalizationFundRows": {
+          "type": "array",
+          "items": {
             "type": "object",
             "properties": {
-              "value": {
+              "globazationFundCode": {
                 "type": "string"
               },
-              "code": {
-                "type": "integer",
+              "municipalityCode": {
+                "type": "string",
+                "maxLength": 3
+              },
+              "sum": {
+                "type": "number",
                 "minimum": 0
-              }
-            },
-            "required": ["value", "code"]
-          },
-          "creator": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "object",
-                "properties": {
-                  "firstName": {
-                    "type": "string"
-                  },
-                  "lastName": {
-                    "type": "string"
-                  }
-                },
-                "required": ["firstName", "lastName"]
-              }
-            },
-            "required": ["name"]
-          },
-          "paymentSubjectInspector": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "object",
-                "properties": {
-                  "firstName": {
-                    "type": "string"
-                  },
-                  "lastName": {
-                    "type": "string"
-                  }
-                },
-                "required": ["firstName", "lastName"]
               },
-              "email": {
-                "type": "object",
-                "properties": {
-                  "value": {
-                    "type": "string"
-                  }
-                },
-                "required": ["value"]
-              }
-            },
-            "required": ["name", "email"]
-          },
-          "verifyDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "paymentPresenter": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "object",
-                "properties": {
-                  "firstName": {
-                    "type": "string"
-                  },
-                  "lastName": {
-                    "type": "string"
-                  }
-                },
-                "required": ["firstName", "lastName"]
-              },
-              "email": {
-                "type": "object",
-                "properties": {
-                  "value": {
-                    "type": "string"
-                  }
-                },
-                "required": ["value"]
-              },
-              "signedTime": {
+              "vatCode": {
                 "type": "string",
-                "format": "date"
+                "maxLength": 4
               }
-            },
-            "required": ["name", "email", "signedTime"]
-          },
-          "paymentAcceptor": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "object",
-                "properties": {
-                  "firstName": {
-                    "type": "string"
-                  },
-                  "lastName": {
-                    "type": "string"
-                  }
-                },
-                "required": ["firstName", "lastName"]
-              },
-              "email": {
-                "type": "object",
-                "properties": {
-                  "value": {
-                    "type": "string"
-                  }
-                },
-                "required": ["value"]
-              },
-              "signedTime": {
-                "type": "string",
-                "format": "date"
-              }
-            },
-            "required": ["name", "email", "signedTime"]
-          },
-          "additionalInformation": {
-            "type": "string"
-          },
-          "rows": {
-            "type": "object",
-            "properties": {
-              "row": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "description": {
-                      "type": "string"
-                    },
-                    "grossSum": {
-                      "type": "number",
-                      "minimum": 0
-                    },
-                    "vatPercentage": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 100
-                    },
-                    "vatSum": {
-                      "type": "number",
-                      "minimum": 0
-                    },
-                    "netSum": {
-                      "type": "number",
-                      "minimum": 0
-                    }
-                  },
-                  "required": ["description", "grossSum", "vatPercentage", "vatSum", "netSum"]
-                }
-              }
-            },
-            "required": ["row"]
-          },
-          "vatSum": {
-            "type": "number",
-            "minimum": 0
-          },
-          "netSum": {
-            "type": "number",
-            "minimum": 0
-          },
-          "aidType": {
-            "type": "string"
-          },
-          "language": {
-            "type": "integer"
+            }
           }
-        },
-        "required": [
-          "paymentDecisionRecordNumber", 
-          "paymentDecisionDate", 
-          "grantDecisionRecordNumber", 
-          "verifyDate", 
-          "businessUnit", 
-          "additionalInformation",
-          "vatSum",
-          "netSum",
-          "aidType",
-          "language"
-        ]
-      },
-      "version": {
-        "type": "string"
-      },
-      "claimType": {
-        "type": "string"
-      },
-      "auraAccount": {
-        "type": "string"
-      },
-      "sectorIdentifier": {
-        "type": "string"
-      },
-      "participantHomeMunicipality": {
-        "type": "string",
-        "maxLength": 3
-      },
-      "recipientMunicipality": {
-        "type": "string",
-        "maxLength": 3
-      },
-      "employmentMunicipality": {
-        "type": ["string", "null"],
-        "maxLength": 3
-      },
-      "payerBusinessId": {
-        "type": ["string", "null"],
-        "maxLength": 9
-      },
-      "acculturingStatus": {
-        "type": ["boolean", "null"]
-      },
-      "originalInvoiceNumber": {
-        "type": ["string", "null"]
-      },
-      "originalBuyerReferenceIdentifier": {
-        "type": ["string", "null"]
+        }
       }
-    },
-    "required": [
-      "bizTalkPipe",
-      "invoiceNumber",
-      "invoiceDate",
-      "dueDate",
-      "receiptDate",
-      "grossSum",
-      "currency",
-      "ourReference",
-      "receiver",
-      "posting",
-      "view",
-      "version",
-      "claimType",
-      "auraAccount",
-      "sectorIdentifier",
-      "participantHomeMunicipality",
-      "recipientMunicipality"
-    ]
-  }
-  
+    }
+  },
+  "required": [
+    "delivery",
+    "bizTalkPipe",
+    "invoiceNumber",
+    "invoiceDate",
+    "dueDate",
+    "receiptDate",
+    "grossSum",
+    "currency",
+    "ourReference",
+    "receiver",
+    "posting",
+    "view",
+    "version",
+    "claimType",
+    "auraAccount",
+    "sectorIdentifier",
+    "recipientMunicipality"
+  ]
+}     
