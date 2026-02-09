@@ -1,0 +1,158 @@
+{
+  "delivery": {
+    "fileName": "YA_p22_399_20240820110559_1_SR.json",
+    "id": 60025839,
+    "sentAt": "2024-09-16 16:17:59",
+    "from": "YA",
+    "to": "RONDO"
+  },
+  "bizTalkPipe": "automatic",
+  "invoiceNumber": 60025839,
+  "refundedInvoiceNumber": 60022742,
+  "invoiceDate": "2024-09-16 00:00:00",
+  "dueDate": "2024-09-16 00:00:00",
+  "receiptDate": "2024-09-16 00:00:00",
+  "grossSum": 669.78,
+  "currency": "EUR",
+  "ourReference": "Starttirahahakemus SR/938/2022 maksuerä 2/8",
+  "customerBankReference": null,
+  "periodStartDate": "2024-09-16 00:00:00",
+  "periodEndDate": "2024-09-16 00:00:00",
+  "paymentPeriodStartDate": "2024-09-16 00:00:00",
+  "paymentPeriodEndDate": "2024-09-16 00:00:00",
+  "employeeName": null,
+  "customProjectCode": null,
+  "receiver": {
+    "profitCenterCode": 111,
+    "bankAccount": {
+      "value": "FI3040244380000352",
+      "bicCode": "OKOYFIHH"
+    },
+    "name": {
+      "firstName": "Jarno",
+      "lastName": "Jarno"
+    },
+    "socialSecurityNumber": "010101+0101",
+    "businessId": null,
+  "employerIdentifier": null,
+    "postalAddress": {
+      "addressLine": [
+        "Val"
+      ],
+      "postalCode": "33100",
+      "postOffice": "Tampere",
+      "country": "FI"
+    },
+    "number": 90060
+  },
+  "posting": {
+    "postingInstallment": [
+      {
+        "sum": 669.78,
+        "businessBookkeepingAccount": 82620000,
+        "financeAssessmentAccount": 42332305106,
+        "followUpCode1": null,
+        "followUpCode2": null,
+        "partnerCode": null,
+        "functionCode": null,
+        "ovt": "00372296962122",
+        "operationUnit": 3800222901,
+        "projectCode": "111YA0034",
+        "municipalityCode": "399",
+        "vatCode": "0000"
+      }
+    ],
+    "accountsLedgerReceiptType": "YA"
+  },
+  "view": {
+    "type": "Yksityistieavustus",
+    "roadName": "111YA0034",
+    "roadId": null,
+    "usePriviledgeUnitId": null,
+    "municipality": {
+      "value": "Laihia",
+      "code": "399"
+    },
+    "paymentDecisionRecordNumber": "SR/938/2022",
+    "paymentDecisionDate": "2024-09-16 00:00:00",
+    "grantDecisionRecordNumber": "SR/938/2022",
+    "businessUnit": {
+      "value": "POHJANMAAN TE-TOIMISTO",
+      "code": 1021
+    },
+    "creator": {
+      "name": {
+        "firstName": "A006571",
+        "lastName": "Heidi"
+      }
+    },
+    "paymentSubjectInspector": {
+      "name": {
+        "firstName": "A006571",
+        "lastName": "Heidi"
+      },
+      "email": {
+        "value": "esimerkki@example.com"
+      }
+    },
+    "verifyDate": "2024-09-16 15:44:07",
+    "paymentPresenter": {
+      "name": {
+        "firstName": "A006571",
+        "lastName": "Heidi"
+      },
+      "email": {
+        "value": "esimerkki@example.com"
+      },
+      "signedTime": "2024-09-16 15:45:07"
+    },
+    "paymentAcceptor": {
+      "name": {
+        "firstName": "A006571",
+        "lastName": "Heidi"
+      },
+      "email": {
+        "value": "esimerkki@example.com"
+      },
+      "signedTime": "2024-09-16 15:44:07"
+    },
+    "additionalInformation": "Starttirahahakemus: 111YA0034. Myöntöpäätös: 26.07.2024. 32305106. Kustannuksia haettu 01.06.2024 - 30.06.2024.",
+    "rows": {
+      "row": [
+        {
+          "description": "YA valtionapu erä  2-2024",
+          "grossSum": 669.78,
+          "vatPercentage": 0,
+          "vatSum": 0,
+          "netSum": 669.78
+        }
+      ]
+    },
+    "vatSum": 0,
+    "netSum": 669.78,
+    "aidType": "99",
+    "language": 1
+  },
+  "version": "2.1",
+  "claimType": "STARTTIRAHA",
+  "auraAccount": "4730",
+  "sectorIdentifier": "S.14",
+  "participantHomeMunicipality": "399",
+  "recipientMunicipality": "399",
+  "employmentMunicipality": "399",
+  "payerBusinessId": "2296962-1",
+  "acculturingStatus": true,
+  "contractAcculturingStatus": null,
+     "originalInvoiceNumber": null,
+     "originalBuyerReferenceIdentifier": null,
+ "euGlobalizationFundDetails": {
+     "euGlobalizationFundRows": [
+      {
+        "globazationFundCode": "G21310",
+        "municipalityCode": "399",
+        "sum": 669.78,
+        "vatCode": "0000"
+      }
+    ]
+  }
+}
