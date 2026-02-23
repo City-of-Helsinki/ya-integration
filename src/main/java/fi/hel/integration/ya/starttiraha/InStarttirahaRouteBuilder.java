@@ -166,7 +166,7 @@ public class InStarttirahaRouteBuilder extends RouteBuilder {
                 }
                 
                 List<String> filteredFiles = allFiles.stream()
-                    .filter(fileName -> fileName != null && fileName.startsWith("YA_p22"))
+                    .filter(fileName -> fileName != null && fileName.startsWith("YA_p22") && fileName.endsWith(".json"))
                     .collect(Collectors.toList());
                 
                 exchange.getIn().setBody(filteredFiles);
