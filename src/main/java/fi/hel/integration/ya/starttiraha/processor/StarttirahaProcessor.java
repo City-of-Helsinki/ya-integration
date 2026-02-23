@@ -74,11 +74,11 @@ public class StarttirahaProcessor {
             
                 Map<String,Object> postalAddress = (Map<String, Object>) receiver.get("postalAddress");
                 ArrayList<String> addressList = (ArrayList<String>) postalAddress.get("addressLine");
-                String address = addressList.get(0);
+                String address = (addressList != null && !addressList.isEmpty()) ? addressList.get(0) : EMPTY;
             
                 String postalCode = (String) postalAddress.get("postalCode");
                 String postOffice = (String) postalAddress.get("postOffice");
-                String postalCodeAndOffice = postalCode + " " + postOffice;            
+                String postalCodeAndOffice = (postalCode != null ? postalCode : EMPTY) + " " + (postOffice != null ? postOffice : EMPTY);
             
                 Map<String,Object> bankAccount = (Map<String, Object>) receiver.get("bankAccount");
                 String bankAccountNo = (String) bankAccount.get("value");
