@@ -46,8 +46,8 @@ public class CsvValidator {
 
                 if (expectedEmptyFieldsCount != null) {
                     int emptyFieldCount = (int) Arrays.stream(line).filter(String::isEmpty).count();
-                    if (emptyFieldCount != expectedEmptyFieldsCount) {
-                        throw new IllegalArgumentException("Line " + lineNumber + " does not have the expected number of empty fields. Found " + emptyFieldCount + " empty fields.");
+                    if (emptyFieldCount < expectedEmptyFieldsCount) {
+                        throw new IllegalArgumentException("Line " + lineNumber + " does not have the expected number of empty fields. Found " + emptyFieldCount + " empty fields, expected at least " + expectedEmptyFieldsCount + ".");
                     }
                 }
             }
