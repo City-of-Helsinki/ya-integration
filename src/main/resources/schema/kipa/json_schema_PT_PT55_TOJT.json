@@ -453,6 +453,9 @@
     "sectorIdentifier": {
       "type": "string"
     },
+    "serviceProviderSectorIdentifier": {
+      "type": ["string", "null"]
+    },
     "participantHomeMunicipality": {
       "type": ["string", "null"],
       "maxLength": 3
@@ -508,6 +511,34 @@
           }
         }
       }
+    },
+    "abruptStructuralChangeDetails": {
+      "type": ["object", "null"],
+      "properties": {
+        "abruptStructuralChangeRows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "abruptStructuralChangeCode": {
+                "type": "string"
+              },
+              "municipalityCode": {
+                "type": "string",
+                "maxLength": 3
+              },
+              "sum": {
+                "type": "number",
+                "minimum": 0
+              },
+              "vatCode": {
+                "type": "string",
+                "maxLength": 4
+              }
+            }
+          }
+        }
+      }
     }
   },
   "required": [
@@ -529,4 +560,4 @@
     "sectorIdentifier",
     "recipientMunicipality"
   ]
-}     
+}

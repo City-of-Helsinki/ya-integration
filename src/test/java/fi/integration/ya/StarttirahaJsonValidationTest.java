@@ -9,10 +9,8 @@ import org.junit.jupiter.api.Test;
 
 import fi.hel.integration.ya.JsonValidator;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 
-@TestProfile(StarttirahaJsonValidationTest.class)
 @QuarkusTest
 public class StarttirahaJsonValidationTest extends CamelQuarkusTestSupport {
 

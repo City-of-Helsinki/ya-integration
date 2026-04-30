@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.hel.integration.ya.JsonValidator;
 import fi.hel.integration.ya.maksuliikenne.processor.MaksuliikenneProcessor;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-@TestProfile(MaksuliikenneTest.class)
 @QuarkusTest
 public class MaksuliikenneTest extends CamelQuarkusTestSupport {
 

@@ -17,10 +17,8 @@ import org.junit.jupiter.api.Test;
 
 import fi.hel.integration.ya.starttiraha.processor.StarttirahaProcessor;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 
-@TestProfile(StarttirahaTest.class)
 @QuarkusTest
 public class StarttirahaTest extends CamelQuarkusTestSupport {
 

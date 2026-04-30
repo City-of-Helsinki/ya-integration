@@ -510,10 +510,8 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
         from("sftp:{{KIPA_SFTP_HOST}}:22/{{KIPA_DIRECTORY_PATH_P24}}?username={{KIPA_SFTP_USER_P24}}"
                 + "&password={{KIPA_SFTP_PASSWORD_P24}}"
                 + "&strictHostKeyChecking=no"
-                + "&scheduler=quartz"         
-                + "&scheduler.cron={{MAKSULIIKENNE_TEST_TIMER}}" 
-                + "&delete=true" 
-            )   
+                + "&delete=true"
+            )
             .autoStartup("{{MAKSULIIKENNE_TEST_IN_AUTOSTARTUP}}")
             .log("json content :: ${body}")
         ;
