@@ -137,6 +137,7 @@
   "claimType": "PALKKATUKI_55V",
   "auraAccount": "4746",
   "sectorIdentifier": "S.11",
+  "serviceProviderSectorIdentifier": null,
   "participantHomeMunicipality": "091",
   "recipientMunicipality": "091",
   "employmentMunicipality": "091",
@@ -146,11 +147,21 @@
   "originalInvoiceNumber": null,
   "originalBuyerReferenceIdentifier": null,
   "euGlobalizationFundDetails": {
-     "euGlobalizationFundRows": [
+    "euGlobalizationFundRows": [
       {
         "globazationFundCode": "G21310",
         "municipalityCode": "091",
         "sum": 1764.00,
+        "vatCode": "0000"
+      }
+    ]
+  },
+  "abruptStructuralChangeDetails": {
+    "abruptStructuralChangeRows": [
+      {
+        "abruptStructuralChangeCode": "R01",
+        "municipalityCode": "992",
+        "sum": 1500.00,
         "vatCode": "0000"
       }
     ]
