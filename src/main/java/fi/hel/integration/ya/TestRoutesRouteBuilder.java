@@ -458,6 +458,23 @@ public class TestRoutesRouteBuilder extends RouteBuilder {
             .bean(this, "testSFTPConnection")
         ;
 
+        from("timer://testAvaloSftp?repeatCount=1&delay=5000")
+            .autoStartup("{{AVALO_SFTP_TESTROUTE_AUTOSTARTUP}}")
+            .log("Starting Avalo sftp test route")
+            .setHeader("hostname").simple("{{AVALO_SFTP_HOST}}")
+            .setHeader("username").simple("{{AVALO_SFTP_USER}}")
+            .setHeader("password").simple("{{AVALO_SFTP_PASSWORD}}")
+            .setHeader("directoryPath").simple("{{AVALO_DIRECTORY_PATH}}")
+            .process(ex -> {
+                // Configure algorithms for compatibility with the server
+                java.util.Properties config = new java.util.Properties();
+                config.put("kex", "curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group-exchange-sha256");
+                config.put("server_host_key", "ssh-ed25519,rsa-sha2-256,rsa-sha2-512,ecdsa-sha2-nistp521");
+                ex.getIn().setHeader("sftp_config", config);
+            })
+            .bean(this, "testSFTPConnection")
+        ;
+
         from("timer://testP24Route?repeatCount=1")
             .autoStartup("{{MAKSULIIKENNE_P24_TESTROUTE_AUTOSTARTUP}}")
             .log("Starting kipa P24 test route")
