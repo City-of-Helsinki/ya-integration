@@ -40,6 +40,8 @@ public class TasmaytysraporttiCombineProcessor implements Processor {
         String privateKeyEncoded = exchange.getIn().getHeader("privateKey", String.class);
         String privateKey = null;
         String filePrefix = exchange.getIn().getHeader("filePrefix", String.class);
+        String reportStartDate = exchange.getIn().getHeader("reportStartDate", String.class);
+        String reportEndDate = exchange.getIn().getHeader("reportEndDate", String.class);
         
         if(privateKeyEncoded != null) {
             privateKey = new String(Base64.getDecoder().decode(privateKeyEncoded));
@@ -103,6 +105,11 @@ public class TasmaytysraporttiCombineProcessor implements Processor {
                         
                         // Extract date from filename (format: YATE_tasmaytysraportti_p24-02012566_YYYYMMDD.json)
                         String fileDate = extractDateFromFileName(fileName);
+                        if (!isWithinRange(fileDate, reportStartDate, reportEndDate)) {
+                            LOG.info("Skipping file {} - date {} outside report range {}-{}",
+                                fileName, fileDate, reportStartDate, reportEndDate);
+                            continue;
+                        }
                         if (fileDate != null) {
                             if (minDate == null || fileDate.compareTo(minDate) < 0) {
                                 minDate = fileDate;
@@ -111,7 +118,7 @@ public class TasmaytysraporttiCombineProcessor implements Processor {
                                 maxDate = fileDate;
                             }
                         }
-                        
+
                         try {
                             // Fetch file content
                             String remoteFilePath = directoryPath + "/" + fileName;
@@ -159,15 +166,17 @@ public class TasmaytysraporttiCombineProcessor implements Processor {
             String timestamp = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
             
-            // Use extracted dates or defaults
-            String startDate = (minDate != null) ? minDate : "00000000";
-            String endDate = (maxDate != null) ? maxDate : "99999999";
-            
+            // Use configured report range if set, otherwise fall back to dates found in the processed files
+            String startDate = (reportStartDate != null && !reportStartDate.isEmpty())
+                ? reportStartDate : (minDate != null) ? minDate : "00000000";
+            String endDate = (reportEndDate != null && !reportEndDate.isEmpty())
+                ? reportEndDate : (maxDate != null) ? maxDate : "99999999";
+
             String fileName = String.format("tasmaytysraportti_%s_%s_%s.csv", startDate, endDate, timestamp);
             exchange.getIn().setHeader(Exchange.FILE_NAME, fileName);
-            
+
             LOG.info("Successfully created combined CSV with {} records", allRecords.size());
-            
+
         } catch (JSchException | SftpException e) {
             LOG.error("SFTP operation failed: {}", e.getMessage());
             throw new RuntimeCamelException("SFTP operation failed: " + e.getMessage(), e);
@@ -185,6 +194,8 @@ public class TasmaytysraporttiCombineProcessor implements Processor {
     
     private void processLocalFiles(Exchange exchange) throws Exception {
         String inputDir = "inbox/täsmäytysraportit";
+        String reportStartDate = exchange.getIn().getHeader("reportStartDate", String.class);
+        String reportEndDate = exchange.getIn().getHeader("reportEndDate", String.class);
         LOG.info("Processing local JSON files from {}", inputDir);
         
         File directory = new File(inputDir);
@@ -213,6 +224,11 @@ public class TasmaytysraporttiCombineProcessor implements Processor {
             
             // Extract date from filename
             String fileDate = extractDateFromFileName(jsonFile.getName());
+            if (!isWithinRange(fileDate, reportStartDate, reportEndDate)) {
+                LOG.info("Skipping file {} - date {} outside report range {}-{}",
+                    jsonFile.getName(), fileDate, reportStartDate, reportEndDate);
+                continue;
+            }
             if (fileDate != null) {
                 if (minDate == null || fileDate.compareTo(minDate) < 0) {
                     minDate = fileDate;
@@ -221,7 +237,7 @@ public class TasmaytysraporttiCombineProcessor implements Processor {
                     maxDate = fileDate;
                 }
             }
-            
+
             try {
                 String content = new String(java.nio.file.Files.readAllBytes(jsonFile.toPath()));
                 List<Map<String, Object>> fileRecords = objectMapper.readValue(content, 
@@ -261,10 +277,12 @@ public class TasmaytysraporttiCombineProcessor implements Processor {
         String timestamp = LocalDateTime.now()
             .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         
-        // Use extracted dates or defaults
-        String startDate = (minDate != null) ? minDate : "00000000";
-        String endDate = (maxDate != null) ? maxDate : "99999999";
-        
+        // Use configured report range if set, otherwise fall back to dates found in the processed files
+        String startDate = (reportStartDate != null && !reportStartDate.isEmpty())
+            ? reportStartDate : (minDate != null) ? minDate : "00000000";
+        String endDate = (reportEndDate != null && !reportEndDate.isEmpty())
+            ? reportEndDate : (maxDate != null) ? maxDate : "99999999";
+
         String fileName = String.format("tasmaytysraportti_%s_%s_%s.csv", startDate, endDate, timestamp);
         exchange.getIn().setHeader(Exchange.FILE_NAME, fileName);
         
@@ -379,5 +397,24 @@ public class TasmaytysraporttiCombineProcessor implements Processor {
             LOG.debug("Could not extract date from filename: {}", fileName);
         }
         return null;
+    }
+
+    // Checks whether fileDate (YYYYMMDD) falls within [startDate, endDate], both inclusive.
+    // A missing bound is treated as unbounded; a file with no extractable date is excluded
+    // whenever a range is configured, since it cannot be verified to be within it.
+    private boolean isWithinRange(String fileDate, String startDate, String endDate) {
+        if ((startDate == null || startDate.isEmpty()) && (endDate == null || endDate.isEmpty())) {
+            return true;
+        }
+        if (fileDate == null) {
+            return false;
+        }
+        if (startDate != null && !startDate.isEmpty() && fileDate.compareTo(startDate) < 0) {
+            return false;
+        }
+        if (endDate != null && !endDate.isEmpty() && fileDate.compareTo(endDate) > 0) {
+            return false;
+        }
+        return true;
     }
 }
