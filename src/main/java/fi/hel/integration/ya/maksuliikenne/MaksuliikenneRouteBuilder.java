@@ -153,7 +153,7 @@ public class MaksuliikenneRouteBuilder extends RouteBuilder {
                 BigDecimal totalAmountSotepe = (BigDecimal) totalAmountsKirjanpito.get("totalSumOfPmtsSotepe");
 
                 String message = "Maksupäivä: " + dueDate + "<br>" 
-                               + "<b>Nomentia Banking</b> <br>"
+                               + "<b>Avalo</b> <br>"
                                + "Maksuja yhteensä: " + amountOfPayments + "<br>"
                                + "Maksujen yhteissumma: " + totalAmount + "<br>"
                                + "<b>Sotepelle kirjanpitoon siirretyt avustukset - sisältyy Kirjanpito (SAP) summiin</b> <br>"
