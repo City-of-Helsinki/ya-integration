@@ -37,7 +37,7 @@ public class TasmaytysraporttiRouteBuilder extends RouteBuilder {
             .setHeader("kipa_container", simple("P24"))
             .setHeader("filePrefix", constant("YATE_tasmaytysraportti_p24-02012566_"))
             .setHeader("reportStartDate", constant("20260101"))
-            .setHeader("reportEndDate", constant("20260831"))
+            .setHeader("reportEndDate", constant("20261031"))
             .process(tasmaytysraporttiCombineProcessor)
             .choice()
                 .when(simple("${body} != null && ${body} != ''"))
