@@ -40,6 +40,9 @@ public class MaksuliikenneTest extends CamelQuarkusTestSupport {
     @Inject
     private JsonValidator jsonValidator;
 
+    @Inject
+    private fi.hel.integration.ya.XmlValidator xmlValidator;
+
     @ConfigProperty(name = "MAKSULIIKENNE_BANKING_FILENAMEPREFIX")
     private String FILE_NAME_PREFIX;
 
@@ -243,5 +246,99 @@ public class MaksuliikenneTest extends CamelQuarkusTestSupport {
         }
         
         mock.assertIsSatisfied();
+    }
+
+    // --- Creditor postal address: missing data in the source must not produce invalid XML ---
+
+    private static final String PAIN_SCHEMA = "schema/banking/pain.001.001.03.xsd";
+
+    /**
+     * Reads maksuliikenne_data.json, lets the caller modify the receiver of the first payment,
+     * runs the mapping route and returns the first creditor (Cdtr) element of the resulting XML.
+     * Also asserts that the whole XML is valid against the pain.001 schema.
+     */
+    @SuppressWarnings("unchecked")
+    private String mapWithModifiedReceiver(java.util.function.Consumer<Map<String, Object>> receiverModifier) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        String startData = tu.readResource("src/test/java/fi/integration/ya/resources/maksuliikenne/maksuliikenne_data.json");
+        List<Map<String, Object>> payments = mapper.readValue(startData, List.class);
+
+        Map<String, Object> receiver = (Map<String, Object>) payments.get(0).get("receiver");
+        receiverModifier.accept(receiver);
+
+        String result = pt.requestBody("direct:mapPaymentTransactions", mapper.writeValueAsString(payments), String.class);
+        assertNotNull(result);
+
+        Exchange exchange = tu.createExchange(result);
+        xmlValidator.validateXml(exchange, PAIN_SCHEMA);
+        assertTrue(exchange.getIn().getHeader("isXmlValid", Boolean.class),
+                "XML is not valid against the pain.001 schema: " + exchange.getIn().getHeader("error_messages"));
+
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("<Cdtr>.*?</Cdtr>").matcher(result);
+        assertTrue(m.find(), "Cdtr element not found");
+        return m.group();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> postalAddress(Map<String, Object> receiver) {
+        return (Map<String, Object>) receiver.get("postalAddress");
+    }
+
+    @Test
+    public void testCreditorAddress_Complete() throws Exception {
+        String cdtr = mapWithModifiedReceiver(receiver -> { });
+
+        assertEquals("<Cdtr><Nm>Makkonen, Mari</Nm><PstlAdr><Ctry>FI</Ctry>"
+                + "<AdrLine>Keskuskatu 1</AdrLine><AdrLine>00100 Helsinki</AdrLine></PstlAdr></Cdtr>", cdtr);
+    }
+
+    @Test
+    public void testCreditorAddress_PostalCodeAndPostOfficeNull() throws Exception {
+        String cdtr = mapWithModifiedReceiver(receiver -> {
+            postalAddress(receiver).put("postalCode", null);
+            postalAddress(receiver).put("postOffice", null);
+        });
+
+        assertFalse(cdtr.contains("null"), "Cdtr must not contain 'null': " + cdtr);
+        assertEquals("<Cdtr><Nm>Makkonen, Mari</Nm><PstlAdr><Ctry>FI</Ctry>"
+                + "<AdrLine>Keskuskatu 1</AdrLine></PstlAdr></Cdtr>", cdtr);
+    }
+
+    @Test
+    public void testCreditorAddress_OnlyPostalCode() throws Exception {
+        String cdtr = mapWithModifiedReceiver(receiver -> postalAddress(receiver).remove("postOffice"));
+
+        assertEquals("<Cdtr><Nm>Makkonen, Mari</Nm><PstlAdr><Ctry>FI</Ctry>"
+                + "<AdrLine>Keskuskatu 1</AdrLine><AdrLine>00100</AdrLine></PstlAdr></Cdtr>", cdtr);
+    }
+
+    @Test
+    public void testCreditorAddress_EmptyAddressLinesAndBlankValues() throws Exception {
+        String cdtr = mapWithModifiedReceiver(receiver -> {
+            postalAddress(receiver).put("addressLine", Arrays.asList("", "  ", null));
+            postalAddress(receiver).put("postalCode", "");
+            postalAddress(receiver).put("postOffice", " ");
+        });
+
+        assertEquals("<Cdtr><Nm>Makkonen, Mari</Nm><PstlAdr><Ctry>FI</Ctry></PstlAdr></Cdtr>", cdtr);
+    }
+
+    @Test
+    public void testCreditorAddress_AllAddressFieldsNull() throws Exception {
+        String cdtr = mapWithModifiedReceiver(receiver -> {
+            postalAddress(receiver).put("addressLine", null);
+            postalAddress(receiver).put("postalCode", null);
+            postalAddress(receiver).put("postOffice", null);
+            postalAddress(receiver).put("country", null);
+        });
+
+        assertEquals("<Cdtr><Nm>Makkonen, Mari</Nm></Cdtr>", cdtr);
+    }
+
+    @Test
+    public void testCreditorAddress_PostalAddressMissing() throws Exception {
+        String cdtr = mapWithModifiedReceiver(receiver -> receiver.remove("postalAddress"));
+
+        assertEquals("<Cdtr><Nm>Makkonen, Mari</Nm></Cdtr>", cdtr);
     }
 }

@@ -2,9 +2,12 @@ package fi.hel.integration.ya.maksuliikenne.processor;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.camel.Exchange;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -240,30 +243,49 @@ public class MaksuliikenneProcessor {
 
             receiverName = utils.xmlEscape(receiverName);
 
+            // Address data may be missing from the source data. Only non-empty values are
+            // written to the XML, because empty or "null null" AdrLine values fail validation.
             Map<String,Object> address = (Map<String, Object>) receiver.get("postalAddress");
-            ArrayList<String> addressList = (ArrayList<String>) address.get("addressLine");
-            StringBuilder postalAddressBuilder = new StringBuilder();
-
-            for (String addressLine : addressList) {
-                if (postalAddressBuilder.length() > 0) {
-                    postalAddressBuilder.append(", "); 
-                }
-                postalAddressBuilder.append(addressLine);
+            if (address == null) {
+                address = Collections.emptyMap();
             }
 
-            String postalAddress = postalAddressBuilder.toString();
+            List<String> addressList = (List<String>) address.get("addressLine");
+            StringBuilder postalAddressBuilder = new StringBuilder();
 
-            postalAddress = utils.xmlEscape(postalAddress);
+            if (addressList != null) {
+                for (String addressLine : addressList) {
+                    if (addressLine == null || addressLine.isBlank()) {
+                        continue;
+                    }
+                    if (postalAddressBuilder.length() > 0) {
+                        postalAddressBuilder.append(", ");
+                    }
+                    postalAddressBuilder.append(addressLine.trim());
+                }
+            }
+
+            String postalAddress = utils.xmlEscape(postalAddressBuilder.toString());
 
             String postalCode = (String) address.get("postalCode");
             String postOffice = (String) address.get("postOffice");
-            String postalAddress2 = postalCode + " " + postOffice;
+            String postalAddress2 = Stream.of(postalCode, postOffice)
+                    .filter(s -> s != null && !s.isBlank())
+                    .map(String::trim)
+                    .collect(Collectors.joining(" "));
 
             List<String> addresslines = new ArrayList<String>();
-            addresslines.add(postalAddress);
-            addresslines.add(postalAddress2);
+            if (!postalAddress.isBlank()) {
+                addresslines.add(postalAddress);
+            }
+            if (!postalAddress2.isBlank()) {
+                addresslines.add(utils.xmlEscape(postalAddress2));
+            }
 
             String country = (String) address.get("country");
+            if (country != null && country.isBlank()) {
+                country = null;
+            }
 
             CreditTransferTransaction creditTransferTransaction = new CreditTransferTransaction();
             PaymentId pmtId = new PaymentId();
@@ -285,9 +307,12 @@ public class MaksuliikenneProcessor {
            
             // Creditor
             creditor.setNm(receiverName);
-            pstlAdr.setAdrLine(addresslines);
-            pstlAdr.setCtry(country);
-            creditor.setPstlAdr(pstlAdr);
+            // PstlAdr is optional in pain.001 – omit it entirely if there is no address data
+            if (!addresslines.isEmpty() || country != null) {
+                pstlAdr.setAdrLine(addresslines.isEmpty() ? null : addresslines);
+                pstlAdr.setCtry(country);
+                creditor.setPstlAdr(pstlAdr);
+            }
             
             // Creditor account
             accountIdentification.setIban(iban);
